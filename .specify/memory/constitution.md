@@ -1,50 +1,129 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+# 第 20 組 SpecKit 課堂搶答系統 Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. 雙小組需求協調與決策追溯
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+SpecKit 與 OpenSpec 小組必須各自使用對應工具流程與 GitHub repo，
+並依共同確認的需求交付一致的使用者功能。
+`docs/shared-requirements.md` 必須區分專題規定、已確認決策與待確認建議。
+涉及共用功能、操作規則或結果可見範圍的變更，必須先由兩小組討論確認，
+記錄需求編號、理由、日期與確認者，再更新各自的規格、任務及驗收條件。
+尚待確認的建議必須維持原狀態，功能規格採用前須取得對應確認紀錄。
+此原則使兩組能用共同情境驗收，並追查變更依據。
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### II. PlantUML 設計優先（Design-First with PlantUML）
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+在 `speckit.specify` 階段，每個子功能必須以 PlantUML 產生組件圖
+（Component Diagram）、類別圖（Class Diagram）與時序圖（Sequence Diagram）。
+所有 `.puml` 必須存放於 repo 根目錄 `./diagrams/`，以功能識別前綴區分圖檔。
+檔案建立後，必須使用 PlantUML CLI 將所有 `.puml` 轉成同目錄 PNG，
+並記錄實際指令與結果。JAR 路徑依環境調整，附錄的命令形式如下。
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+```powershell
+java -jar plantuml.jar "./diagrams/*.puml"
+```
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+`speckit.clarify` 若改變結構或互動，必須同步修圖並重新渲染。
+進入 `speckit.plan` 前，三類圖必須成功渲染並由組員檢查圖意。
+`speckit.plan` 必須以圖表為主要藍圖，說明組件、類別與互動如何落實於設計。
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+`speckit.implement` 完成後，必須核對程式碼與圖表的組件責任、資料關係及時序分支，
+記錄對應位置、差異與驗證結果。有差異時，必須依已確認需求修正圖表、計畫或程式碼，
+重新渲染及驗證，直到受影響內容一致，才可將功能標記完成。
+圖表提供 AI 實作依據與組員可視化的設計審查證據。
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+### III. Guided Notes 動態匯入與正確回填
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+系統必須依明確格式規則從 Google Sheets Guided Notes 動態辨識題目與填空格，
+匯入題數必須與來源講義一致，勝組答案必須寫入原講義的對應填空格。
+實作不得將特定題號固定綁定某份講義的儲存格座標。
+
+辨識規則與輸入限制必須寫入功能規格及操作文件。
+課程允許的佔位符或記號可納入設計，實際語法須依範本核對及雙組確認結果定案。
+無法唯一辨識題目或填空格時，必須回報可定位的錯誤，修正後才可寫入。
+匯出僅能修改經辨識的目標填空內容，必須保護其他題目敘述、格式及非目標資料。
+驗收必須使用來源範本副本及另一份題數或欄列配置不同的講義，
+逐題核對辨識數量、勝組答案與實際回填位置，以證明支援更換講義。
+
+### IV. 機敏資料保護與角色可見範圍
+
+密碼、金鑰、OAuth token 及其他機敏資料必須透過環境變數或本機受控設定載入，
+不得寫入受版本控制的文件、原始碼、測試資料或執行日誌。
+提交檔案、截圖及 AI 對話紀錄前必須檢查機敏內容。
+範例設定必須使用佔位值，本機憑證必須由忽略規則排除。
+
+老師與學生的操作權限及回傳資料必須由後端檢查。
+搶答結束前，學生頁面與 API 回應必須排除其他組別的作答狀況。
+教師可檢視作答狀況與結果，學生在結束後可檢視結果，
+詳細公布欄位依兩組確認的規格執行。
+驗證必須涵蓋直接請求受限操作及檢查學生 API 回應的情境。
+
+### V. AI 代理開發與人工驗證
+
+開發必須使用 AI 代理與 SpecKit 流程，組員必須閱讀並核對 AI 產物。
+每個子功能的任務必須包含正常流程及與該功能風險相關的失敗或邊界情境，
+例如同時提交、重送、截止邊界、權限、動態辨識或回填失敗。
+具體預期必須先依已確認規格定義，再執行驗證。
+
+完成條件必須同時包含 AI 執行的自動驗證及組員實際操作的人工驗收。
+紀錄必須包含執行者、日期、版本或 commit、情境或指令、預期及實際結果。
+未執行、失敗或受阻的驗證必須如實標記，失敗項目須有修正及重驗結果。
+完整流程的人工驗收必須包含教師與至少兩組學生。
+組員必須保留可繳交的 AI 對話及實作心得，並在工作階段留意模型用量，
+依任務複雜度與可用用量選擇模型。
+
+### VI. 文件、任務、圖表與實作一致
+
+每個子功能必須維護可獨立驗收的 `spec.md`、`plan.md`、`tasks.md` 與對應圖表。
+需求、任務、實作及驗收證據必須以編號或明確路徑建立對應。
+只有在實作與必要驗證完成後，才能勾選對應任務或宣稱功能完成。
+需求變更時，必須同步檢查規格、計畫、任務、圖表、操作文件與 Demo 的影響。
+合併功能前必須完成 `speckit.analyze` 與 `speckit.converge` 的檢核，
+修正影響交付的衝突或缺漏，並保留結果。
+提交版文件及 Demo 所描述的功能必須在該版本可重現。
+
+## 專題範圍與決策狀態
+
+核心交付依共同需求 R01–R11，涵蓋老師與學生、Google Sheets 匯入、組別作答、
+活動開啟與結束、教師檢視、最快組別勝出、階段同步、結束後結果檢視及答案回填。
+題目敘述可依作業規定僅以題號呈現。
+
+共同需求 D01–D10 仍為待確認建議，包含提交次數、排序實作、階段設計、加入方式、
+辨識語法、公布欄位、無人作答處理、評分方式、重試及題組計數。
+具體行為必須依後續雙方確認紀錄定案。
+CSV、匿名講評、題組與公平順位亦為待確認的額外功能。
+技術棧、輪詢間隔、模型配置與成員分工依各自確認紀錄及 plan 決定。
+可在本機模擬教師與學生操作，系統須保留可重現的環境與操作說明。
+
+## 開發流程與驗收門檻
+
+1. 開始子功能前讀取憲章及共同需求，核對 Git 分支與本機
+   `.specify/feature.json` 指向的功能目錄，依 Issue 記錄負責人及驗收目標。
+2. 依序執行 specify、clarify、plan、tasks、analyze、implement、converge。
+   specify 產圖，clarify 同步圖意，plan 依圖規劃，實作依可驗證階段推進。
+3. AI 與人工驗收依原則 V 執行，圖表一致性依原則 II 檢查。
+   發現缺漏時更新任務並完成修正及驗證。
+4. 兩位成員以各自帳號提交功能分支與 PR，由另一位成員審查。
+   PR 必須列出需求依據、相關文件與圖表、驗證結果、限制及適用的雙組確認紀錄。
+   目前整合目標為 `master`，後續變更以 repo 實際設定為準。
+5. 交件前核對 repo、文件、程式、驗收與影片版本一致，整理 AI 對話、分工及心得，
+   確認助教可存取交付內容。Demo 必須在五分鐘內呈現教師與至少兩組學生的完整流程。
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+本憲章依使用者要求於 2026-11-23 首次建立為 SpecKit 小組的治理基準，
+並透過組員 PR 互審確認。課程最新規定優先適用，團隊必須依其更新共同需求與憲章。
+功能規格與計畫必須遵循憲章，尚待確認的決策依原則 I 處理。
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+修訂必須以 PR 說明原因、受影響原則、版本變更及既有產物的同步方式，
+由另一位成員審查。涉及共用功能的修訂還須記錄 OpenSpec 組確認結果。
+每次修訂保留首次採用日期，更新最後修訂日期與語意版本。
+版本採 MAJOR.MINOR.PATCH。不相容地移除或重定義治理原則提升 MAJOR，
+新增原則或實質擴充規則提升 MINOR，不改變規則含義的澄清及文字修正提升 PATCH。
+1.0.0 為首次正式基準，先前初始化範本沒有已採用版本。
+
+每次 PR 審查與最終交付檢查必須核對適用原則及證據。
+未符合項目必須明列差異、負責人與補正任務，完成前不得將受影響功能標記為已完成。
+
+**Version**: 1.0.0 | **Ratified**: 2026-11-23 | **Last Amended**: 2026-11-23

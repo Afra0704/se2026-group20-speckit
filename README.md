@@ -5,12 +5,12 @@
 
 ## 目前進度
 
-截至 2026-11-23，已完成 GitHub repo 連結、SpecKit 初始化與起步協作文件。應用程式、正式憲章、功能規格及設計圖尚待建立，尚無可啟動的系統或應用程式測試。
+截至 2026-11-23，已完成 GitHub repo 連結、SpecKit 初始化、起步協作文件與憲章 v1.0.0 的編寫。憲章待組員 PR 審查，應用程式、功能規格及設計圖尚待建立，尚無可啟動的系統或應用程式測試。
 
 | 項目 | 狀態 |
 | --- | --- |
 | SpecKit | Specify CLI 1.2.1，Codex 整合，PowerShell 腳本 |
-| 憲章 | `.specify/memory/constitution.md` 目前為初始化範本 |
+| 憲章 | [憲章 v1.0.0](.specify/memory/constitution.md) 已編寫，待組員 PR 審查 |
 | 共同需求 | [共同需求與待確認決策](docs/shared-requirements.md)，待 OpenSpec 組確認建議項目 |
 | 功能規格與圖表 | 尚待依子功能建立 |
 | 技術棧與分工 | 下列內容為建議，待組員確認 |
@@ -55,7 +55,7 @@ Python、Flask、Jinja、少量原生 JavaScript 與 SQLite 是目前建議技�
 
 ## SpecKit 開發流程
 
-先在 Codex 對話執行 `$speckit-constitution`，依專題附錄建立正式憲章。每個子功能各自保留 spec、plan、tasks，依序執行以下技能。
+憲章已依專題附錄建立，待組員審查。後續修訂可在 Codex 對話執行 `$speckit-constitution`。每個子功能各自保留 spec、plan、tasks，依序執行以下技能。
 
 ```text
 $speckit-specify
@@ -82,7 +82,7 @@ java -jar plantuml.jar "./diagrams/*.puml"
 每項工作先開 Issue，寫清楚需求編號、負責人與驗收條件。每人使用自己的帳號提交及互審。以下是開始新工作時的流程，若 SpecKit 已建立功能分支，使用該分支即可。
 
 ```powershell
-git switch main
+git switch master
 git pull --ff-only
 git switch -c 001-guided-notes
 ```
@@ -98,9 +98,9 @@ git commit -m "docs: define guided notes import requirements"
 git push -u origin HEAD
 ```
 
-在 GitHub 建立目標為 `main` 的 PR，依範本填寫證據，請另一位組員提出具體回饋並核准後合併。合併後回本機更新 main，再開始下一項工作。若合併衝突或 pull 失敗，先保留目前修改並檢查原因。
+在 GitHub 建立目標為 `master` 的 PR，依範本填寫證據，請另一位組員提出具體回饋並核准後合併。合併後回本機更新 master，再開始下一項工作。若合併衝突或 pull 失敗，先保留目前修改並檢查原因。
 
-第一個 PR 使用目前的 `chore/project-setup` 分支，提交初始化檔及這次協作文件。Review 重點為共同需求的分類、暫定分工、版本與忽略規則。後續正式憲章可獨立開 PR 審查。
+初始化與起步協作文件由 `chore/project-setup` 分支提交。憲章與對應 README 更新使用 `docs/project-constitution` 分支，審查重點為治理原則、圖表流程、驗收要求與待確認決策的處理方式。
 
 ## 驗證與交件
 
