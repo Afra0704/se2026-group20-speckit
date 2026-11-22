@@ -1,0 +1,60 @@
+# Local credentials and environment configuration
+.env
+.env.*
+!.env.example
+!.env.*.example
+credentials.json
+client_secret*.json
+token.json
+token-*.json
+service-account*.json
+service_account*.json
+/secrets/
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Python dependencies, caches and generated files
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Optional frontend dependencies and build output
+node_modules/
+/dist/
+/build/
+/coverage/
+/playwright-report/
+/test-results/
+
+# Runtime data, local databases and logs
+/instance/
+/data/local/
+/tmp/
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+*.log
+
+# Personal editor and operating system state
+/.codex/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Keep .agents/skills/, shared .specify/ files, specs/ and diagrams/ tracked.
+# Spec Kit manages per-machine ignores in .specify/.gitignore.
