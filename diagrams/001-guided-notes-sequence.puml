@@ -1,0 +1,136 @@
+@startuml
+skinparam shadowing false
+skinparam defaultFontName SansSerif
+skinparam maxMessageSize 220
+title 001 Guided Notes - Import and Write-back Sequence (Merged Headers / Main Questions and Subitems)
+actor Teacher
+participant "Teacher Authorization" as Auth
+participant "Guided Notes Feature" as Notes
+participant "Original Google Sheets" as Sheets
+participant "Activity Module" as Activity
+participant "Result Module" as Results
+participant "Operation Repository / Lease" as Store
+Teacher -> Notes : provide link and select worksheet
+Notes -> Auth : check teacher authorization
+alt unauthorized
+ Auth --> Notes : denied
+ Notes --> Teacher : access denied
+else authorized
+ Auth --> Notes : permitted
+ Notes -> Sheets : read selected worksheet
+ alt inaccessible / read failure
+  Sheets --> Notes : error
+  Notes --> Teacher : locate error; preserve confirmed version
+ else readable
+  Sheets --> Notes : content plus header and data merge ranges
+  Notes -> Notes : locate main-number spans, subitem labels and answer anchors
+  alt duplicate / missing / ambiguous
+   Notes --> Teacher : located errors; confirmation unavailable
+  else valid
+   Notes --> Teacher : main question count, answer count, subitem labels and targets
+   Teacher -> Notes : review detected main questions and all subitems; confirm import
+   Notes -> Notes : establish versioned catalog and bindings
+   Notes --> Activity : versioned main questions as units, with ordered answer items
+  end
+ end
+end
+== Ended activity and winning answers ==
+Teacher -> Notes : request write-back preview
+Notes -> Auth : check teacher authorization
+alt unauthorized
+ Auth --> Notes : denied
+ Notes --> Teacher : access denied
+else authorized
+ Auth --> Notes : permitted
+ Notes -> Activity : obtain activity and bound import version
+ Activity --> Notes : activity identity, import version, ended state
+ Notes -> Results : obtain specified result snapshot
+ Results --> Notes : settled immutable snapshot, or RESULT_NOT_READY
+ break activity not ended or result not settled
+  Notes --> Teacher : wait for activity closure and settlement
+ end
+ Notes -> Notes : validate ended state, identities, set membership and same winner
+ alt invalid / unfinished activity
+  Notes --> Teacher : explain mismatch; no write
+ else valid
+  Notes -> Sheets : read current targets and content
+  Sheets --> Notes : observations or access error
+  alt source unavailable
+   Notes --> Teacher : source error; no write
+  else source accessible
+   Notes --> Teacher : preview original / proposed values and differences
+   note over Teacher,Notes
+   Skip units without a winner.
+   Re-identify moved targets and confirm new preview.
+   Changed main numbers or subitems require re-import.
+   end note
+   Teacher -> Notes : confirm preview identity
+   Notes -> Auth : recheck teacher permission
+   Auth --> Notes : current permission
+   Notes -> Store : claim source and idempotent operation in short transaction
+   Store --> Notes : owner token or existing / busy
+   break claim denied or duplicate running
+    Notes --> Teacher : source busy or existing operation
+   end
+   Notes -> Activity : recheck bound import version and ended state
+   Activity --> Notes : current activity state
+   Notes -> Results : recheck result version
+   Results --> Notes : current result version
+   Notes -> Sheets : recheck targets and observed content
+   Sheets --> Notes : current observations or error
+   alt authorization / source / result changed or inaccessible
+    Notes -> Store : invalidate preview; release source lease
+    Notes --> Teacher : invalidate preview; re-identify and confirm differences
+   else preview still valid
+    Notes -> Sheets : one RAW batch per main question; write answer anchors only
+    alt permission denied / explicit failure
+     Sheets --> Notes : failed outcome
+    else atomic success / timeout (outcome unknown)
+     Sheets --> Notes : response or uncertain outcome
+    end
+    Notes -> Sheets : read back targets where possible
+    Sheets --> Notes : observed values or read failure
+    Notes -> Notes : classify verified / failed / not processed / unknown / skipped
+    Notes -> Store : persist observed outcomes; release source lease
+    Notes --> Teacher : per-item and per-set report; verify all members for completion
+   end
+  end
+ end
+end
+== Recover incomplete write-back ==
+Teacher -> Notes : retry incomplete operation
+Notes -> Auth : recheck authorization
+Auth --> Notes : permission
+alt authorized
+ Notes -> Store : claim recovery; pin original result snapshot
+ Store --> Notes : owner token or busy
+ break recovery claim denied
+  Notes --> Teacher : source busy or existing operation
+ end
+ Notes -> Activity : recheck binding and ended state
+ Activity --> Notes : current state
+ Notes -> Results : recheck original result version
+ Results --> Notes : current result version
+ Notes -> Sheets : read targets before retry
+ Sheets --> Notes : observed values or read error
+ Notes -> Notes : same answer = verified; no winner = skipped
+ alt source inaccessible / main-question / subitem membership or result changed
+  Notes -> Store : persist conflict or unknown; release lease
+  Notes --> Teacher : explain error; re-import if necessary
+ else original values or conflicts remain
+  Notes -> Store : persist new recovery preview; release lease
+  Notes --> Teacher : refreshed preview; identify conflicts
+  Teacher -> Notes : explicitly confirm remaining writes
+  ref over Teacher,Sheets
+  Repeat pre-write checks, writes and read-back.
+  Preserve set winner; retry incomplete members only.
+  end ref
+ else all applicable answers match
+  Notes -> Store : persist verification; release lease
+  Notes --> Teacher : verified completion without rewriting
+ end
+else unauthorized
+ Notes --> Teacher : denied
+end
+@enduml
+

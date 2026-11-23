@@ -1,0 +1,352 @@
+{
+  "description": "Synthetic contract examples. Not actual class results or live Sheets evidence.",
+  "catalog": {
+    "contract_version": 1,
+    "import_id": "7831c4da-7a57-4e0b-bf3e-65829c5d02bf",
+    "import_version": 1,
+    "question_count": 2,
+    "submission_unit_count": 2,
+    "answer_item_count": 3,
+    "questions": [
+      {
+        "question_id": "68954838-dd57-5d6c-9fb7-006cb5ddb2da",
+        "display_number": "1",
+        "kind": "question_set",
+        "items": [
+          {
+            "item_id": "b22d97f0-26b3-5619-9bf3-8fb07eada54b",
+            "blank_id": "4b1ec31a-486f-535e-988a-49cb1f2908dc",
+            "subitem_label": "(1)"
+          },
+          {
+            "item_id": "58ff8505-9714-5140-937e-8b59272bed63",
+            "blank_id": "137b93f8-30f6-5089-8661-02be976f1e44",
+            "subitem_label": "(2)"
+          }
+        ]
+      },
+      {
+        "question_id": "07ed807d-a84c-5e80-9a48-0f2b056a27d1",
+        "display_number": "2",
+        "kind": "single",
+        "items": [
+          {
+            "item_id": "318db64c-d45b-584c-9778-713615f86c24",
+            "blank_id": "48f2a865-59e2-5aa4-ac16-80649c953d0e",
+            "subitem_label": null
+          }
+        ]
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "single_and_complete_set",
+      "expected": "accepted",
+      "snapshot": {
+        "contract_version": 1,
+        "activity_id": "activity-demo",
+        "import_id": "7831c4da-7a57-4e0b-bf3e-65829c5d02bf",
+        "import_version": 1,
+        "result_version": "result-demo-v1",
+        "ended": true,
+        "units": [
+          {
+            "question_id": "68954838-dd57-5d6c-9fb7-006cb5ddb2da",
+            "winner_group_id": "group-A",
+            "no_winner": false,
+            "answers": [
+              {
+                "item_id": "b22d97f0-26b3-5619-9bf3-8fb07eada54b",
+                "blank_id": "4b1ec31a-486f-535e-988a-49cb1f2908dc",
+                "answer_text": "CPU"
+              },
+              {
+                "item_id": "58ff8505-9714-5140-937e-8b59272bed63",
+                "blank_id": "137b93f8-30f6-5089-8661-02be976f1e44",
+                "answer_text": "作業系統"
+              }
+            ]
+          },
+          {
+            "question_id": "07ed807d-a84c-5e80-9a48-0f2b056a27d1",
+            "winner_group_id": "group-B",
+            "no_winner": false,
+            "answers": [
+              {
+                "item_id": "318db64c-d45b-584c-9778-713615f86c24",
+                "blank_id": "48f2a865-59e2-5aa4-ac16-80649c953d0e",
+                "answer_text": "二進位"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "explicit_no_winner",
+      "expected": "accepted_skip_single",
+      "snapshot": {
+        "contract_version": 1,
+        "activity_id": "activity-demo",
+        "import_id": "7831c4da-7a57-4e0b-bf3e-65829c5d02bf",
+        "import_version": 1,
+        "result_version": "result-demo-v1",
+        "ended": true,
+        "units": [
+          {
+            "question_id": "68954838-dd57-5d6c-9fb7-006cb5ddb2da",
+            "winner_group_id": "group-A",
+            "no_winner": false,
+            "answers": [
+              {
+                "item_id": "b22d97f0-26b3-5619-9bf3-8fb07eada54b",
+                "blank_id": "4b1ec31a-486f-535e-988a-49cb1f2908dc",
+                "answer_text": "CPU"
+              },
+              {
+                "item_id": "58ff8505-9714-5140-937e-8b59272bed63",
+                "blank_id": "137b93f8-30f6-5089-8661-02be976f1e44",
+                "answer_text": "作業系統"
+              }
+            ]
+          },
+          {
+            "question_id": "07ed807d-a84c-5e80-9a48-0f2b056a27d1",
+            "winner_group_id": null,
+            "no_winner": true,
+            "answers": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "missing_set_item",
+      "expected": "RESULT_INVALID",
+      "snapshot": {
+        "contract_version": 1,
+        "activity_id": "activity-demo",
+        "import_id": "7831c4da-7a57-4e0b-bf3e-65829c5d02bf",
+        "import_version": 1,
+        "result_version": "result-demo-v1",
+        "ended": true,
+        "units": [
+          {
+            "question_id": "68954838-dd57-5d6c-9fb7-006cb5ddb2da",
+            "winner_group_id": "group-A",
+            "no_winner": false,
+            "answers": [
+              {
+                "item_id": "b22d97f0-26b3-5619-9bf3-8fb07eada54b",
+                "blank_id": "4b1ec31a-486f-535e-988a-49cb1f2908dc",
+                "answer_text": "CPU"
+              }
+            ]
+          },
+          {
+            "question_id": "07ed807d-a84c-5e80-9a48-0f2b056a27d1",
+            "winner_group_id": "group-B",
+            "no_winner": false,
+            "answers": [
+              {
+                "item_id": "318db64c-d45b-584c-9778-713615f86c24",
+                "blank_id": "48f2a865-59e2-5aa4-ac16-80649c953d0e",
+                "answer_text": "二進位"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "wrong_import_version",
+      "expected": "RESULT_INVALID",
+      "snapshot": {
+        "contract_version": 1,
+        "activity_id": "activity-demo",
+        "import_id": "7831c4da-7a57-4e0b-bf3e-65829c5d02bf",
+        "import_version": 2,
+        "result_version": "result-demo-v1",
+        "ended": true,
+        "units": [
+          {
+            "question_id": "68954838-dd57-5d6c-9fb7-006cb5ddb2da",
+            "winner_group_id": "group-A",
+            "no_winner": false,
+            "answers": [
+              {
+                "item_id": "b22d97f0-26b3-5619-9bf3-8fb07eada54b",
+                "blank_id": "4b1ec31a-486f-535e-988a-49cb1f2908dc",
+                "answer_text": "CPU"
+              },
+              {
+                "item_id": "58ff8505-9714-5140-937e-8b59272bed63",
+                "blank_id": "137b93f8-30f6-5089-8661-02be976f1e44",
+                "answer_text": "作業系統"
+              }
+            ]
+          },
+          {
+            "question_id": "07ed807d-a84c-5e80-9a48-0f2b056a27d1",
+            "winner_group_id": "group-B",
+            "no_winner": false,
+            "answers": [
+              {
+                "item_id": "318db64c-d45b-584c-9778-713615f86c24",
+                "blank_id": "48f2a865-59e2-5aa4-ac16-80649c953d0e",
+                "answer_text": "二進位"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "mixed_winner_inside_set",
+      "expected": "RESULT_INVALID",
+      "snapshot": {
+        "contract_version": 1,
+        "activity_id": "activity-demo",
+        "import_id": "7831c4da-7a57-4e0b-bf3e-65829c5d02bf",
+        "import_version": 1,
+        "result_version": "result-demo-v1",
+        "ended": true,
+        "units": [
+          {
+            "question_id": "68954838-dd57-5d6c-9fb7-006cb5ddb2da",
+            "winner_group_id": "group-A",
+            "no_winner": false,
+            "answers": [
+              {
+                "item_id": "b22d97f0-26b3-5619-9bf3-8fb07eada54b",
+                "blank_id": "4b1ec31a-486f-535e-988a-49cb1f2908dc",
+                "answer_text": "CPU"
+              },
+              {
+                "item_id": "58ff8505-9714-5140-937e-8b59272bed63",
+                "blank_id": "137b93f8-30f6-5089-8661-02be976f1e44",
+                "answer_text": "作業系統",
+                "winner_group_id": "group-B"
+              }
+            ]
+          },
+          {
+            "question_id": "07ed807d-a84c-5e80-9a48-0f2b056a27d1",
+            "winner_group_id": "group-B",
+            "no_winner": false,
+            "answers": [
+              {
+                "item_id": "318db64c-d45b-584c-9778-713615f86c24",
+                "blank_id": "48f2a865-59e2-5aa4-ac16-80649c953d0e",
+                "answer_text": "二進位"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "duplicate_unit",
+      "expected": "RESULT_INVALID",
+      "snapshot": {
+        "contract_version": 1,
+        "activity_id": "activity-demo",
+        "import_id": "7831c4da-7a57-4e0b-bf3e-65829c5d02bf",
+        "import_version": 1,
+        "result_version": "result-demo-v1",
+        "ended": true,
+        "units": [
+          {
+            "question_id": "68954838-dd57-5d6c-9fb7-006cb5ddb2da",
+            "winner_group_id": "group-A",
+            "no_winner": false,
+            "answers": [
+              {
+                "item_id": "b22d97f0-26b3-5619-9bf3-8fb07eada54b",
+                "blank_id": "4b1ec31a-486f-535e-988a-49cb1f2908dc",
+                "answer_text": "CPU"
+              },
+              {
+                "item_id": "58ff8505-9714-5140-937e-8b59272bed63",
+                "blank_id": "137b93f8-30f6-5089-8661-02be976f1e44",
+                "answer_text": "作業系統"
+              }
+            ]
+          },
+          {
+            "question_id": "07ed807d-a84c-5e80-9a48-0f2b056a27d1",
+            "winner_group_id": "group-B",
+            "no_winner": false,
+            "answers": [
+              {
+                "item_id": "318db64c-d45b-584c-9778-713615f86c24",
+                "blank_id": "48f2a865-59e2-5aa4-ac16-80649c953d0e",
+                "answer_text": "二進位"
+              }
+            ]
+          },
+          {
+            "question_id": "68954838-dd57-5d6c-9fb7-006cb5ddb2da",
+            "winner_group_id": "group-A",
+            "no_winner": false,
+            "answers": [
+              {
+                "item_id": "b22d97f0-26b3-5619-9bf3-8fb07eada54b",
+                "blank_id": "4b1ec31a-486f-535e-988a-49cb1f2908dc",
+                "answer_text": "CPU"
+              },
+              {
+                "item_id": "58ff8505-9714-5140-937e-8b59272bed63",
+                "blank_id": "137b93f8-30f6-5089-8661-02be976f1e44",
+                "answer_text": "作業系統"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "literal_text_preserved",
+      "expected": "accepted_literal_text",
+      "snapshot": {
+        "contract_version": 1,
+        "activity_id": "activity-demo",
+        "import_id": "7831c4da-7a57-4e0b-bf3e-65829c5d02bf",
+        "import_version": 1,
+        "result_version": "result-demo-v1",
+        "ended": true,
+        "units": [
+          {
+            "question_id": "68954838-dd57-5d6c-9fb7-006cb5ddb2da",
+            "winner_group_id": "group-A",
+            "no_winner": false,
+            "answers": [
+              {
+                "item_id": "b22d97f0-26b3-5619-9bf3-8fb07eada54b",
+                "blank_id": "4b1ec31a-486f-535e-988a-49cb1f2908dc",
+                "answer_text": "=SUM(1,2)"
+              },
+              {
+                "item_id": "58ff8505-9714-5140-937e-8b59272bed63",
+                "blank_id": "137b93f8-30f6-5089-8661-02be976f1e44",
+                "answer_text": "001\n中文"
+              }
+            ]
+          },
+          {
+            "question_id": "07ed807d-a84c-5e80-9a48-0f2b056a27d1",
+            "winner_group_id": "group-B",
+            "no_winner": false,
+            "answers": [
+              {
+                "item_id": "318db64c-d45b-584c-9778-713615f86c24",
+                "blank_id": "48f2a865-59e2-5aa4-ac16-80649c953d0e",
+                "answer_text": "二進位"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

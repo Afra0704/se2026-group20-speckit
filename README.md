@@ -5,14 +5,14 @@
 
 ## 目前進度
 
-截至 2026-11-23，已完成 GitHub repo 連結、SpecKit 初始化、起步協作文件與憲章 v1.0.0 的編寫。憲章待組員 PR 審查，應用程式、功能規格及設計圖尚待建立，尚無可啟動的系統或應用程式測試。
+截至 2026-11-23，憲章 v1.0.0 已通過組員審查（使用者回報），001 匯入與回填及 002 身分與活動階段的設計已整合至 integration/001-002-design，兩功能均有規格、三類圖、計畫與任務。Q2 題組與 Q3 回填恢復已與 OpenSpec 組確認（使用者回報）。應用程式與測試尚待 tasks／implement，尚無可啟動系統。
 
 | 項目 | 狀態 |
 | --- | --- |
 | SpecKit | Specify CLI 1.2.1，Codex 整合，PowerShell 腳本 |
-| 憲章 | [憲章 v1.0.0](.specify/memory/constitution.md) 已編寫，待組員 PR 審查 |
+| 憲章 | [憲章 v1.0.0](.specify/memory/constitution.md) 已通過組員審查（使用者回報） |
 | 共同需求 | [共同需求與待確認決策](docs/shared-requirements.md)，待 OpenSpec 組確認建議項目 |
-| 功能規格與圖表 | 尚待依子功能建立 |
+| 功能規格與圖表 | [001 規格](specs/001-guided-notes/spec.md)、[計畫](specs/001-guided-notes/plan.md)、三類圖及 PNG 已產出，待設計互審 |
 | 技術棧與分工 | 下列內容為建議，待組員確認 |
 
 ## 兩小組協調
@@ -51,11 +51,11 @@ Get-ChildItem .agents/skills -Directory | Select-Object Name
 
 安裝完成後若找不到 `specify`，執行 `uv tool update-shell` 並重新開啟 PowerShell。已安裝其他版本的組員先對齊團隊版本。clone 會取得已提交的 SpecKit 技能、範本與腳本。
 
-Python、Flask、Jinja、少量原生 JavaScript 與 SQLite 是目前建議技術棧，尚待 plan 階段定案。應用程式的安裝、啟動及測試指令將在實作後依實測結果補上。
+001 計畫採 Python 3.13、Flask、Jinja、少量原生 JavaScript、SQLite 與官方 Google 用戶端，兩位組員需對齊共用 shell 與介面。依賴解析已完成，安裝及應用整合尚待實作。目標啟動與驗收步驟見 [驗收指南](specs/001-guided-notes/quickstart.md)，其中實作後命令尚不可在目前 repo 執行。
 
 ## SpecKit 開發流程
 
-憲章已依專題附錄建立，待組員審查。後續修訂可在 Codex 對話執行 `$speckit-constitution`。每個子功能各自保留 spec、plan、tasks，依序執行以下技能。
+憲章已依專題附錄建立並通過組員審查（使用者回報）。後續修訂可在 Codex 對話執行 `$speckit-constitution`。每個子功能各自保留 spec、plan、tasks，依序執行以下技能。
 
 ```text
 $speckit-specify
@@ -87,7 +87,7 @@ git pull --ff-only
 git switch -c 001-guided-notes
 ```
 
-一個 PR 聚焦一個可驗收的工作。送出前檢查 diff、更新相關規格與圖表，執行適合本次變更的驗證。提交前確認工作目錄沒有機敏資料。
+每位組員在自己的功能分支按階段提交，以規格與圖表、實作、驗證等可追溯的工作作為 commit 邊界。每條功能分支累積完成後，再集中開一個 PR 至 `master`，由另一位組員互審。口頭審查也要在對應文件或 PR 留下審查方式、範圍與結果。送出前檢查 diff、相關規格及圖表、驗證證據與機敏資料。
 
 ```powershell
 git status
@@ -119,3 +119,11 @@ git push -u origin HEAD
 ## 需求依據
 
 共同需求依課程提供的《期末專題說明》與《SpecKit 教學》整理。課程更新或兩組確認後，請更新 [共同需求與變更紀錄](docs/shared-requirements.md)。Spec Kit 操作可參考 [官方文件](https://github.com/github/spec-kit)。
+
+## 目前的設計整合分支
+
+`integration/001-002-design` 合併 001 與 codex/002-identity-activity-phases，統一目錄及介面。
+[001 計畫](specs/001-guided-notes/plan.md) 與 [002 計畫](specs/002-identity-activity-phases/plan.md) 均為待實作設計。
+共同採 src/guided_notes、Python 3.13、import_id／import_version、主題號作提交單位，且結算完成才可回填。
+設計整合可先送一個 PR 至 master，兩人取得共同基準後回各自功能分支實作。
+共用骨架由 002 先建立，001 接 notes Blueprint。先核對實際狀態與未提交變更，再更新分支。
