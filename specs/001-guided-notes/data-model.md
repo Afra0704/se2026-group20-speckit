@@ -50,6 +50,10 @@ DTO 與資料表不必逐一分檔；先維持 models.py 與 repository.py，避
 `preview` → 確認時重讀 → `confirmed`。辨識錯誤保持 preview 並列錯誤，不能發布 catalog。
 確認前來源變動時重建 preview，版本只在成功確認時建立。
 
+ImportPreview 保存 preview_id、teacher_id、source_id、候選資料、三種 hash、existing_import_id、status、confirmed_import_id／version 及時間。狀態為 ready／confirmed／invalidated。
+來源確認重讀在 SQLite 交易外完成；進入短交易後重檢 preview 狀態，以條件更新與唯一 preview_id 發布一次 catalog。
+相同教師的重送／並行確認返回同一 confirmed catalog，不遞增版本；修改 existing_import_id 的重送視為衝突。失效 preview 不可再確認，需建立新 preview。
+
 ### 回填預覽
 
 `ready` → `consumed` 或 `invalidated`。來源／結果變動、教師權限失效使預覽 invalidated。

@@ -1,7 +1,7 @@
 # Quickstart Validation Guide
 
 此指南對應 [plan.md](plan.md)、[format.md](contracts/format.md) 及 [interfaces.md](contracts/interfaces.md)。
-目前只有規格與設計文件，應用程式、CLI、pyproject.toml、uv.lock 及測試尚未建立。
+目前已有無框架的辨識、DTO 契約及 Sheets gateway 與離線測試；可執行方式見 README。Flask 應用程式、CLI、pyproject.toml、uv.lock 及 DB 接線尚未建立。
 下列「實作後」命令是 implement 階段必須提供並驗證的入口，不能將本指南當成已執行成功的紀錄。
 
 ## 現在可執行的文件檢查

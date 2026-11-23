@@ -11,7 +11,7 @@
 回填只接收伺服器取得的已結束活動快照，每題組一個批次寫入請求，寫後回讀，未知結果先查明再恢復。
 
 Q2、Q3 已於 2026-11-23 由使用者回報與 OpenSpec 組確認，確認者姓名尚未提供。
-D03、D06 與 D09 活動重連採 002 分支已回報確認內容；D01、D02 排名細節、D04 自填組別與 D08 依共同需求保持待確認。
+D03、D04 自填組別、D06 與 D09 活動重連採共同需求已回報確認內容；D01、D02 排名細節與 D08 保持待確認。
 本功能只依相鄰模組提供的權限、已結束狀態與唯一勝組驗證，不代替它們決定提交次數或排序方式。
 
 ## Technical Context
@@ -141,7 +141,7 @@ Google gateway 先列工作表，以 numeric sheetId 識別。讀取選表的 Gr
 4. 確認以短 SQLite 交易取得來源 write lease，綁定 teacher、source、preview 及 idempotency key，立即提交交易。再重檢授權、ended state、結果版本與來源，失效時不寫入並回傳新預覽要求。
 5. 同一題組所有待寫答案，以單次 values.batchUpdateByDataFilter、numeric sheetId 的單格 GridRange、RAW 字串寫入。單題亦相同。一個題組不可拆成多個小題請求。
 6. 每個成功、逾時或不確定請求都安排回讀，以 userEnteredValue.stringValue 與預定文字核對。成功寫入後 read-back 失敗仍為 unknown。已知無效請求為 failed，尚未送出的單位為 not_processed。
-7. 重試先回讀原 operation 的目標，保持原 catalog 及 result_version。相同字串為 verified；原值未變可預覽確認後補寫；第三種內容為 conflict，需明確確認覆寫。無勝組仍 skipped。
+7. 重試先重讀完整來源結構，以原 catalog 主題號／小題識別重新定位，核對語意及精確成員集合後，才回讀目前答案錨點，不能直接沿用原 operation 的舊座標。保持原 catalog 及 result_version；集合或題意改變停止恢復。相同字串為 verified；原值未變可預覽確認後補寫；第三種內容為 conflict，需明確確認覆寫。無勝組仍 skipped。
 8. 題組所有應寫小題 verified 才完成；整體所有應寫項目 verified 且其餘 skipped 才完成。Google 失敗不回滾已成功的其他題組，教師可查看逐項報告。
 
 ### 本機一致性與外部編輯限制
@@ -174,5 +174,17 @@ Cookie HttpOnly、SameSite=Lax，本機 HTTP 不強制 Secure cookie；Jinja 保
 001 的回填只能在 002／003 接上可信 snapshot 後走完整活動；離線測試可注入 provider，不開放學生或瀏覽器注入勝組。
 
 ## Complexity Tracking
+
+保留單體程式與標準庫 SQLite；source lease、不可變快照及逐項狀態對應 FR-005、FR-011、FR-015，不新增框架。
+
+## 2026-11-23 開發交接補充
+
+使用者回報設計已由同學審查並合併（PR #3）。先前的圖意審查門檻以已合併設計為基準；具名審查細節仍可由 PR 歷史追溯，不虛構姓名。
+共用骨架由 002 實作。骨架未就緒時，001 可先執行 T003／T015／T017 的無框架純解析切片；前置階段及接線任務保持未完成，合併骨架後再驗證。
+ImportPreview 必須持久化且有 ready／confirmed／invalidated 狀態；成功確認與 catalog 發布以同一短交易完成，重送或並行確認回同一已發布版本。詳見 data-model。
+get_catalog 在 US1 發布版本時即提供；US4 T049 負責與真正 002 接線，不延後基本查詢介面的實作。
+SC-005 人工驗收要求兩位組員各自完整操作，不以分拆情境的交叉測試替代。實測證據見 validation.md。
+
+使用者後續明確授權純資料、gateway、模擬測試與授權準備文件，允許這些切片先於共用骨架執行；任務調整見 tasks.md。models.py 先提供無框架 DTO 驗證，Source Access 先完成可注入 service 的 SheetsGateway。getByDataFilter 以 numeric sheetId 讀取，避免表名更動造成 A1 定位競態；官方 API 查核與實際驗證範圍分別記於 research／validation。HTTP／DB／provider 依賴維持原順序，不以離線測試替代。
 
 本輪設計沒有需豁免的憲章違反。保留單體程式與標準庫 SQLite；source lease、不可變快照及逐項狀態用於跨系統失敗恢復，具有 FR-005、FR-011、FR-015 的明確依據。

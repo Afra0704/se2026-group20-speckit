@@ -127,3 +127,24 @@ context 僅限已授權教師可見的定位欄位。驗證先查權限再提供
 - CatalogDTO 的 questions 順序為來源順序，question_id 是提交單位，items 包含所有小題；002 的 position／order_index 為該陣列的本機排序記錄。
 - 002／003 的 get_ended_snapshot 必須在 CLOSED 且結算完成時才交付全部 units。結算中回 RESULT_NOT_READY（409），001 不建立可確認的回填預覽。
 - 共用 app factory、config.py、auth.py、db.py、http.py、pyproject／uv.lock 由 002 先建立；001 接 Blueprint 與既有連線。notes 模組不建立第二個 Flask app 或另一份活動資料庫。
+
+## 2026-11-23 離線實作交接（尚未接線）
+
+可直接匯入的純函式／類別：
+
+| 入口 | 行為 | 接線責任 |
+| --- | --- | --- |
+| `notes.models.validate_catalog(catalog)` | 嚴格 v1 欄位、UUID、版本、計數與小題識別驗證；返回獨立複本 | 002 使用已發布清單；不可把來源綁定加進公開 DTO |
+| `notes.models.validate_snapshot(snapshot, catalog, *, activity_id, result_version=None)` | 精確題目／小題集合、唯一勝組、原字串與固定版本 | 003 provider 先驗教師 ownership、CLOSED 且已結算；純驗證器無法替代這些檢查 |
+| `notes.sheets_gateway.parse_sheets_url(url)` | 標準 HTTPS Sheets URL → `(spreadsheet_id, gid_or_none)`，不抓任意 URL | 001 routes 先教師授權，再解析及列工作表 |
+| `build_google_service(credentials)` | 延遲載入官方 SDK，30 秒 timeout，停用授權層自動 refresh／重播 | 002 安裝共同依賴；001 CLI／服務在作業開始前更新憑證，不從學生輸入取得 credentials |
+| `SheetsGateway(service).list_worksheets(id)`／`read_sheet(id, sheet_id)` | 列名稱與 numeric id，或取得單張 Sheet resource 含 data／merges | 回傳是教師來源資料，不可直接回傳學生 |
+| `read_anchor_values(id, sheet_id, anchors)` | 取得目前錨點的原始 userEnteredValue 型別；省略的空白回 `{}` | export service 先重新辨識、驗證來源語意；不能只拿舊座標回讀 |
+| `write_unit(id, sheet_id, writes)` | `AnchorWrite(question_id,row,column,text)` 清單，同主題號一次 RAW 請求；成功不產生 verified 狀態 | export service 必須先驗整組完整性、確認預覽／授權／lease，寫後回讀並保存報告 |
+
+`ContractError`／`GatewayError` 暴露安全的 code、http_status，不包含原始 payload。
+`CATALOG_INVALID` 是新增的內部 DTO 驗證錯誤（422），避免把壞清單當來源無資料；HTTP 接線時由共同錯誤 adapter 採相同 envelope。
+`GOOGLE_DEPENDENCIES_MISSING` 僅供本機設定診斷，503；`SOURCE_WRITE_UNCERTAIN` 是底層寫入分類，export service 必須轉成逐項 unknown 報告，不直接當一般可重試 HTTP 錯誤。
+`GatewayError.write_outcome` 為 failed／unknown（讀取為 null）；所有寫入都不自動重試。讀取 429／暫時 5xx 最多三次，延遲 1+jitter、2+jitter 秒。
+缺少 settled provider 時不可呼叫回填，結算中由 provider 拋 RESULT_NOT_READY（409）；本輪未把這個跨模組檢查標為完成。
+目前沒有 `get_catalog()` 持久化實作、Flask routes、CLI 或 DB；接線前先同步 002 骨架並驗證套件鎖檔。

@@ -125,5 +125,27 @@ git push -u origin HEAD
 `integration/001-002-design` 合併 001 與 codex/002-identity-activity-phases，統一目錄及介面。
 [001 計畫](specs/001-guided-notes/plan.md) 與 [002 計畫](specs/002-identity-activity-phases/plan.md) 均為待實作設計。
 共同採 src/guided_notes、Python 3.13、import_id／import_version、主題號作提交單位，且結算完成才可回填。
-設計整合可先送一個 PR 至 master，兩人取得共同基準後回各自功能分支實作。
+設計整合已透過 PR #3 合入 master；001 實作分支為 `codex/001-guided-notes-implementation`。
 共用骨架由 002 先建立，001 接 notes Blueprint。先核對實際狀態與未提交變更，再更新分支。
+
+001 已開始離線表頭／合併格辨識，尚未提供可啟動的網頁。測試資料是合成講義，真實 Sheets 尚待驗證；詳見 [實作驗證紀錄](specs/001-guided-notes/validation.md)。
+
+已新增純資料契約檢查與可注入官方 client 的 Sheets gateway；授權準備請見 [Google Sheets 設定](docs/google-sheets-setup.md)，同學的接線入口見 [介面交接](specs/001-guided-notes/contracts/interfaces.md#2026-11-23-離線實作交接尚未接線)。
+
+共用 Python 環境建立前，可先用本機 Python 執行無額外依賴的辨識測試：
+
+```powershell
+$env:PYTHONPATH = "$PWD\src"
+python -m unittest discover -s tests/unit -p test_recognition.py -v
+```
+
+本輪全部離線測試（標準庫 unittest，之後也可由 pytest 收集）：
+
+```powershell
+$env:PYTHONPATH = "$PWD\src"
+python -m unittest discover -s tests/unit -v
+python -m unittest discover -s tests/contract -v
+python -m unittest discover -s tests/integration -v
+```
+
+integration 目前僅有離線元件交接測試，尚無 HTTP／登入／DB 的整合驗證。

@@ -1,0 +1,1796 @@
+{
+  "single": {
+    "properties": {
+      "sheetId": 7,
+      "title": "合成學習單"
+    },
+    "merges": [
+      {
+        "sheetId": 7,
+        "startRowIndex": 3,
+        "endRowIndex": 4,
+        "startColumnIndex": 2,
+        "endColumnIndex": 5
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 3,
+        "endRowIndex": 4,
+        "startColumnIndex": 5,
+        "endColumnIndex": 7
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 4,
+        "endRowIndex": 5,
+        "startColumnIndex": 2,
+        "endColumnIndex": 5
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 4,
+        "endRowIndex": 5,
+        "startColumnIndex": 5,
+        "endColumnIndex": 7
+      }
+    ],
+    "data": [
+      {
+        "startRow": 0,
+        "startColumn": 0,
+        "rowData": [
+          {
+            "values": []
+          },
+          {
+            "values": []
+          },
+          {
+            "values": []
+          },
+          {
+            "values": [
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": " 題號 "
+                },
+                "formattedValue": " 題號 ",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {
+                "userEnteredValue": {
+                  "stringValue": "題目"
+                },
+                "formattedValue": "題目",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {},
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "作答"
+                },
+                "formattedValue": "作答",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              }
+            ]
+          },
+          {
+            "values": [
+              {},
+              {
+                "userEnteredValue": {
+                  "numberValue": 1
+                },
+                "formattedValue": "1",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {
+                "userEnteredValue": {
+                  "stringValue": "電腦的大腦？"
+                },
+                "formattedValue": "電腦的大腦？",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {},
+              {},
+              {
+                "userEnteredValue": {
+                  "formulaValue": "=1+1"
+                },
+                "formattedValue": "=1+1",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "mixed": {
+    "properties": {
+      "sheetId": 7,
+      "title": "合成學習單"
+    },
+    "merges": [
+      {
+        "sheetId": 7,
+        "startRowIndex": 3,
+        "endRowIndex": 4,
+        "startColumnIndex": 2,
+        "endColumnIndex": 5
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 3,
+        "endRowIndex": 4,
+        "startColumnIndex": 5,
+        "endColumnIndex": 8
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 4,
+        "endRowIndex": 5,
+        "startColumnIndex": 2,
+        "endColumnIndex": 5
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 4,
+        "endRowIndex": 6,
+        "startColumnIndex": 1,
+        "endColumnIndex": 2
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 5,
+        "endRowIndex": 6,
+        "startColumnIndex": 2,
+        "endColumnIndex": 5
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 4,
+        "endRowIndex": 5,
+        "startColumnIndex": 6,
+        "endColumnIndex": 8
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 5,
+        "endRowIndex": 6,
+        "startColumnIndex": 6,
+        "endColumnIndex": 8
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 7,
+        "endRowIndex": 8,
+        "startColumnIndex": 2,
+        "endColumnIndex": 5
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 7,
+        "endRowIndex": 8,
+        "startColumnIndex": 5,
+        "endColumnIndex": 8
+      }
+    ],
+    "data": [
+      {
+        "startRow": 0,
+        "startColumn": 0,
+        "rowData": [
+          {
+            "values": []
+          },
+          {
+            "values": []
+          },
+          {
+            "values": []
+          },
+          {
+            "values": [
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": " 題號 "
+                },
+                "formattedValue": " 題號 ",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {
+                "userEnteredValue": {
+                  "stringValue": "題目"
+                },
+                "formattedValue": "題目",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {},
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "作答"
+                },
+                "formattedValue": "作答",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              }
+            ]
+          },
+          {
+            "values": [
+              {},
+              {
+                "userEnteredValue": {
+                  "numberValue": 1
+                },
+                "formattedValue": "1",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {
+                "userEnteredValue": {
+                  "stringValue": "電腦的大腦？"
+                },
+                "formattedValue": "電腦的大腦？",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {},
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "(1)"
+                },
+                "formattedValue": "(1)",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              }
+            ]
+          },
+          {
+            "values": [
+              {},
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "系統軟體？"
+                },
+                "formattedValue": "系統軟體？",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {},
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "（2）"
+                },
+                "formattedValue": "（2）",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              }
+            ]
+          },
+          {
+            "values": []
+          },
+          {
+            "values": [
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "2"
+                },
+                "formattedValue": "2",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {
+                "userEnteredValue": {
+                  "stringValue": "資料結構？"
+                },
+                "formattedValue": "資料結構？",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "moved": {
+    "properties": {
+      "sheetId": 7,
+      "title": "合成學習單"
+    },
+    "merges": [
+      {
+        "sheetId": 7,
+        "startRowIndex": 6,
+        "endRowIndex": 7,
+        "startColumnIndex": 4,
+        "endColumnIndex": 7
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 6,
+        "endRowIndex": 7,
+        "startColumnIndex": 7,
+        "endColumnIndex": 11
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 7,
+        "endRowIndex": 8,
+        "startColumnIndex": 4,
+        "endColumnIndex": 7
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 7,
+        "endRowIndex": 9,
+        "startColumnIndex": 3,
+        "endColumnIndex": 4
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 8,
+        "endRowIndex": 9,
+        "startColumnIndex": 4,
+        "endColumnIndex": 7
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 7,
+        "endRowIndex": 8,
+        "startColumnIndex": 8,
+        "endColumnIndex": 11
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 8,
+        "endRowIndex": 9,
+        "startColumnIndex": 8,
+        "endColumnIndex": 11
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 10,
+        "endRowIndex": 11,
+        "startColumnIndex": 4,
+        "endColumnIndex": 7
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 10,
+        "endRowIndex": 11,
+        "startColumnIndex": 7,
+        "endColumnIndex": 11
+      }
+    ],
+    "data": [
+      {
+        "startRow": 3,
+        "startColumn": 2,
+        "rowData": [
+          {
+            "values": []
+          },
+          {
+            "values": []
+          },
+          {
+            "values": []
+          },
+          {
+            "values": [
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": " 題號 "
+                },
+                "formattedValue": " 題號 ",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {
+                "userEnteredValue": {
+                  "stringValue": "題目"
+                },
+                "formattedValue": "題目",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {},
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "作答"
+                },
+                "formattedValue": "作答",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              }
+            ]
+          },
+          {
+            "values": [
+              {},
+              {
+                "userEnteredValue": {
+                  "numberValue": 1
+                },
+                "formattedValue": "1",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {
+                "userEnteredValue": {
+                  "stringValue": "電腦的大腦？"
+                },
+                "formattedValue": "電腦的大腦？",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {},
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "(1)"
+                },
+                "formattedValue": "(1)",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              }
+            ]
+          },
+          {
+            "values": [
+              {},
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "系統軟體？"
+                },
+                "formattedValue": "系統軟體？",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {},
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "（2）"
+                },
+                "formattedValue": "（2）",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              }
+            ]
+          },
+          {
+            "values": []
+          },
+          {
+            "values": [
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "2"
+                },
+                "formattedValue": "2",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {
+                "userEnteredValue": {
+                  "stringValue": "資料結構？"
+                },
+                "formattedValue": "資料結構？",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "missing_header": {
+    "properties": {
+      "sheetId": 7,
+      "title": "合成學習單"
+    },
+    "merges": [
+      {
+        "sheetId": 7,
+        "startRowIndex": 3,
+        "endRowIndex": 4,
+        "startColumnIndex": 2,
+        "endColumnIndex": 5
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 3,
+        "endRowIndex": 4,
+        "startColumnIndex": 5,
+        "endColumnIndex": 8
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 4,
+        "endRowIndex": 5,
+        "startColumnIndex": 2,
+        "endColumnIndex": 5
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 4,
+        "endRowIndex": 6,
+        "startColumnIndex": 1,
+        "endColumnIndex": 2
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 5,
+        "endRowIndex": 6,
+        "startColumnIndex": 2,
+        "endColumnIndex": 5
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 4,
+        "endRowIndex": 5,
+        "startColumnIndex": 6,
+        "endColumnIndex": 8
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 5,
+        "endRowIndex": 6,
+        "startColumnIndex": 6,
+        "endColumnIndex": 8
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 7,
+        "endRowIndex": 8,
+        "startColumnIndex": 2,
+        "endColumnIndex": 5
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 7,
+        "endRowIndex": 8,
+        "startColumnIndex": 5,
+        "endColumnIndex": 8
+      }
+    ],
+    "data": [
+      {
+        "startRow": 0,
+        "startColumn": 0,
+        "rowData": [
+          {
+            "values": []
+          },
+          {
+            "values": []
+          },
+          {
+            "values": []
+          },
+          {
+            "values": [
+              {},
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "題目"
+                },
+                "formattedValue": "題目",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {},
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "作答"
+                },
+                "formattedValue": "作答",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              }
+            ]
+          },
+          {
+            "values": [
+              {},
+              {
+                "userEnteredValue": {
+                  "numberValue": 1
+                },
+                "formattedValue": "1",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {
+                "userEnteredValue": {
+                  "stringValue": "電腦的大腦？"
+                },
+                "formattedValue": "電腦的大腦？",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {},
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "(1)"
+                },
+                "formattedValue": "(1)",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              }
+            ]
+          },
+          {
+            "values": [
+              {},
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "系統軟體？"
+                },
+                "formattedValue": "系統軟體？",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {},
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "（2）"
+                },
+                "formattedValue": "（2）",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              }
+            ]
+          },
+          {
+            "values": []
+          },
+          {
+            "values": [
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "2"
+                },
+                "formattedValue": "2",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {
+                "userEnteredValue": {
+                  "stringValue": "資料結構？"
+                },
+                "formattedValue": "資料結構？",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "duplicate_header": {
+    "properties": {
+      "sheetId": 7,
+      "title": "合成學習單"
+    },
+    "merges": [
+      {
+        "sheetId": 7,
+        "startRowIndex": 3,
+        "endRowIndex": 4,
+        "startColumnIndex": 2,
+        "endColumnIndex": 5
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 3,
+        "endRowIndex": 4,
+        "startColumnIndex": 5,
+        "endColumnIndex": 8
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 4,
+        "endRowIndex": 5,
+        "startColumnIndex": 2,
+        "endColumnIndex": 5
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 4,
+        "endRowIndex": 6,
+        "startColumnIndex": 1,
+        "endColumnIndex": 2
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 5,
+        "endRowIndex": 6,
+        "startColumnIndex": 2,
+        "endColumnIndex": 5
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 4,
+        "endRowIndex": 5,
+        "startColumnIndex": 6,
+        "endColumnIndex": 8
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 5,
+        "endRowIndex": 6,
+        "startColumnIndex": 6,
+        "endColumnIndex": 8
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 7,
+        "endRowIndex": 8,
+        "startColumnIndex": 2,
+        "endColumnIndex": 5
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 7,
+        "endRowIndex": 8,
+        "startColumnIndex": 5,
+        "endColumnIndex": 8
+      }
+    ],
+    "data": [
+      {
+        "startRow": 0,
+        "startColumn": 0,
+        "rowData": [
+          {
+            "values": []
+          },
+          {
+            "values": []
+          },
+          {
+            "values": []
+          },
+          {
+            "values": [
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": " 題號 "
+                },
+                "formattedValue": " 題號 ",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {
+                "userEnteredValue": {
+                  "stringValue": "題目"
+                },
+                "formattedValue": "題目",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {},
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "作答"
+                },
+                "formattedValue": "作答",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              }
+            ]
+          },
+          {
+            "values": [
+              {},
+              {
+                "userEnteredValue": {
+                  "numberValue": 1
+                },
+                "formattedValue": "1",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {
+                "userEnteredValue": {
+                  "stringValue": "電腦的大腦？"
+                },
+                "formattedValue": "電腦的大腦？",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {},
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "(1)"
+                },
+                "formattedValue": "(1)",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              }
+            ]
+          },
+          {
+            "values": [
+              {},
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "系統軟體？"
+                },
+                "formattedValue": "系統軟體？",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {},
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "（2）"
+                },
+                "formattedValue": "（2）",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              }
+            ]
+          },
+          {
+            "values": []
+          },
+          {
+            "values": [
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "2"
+                },
+                "formattedValue": "2",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {
+                "userEnteredValue": {
+                  "stringValue": "資料結構？"
+                },
+                "formattedValue": "資料結構？",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "startRow": 20,
+        "rowData": [
+          {
+            "values": [
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": " 題號 "
+                },
+                "formattedValue": " 題號 ",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {
+                "userEnteredValue": {
+                  "stringValue": "題目"
+                },
+                "formattedValue": "題目",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {},
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "作答"
+                },
+                "formattedValue": "作答",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "duplicate_question": {
+    "properties": {
+      "sheetId": 7,
+      "title": "合成學習單"
+    },
+    "merges": [
+      {
+        "sheetId": 7,
+        "startRowIndex": 3,
+        "endRowIndex": 4,
+        "startColumnIndex": 2,
+        "endColumnIndex": 5
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 3,
+        "endRowIndex": 4,
+        "startColumnIndex": 5,
+        "endColumnIndex": 8
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 4,
+        "endRowIndex": 5,
+        "startColumnIndex": 2,
+        "endColumnIndex": 5
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 4,
+        "endRowIndex": 6,
+        "startColumnIndex": 1,
+        "endColumnIndex": 2
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 5,
+        "endRowIndex": 6,
+        "startColumnIndex": 2,
+        "endColumnIndex": 5
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 4,
+        "endRowIndex": 5,
+        "startColumnIndex": 6,
+        "endColumnIndex": 8
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 5,
+        "endRowIndex": 6,
+        "startColumnIndex": 6,
+        "endColumnIndex": 8
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 7,
+        "endRowIndex": 8,
+        "startColumnIndex": 2,
+        "endColumnIndex": 5
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 7,
+        "endRowIndex": 8,
+        "startColumnIndex": 5,
+        "endColumnIndex": 8
+      }
+    ],
+    "data": [
+      {
+        "startRow": 0,
+        "startColumn": 0,
+        "rowData": [
+          {
+            "values": []
+          },
+          {
+            "values": []
+          },
+          {
+            "values": []
+          },
+          {
+            "values": [
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": " 題號 "
+                },
+                "formattedValue": " 題號 ",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {
+                "userEnteredValue": {
+                  "stringValue": "題目"
+                },
+                "formattedValue": "題目",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {},
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "作答"
+                },
+                "formattedValue": "作答",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              }
+            ]
+          },
+          {
+            "values": [
+              {},
+              {
+                "userEnteredValue": {
+                  "numberValue": 1
+                },
+                "formattedValue": "1",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {
+                "userEnteredValue": {
+                  "stringValue": "電腦的大腦？"
+                },
+                "formattedValue": "電腦的大腦？",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {},
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "(1)"
+                },
+                "formattedValue": "(1)",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              }
+            ]
+          },
+          {
+            "values": [
+              {},
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "系統軟體？"
+                },
+                "formattedValue": "系統軟體？",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {},
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "（2）"
+                },
+                "formattedValue": "（2）",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              }
+            ]
+          },
+          {
+            "values": []
+          },
+          {
+            "values": [
+              {},
+              {
+                "userEnteredValue": {
+                  "numberValue": 1
+                }
+              },
+              {
+                "userEnteredValue": {
+                  "stringValue": "資料結構？"
+                },
+                "formattedValue": "資料結構？",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "duplicate_subitem": {
+    "properties": {
+      "sheetId": 7,
+      "title": "合成學習單"
+    },
+    "merges": [
+      {
+        "sheetId": 7,
+        "startRowIndex": 3,
+        "endRowIndex": 4,
+        "startColumnIndex": 2,
+        "endColumnIndex": 5
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 3,
+        "endRowIndex": 4,
+        "startColumnIndex": 5,
+        "endColumnIndex": 8
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 4,
+        "endRowIndex": 5,
+        "startColumnIndex": 2,
+        "endColumnIndex": 5
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 4,
+        "endRowIndex": 6,
+        "startColumnIndex": 1,
+        "endColumnIndex": 2
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 5,
+        "endRowIndex": 6,
+        "startColumnIndex": 2,
+        "endColumnIndex": 5
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 4,
+        "endRowIndex": 5,
+        "startColumnIndex": 6,
+        "endColumnIndex": 8
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 5,
+        "endRowIndex": 6,
+        "startColumnIndex": 6,
+        "endColumnIndex": 8
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 7,
+        "endRowIndex": 8,
+        "startColumnIndex": 2,
+        "endColumnIndex": 5
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 7,
+        "endRowIndex": 8,
+        "startColumnIndex": 5,
+        "endColumnIndex": 8
+      }
+    ],
+    "data": [
+      {
+        "startRow": 0,
+        "startColumn": 0,
+        "rowData": [
+          {
+            "values": []
+          },
+          {
+            "values": []
+          },
+          {
+            "values": []
+          },
+          {
+            "values": [
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": " 題號 "
+                },
+                "formattedValue": " 題號 ",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {
+                "userEnteredValue": {
+                  "stringValue": "題目"
+                },
+                "formattedValue": "題目",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {},
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "作答"
+                },
+                "formattedValue": "作答",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              }
+            ]
+          },
+          {
+            "values": [
+              {},
+              {
+                "userEnteredValue": {
+                  "numberValue": 1
+                },
+                "formattedValue": "1",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {
+                "userEnteredValue": {
+                  "stringValue": "電腦的大腦？"
+                },
+                "formattedValue": "電腦的大腦？",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {},
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "(1)"
+                },
+                "formattedValue": "(1)",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              }
+            ]
+          },
+          {
+            "values": [
+              {},
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "系統軟體？"
+                },
+                "formattedValue": "系統軟體？",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {},
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "（1）"
+                }
+              }
+            ]
+          },
+          {
+            "values": []
+          },
+          {
+            "values": [
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "2"
+                },
+                "formattedValue": "2",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {
+                "userEnteredValue": {
+                  "stringValue": "資料結構？"
+                },
+                "formattedValue": "資料結構？",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "answer_overlap": {
+    "properties": {
+      "sheetId": 7,
+      "title": "合成學習單"
+    },
+    "merges": [
+      {
+        "sheetId": 7,
+        "startRowIndex": 3,
+        "endRowIndex": 4,
+        "startColumnIndex": 2,
+        "endColumnIndex": 5
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 3,
+        "endRowIndex": 4,
+        "startColumnIndex": 5,
+        "endColumnIndex": 8
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 4,
+        "endRowIndex": 5,
+        "startColumnIndex": 2,
+        "endColumnIndex": 5
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 4,
+        "endRowIndex": 6,
+        "startColumnIndex": 1,
+        "endColumnIndex": 2
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 5,
+        "endRowIndex": 6,
+        "startColumnIndex": 2,
+        "endColumnIndex": 5
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 7,
+        "endRowIndex": 8,
+        "startColumnIndex": 2,
+        "endColumnIndex": 5
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 7,
+        "endRowIndex": 8,
+        "startColumnIndex": 5,
+        "endColumnIndex": 8
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 4,
+        "endRowIndex": 6,
+        "startColumnIndex": 6,
+        "endColumnIndex": 8
+      }
+    ],
+    "data": [
+      {
+        "startRow": 0,
+        "startColumn": 0,
+        "rowData": [
+          {
+            "values": []
+          },
+          {
+            "values": []
+          },
+          {
+            "values": []
+          },
+          {
+            "values": [
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": " 題號 "
+                },
+                "formattedValue": " 題號 ",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {
+                "userEnteredValue": {
+                  "stringValue": "題目"
+                },
+                "formattedValue": "題目",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {},
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "作答"
+                },
+                "formattedValue": "作答",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              }
+            ]
+          },
+          {
+            "values": [
+              {},
+              {
+                "userEnteredValue": {
+                  "numberValue": 1
+                },
+                "formattedValue": "1",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {
+                "userEnteredValue": {
+                  "stringValue": "電腦的大腦？"
+                },
+                "formattedValue": "電腦的大腦？",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {},
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "(1)"
+                },
+                "formattedValue": "(1)",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              }
+            ]
+          },
+          {
+            "values": [
+              {},
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "系統軟體？"
+                },
+                "formattedValue": "系統軟體？",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {},
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "（2）"
+                },
+                "formattedValue": "（2）",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              }
+            ]
+          },
+          {
+            "values": []
+          },
+          {
+            "values": [
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "2"
+                },
+                "formattedValue": "2",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {
+                "userEnteredValue": {
+                  "stringValue": "資料結構？"
+                },
+                "formattedValue": "資料結構？",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "ambiguous_answer": {
+    "properties": {
+      "sheetId": 7,
+      "title": "合成學習單"
+    },
+    "merges": [
+      {
+        "sheetId": 7,
+        "startRowIndex": 3,
+        "endRowIndex": 4,
+        "startColumnIndex": 2,
+        "endColumnIndex": 5
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 3,
+        "endRowIndex": 4,
+        "startColumnIndex": 5,
+        "endColumnIndex": 8
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 4,
+        "endRowIndex": 5,
+        "startColumnIndex": 2,
+        "endColumnIndex": 5
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 4,
+        "endRowIndex": 6,
+        "startColumnIndex": 1,
+        "endColumnIndex": 2
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 5,
+        "endRowIndex": 6,
+        "startColumnIndex": 2,
+        "endColumnIndex": 5
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 5,
+        "endRowIndex": 6,
+        "startColumnIndex": 6,
+        "endColumnIndex": 8
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 7,
+        "endRowIndex": 8,
+        "startColumnIndex": 2,
+        "endColumnIndex": 5
+      },
+      {
+        "sheetId": 7,
+        "startRowIndex": 7,
+        "endRowIndex": 8,
+        "startColumnIndex": 5,
+        "endColumnIndex": 8
+      }
+    ],
+    "data": [
+      {
+        "startRow": 0,
+        "startColumn": 0,
+        "rowData": [
+          {
+            "values": []
+          },
+          {
+            "values": []
+          },
+          {
+            "values": []
+          },
+          {
+            "values": [
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": " 題號 "
+                },
+                "formattedValue": " 題號 ",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {
+                "userEnteredValue": {
+                  "stringValue": "題目"
+                },
+                "formattedValue": "題目",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {},
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "作答"
+                },
+                "formattedValue": "作答",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              }
+            ]
+          },
+          {
+            "values": [
+              {},
+              {
+                "userEnteredValue": {
+                  "numberValue": 1
+                },
+                "formattedValue": "1",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {
+                "userEnteredValue": {
+                  "stringValue": "電腦的大腦？"
+                },
+                "formattedValue": "電腦的大腦？",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {},
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "(1)"
+                },
+                "formattedValue": "(1)",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              }
+            ]
+          },
+          {
+            "values": [
+              {},
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "系統軟體？"
+                },
+                "formattedValue": "系統軟體？",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {},
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "（2）"
+                },
+                "formattedValue": "（2）",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              }
+            ]
+          },
+          {
+            "values": []
+          },
+          {
+            "values": [
+              {},
+              {
+                "userEnteredValue": {
+                  "stringValue": "2"
+                },
+                "formattedValue": "2",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              },
+              {
+                "userEnteredValue": {
+                  "stringValue": "資料結構？"
+                },
+                "formattedValue": "資料結構？",
+                "userEnteredFormat": {
+                  "wrapStrategy": "WRAP"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
