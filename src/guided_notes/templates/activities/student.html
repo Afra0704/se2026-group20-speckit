@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="zh-Hant">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>學生加入活動</title>
+<main data-role="student" data-csrf="{{ csrf }}">
+  <h1>學生加入活動</h1>
+  <a href="{{ url_for('teacher.page') }}">教師操作</a>
+  <form id="join">
+    <label>活動碼 <input name="code" required maxlength="32"></label>
+    <label>組別 <input name="group_name" required maxlength="80"></label>
+    <button>加入</button>
+  </form>
+  <button id="recover" type="button" hidden>恢復結果存取</button>
+  <p id="activity-state" role="status"></p>
+  <ol id="questions"></ol>
+  {% include "activities/results.html" %}
+</main>
+<script type="module" src="{{ url_for('static', filename='activity-sync.js') }}"></script>
+</html>
