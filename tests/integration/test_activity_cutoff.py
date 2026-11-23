@@ -16,7 +16,7 @@ def fixture_storage(app):
 def test_cutoff_both_orders(app, teacher, activity, joined):
     student = joined[0]
     url = f"/activities/{activity['activity_id']}"
-    body = dict(question_id="q1", items=[{"item_id": "i1-1", "answer_text": "answer"}])
+    body = dict(question_id="q1", items=[{"item_id": "i1-1", "answer_text": "  answer\n"}])
     fixture_storage(app)
     assert post(student, url + "/submissions", **body).status_code == 409
     assert post(teacher, url + "/start").status_code == 200
@@ -28,6 +28,8 @@ def test_cutoff_both_orders(app, teacher, activity, joined):
         assert release.wait(2)
 
     app.config["ACCEPT_SUBMISSION"] = accept
+    blank = dict(question_id="q1", items=[{"item_id": "i1-1", "answer_text": " \n\t"}])
+    assert post(student, url + "/submissions", **blank).status_code == 400
     with ThreadPoolExecutor(2) as pool:
         submission = pool.submit(post, student, url + "/submissions", **body)
         assert inside.wait(2)
@@ -38,7 +40,7 @@ def test_cutoff_both_orders(app, teacher, activity, joined):
     assert post(student, url + "/submissions", **body).status_code == 409
     assert post(app.test_client(), "/activity-memberships", code=activity["code"], group_name="late").status_code == 409
     with sqlite3.connect(app.config["DATABASE"]) as db:
-        assert db.execute("SELECT answer FROM accepted").fetchall() == [("answer",)]
+        assert db.execute("SELECT answer FROM accepted").fetchall() == [("  answer\n",)]
 
 
 def test_rejected_submission_rolls_back(app, teacher, activity, joined):

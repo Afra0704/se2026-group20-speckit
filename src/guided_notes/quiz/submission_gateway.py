@@ -21,7 +21,7 @@ def submit(activity_id, question_id, items):
             if (not isinstance(item_id, str) or item_id not in expected
                     or item_id in answers or not isinstance(answer, str) or not answer.strip()):
                 raise ApiError(400, "INVALID_ITEMS")
-            answers[item_id] = answer.strip()
+            answers[item_id] = answer
         if answers.keys() != expected:
             raise ApiError(400, "INVALID_ITEMS")
         accept = current_app.config.get("ACCEPT_SUBMISSION")

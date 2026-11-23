@@ -37,10 +37,16 @@ def test_ended_snapshot_requires_settlement_and_management(app, teacher, activit
     url = f"/activities/{activity_id}"
     with teacher:
         teacher.get(url + "/state")
-        with pytest.raises(ApiError, match="(409, 'RESULT_NOT_READY')"):
+        with pytest.raises(ApiError) as not_ended:
             get_ended_snapshot(TeacherContext(1), activity_id)
+        assert (not_ended.value.status, not_ended.value.code) == (409, "ACTIVITY_NOT_ENDED")
     post(teacher, url + "/start")
     post(teacher, url + "/close")
+    with teacher:
+        teacher.get(url + "/state")
+        with pytest.raises(ApiError) as not_ready:
+            get_ended_snapshot(TeacherContext(1), activity_id)
+        assert (not_ready.value.status, not_ready.value.code) == (409, "RESULT_NOT_READY")
     app.config["GET_SETTLED_RESULTS"] = lambda db, key: {
         "snapshot": {"activity_id": key, "result_version": 1, "ended": True}
     }

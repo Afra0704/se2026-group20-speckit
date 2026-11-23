@@ -1,3 +1,4 @@
+from importlib import import_module
 import json
 import secrets
 
@@ -14,11 +15,14 @@ def fixed_questions(teacher, import_id, import_version):
         provider = get_demo_catalog
     if provider is None:
         try:
-            from ..notes.import_service import get_catalog as provider
+            service = import_module("..notes.import_service", __package__)
         except ModuleNotFoundError as error:
             if error.name not in {"guided_notes.notes", "guided_notes.notes.import_service"}:
                 raise
             raise ApiError(503, "CATALOG_UNAVAILABLE") from error
+        provider = getattr(service, "get_catalog", None)
+    if not callable(provider):
+        raise ApiError(503, "CATALOG_UNAVAILABLE")
     catalog = provider(teacher, import_id, import_version)
     questions = catalog.get("questions") if isinstance(catalog, dict) else None
     if not questions or not isinstance(questions, list):

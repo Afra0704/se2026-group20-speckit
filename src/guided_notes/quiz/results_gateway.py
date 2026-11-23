@@ -46,7 +46,9 @@ def get_ended_snapshot(teacher_context, activity_id):
     if (teacher_context != require_teacher(db) or activity is None
             or activity["teacher_id"] != teacher_context.teacher_id):
         raise ApiError(403, "FORBIDDEN")
-    data = snapshot(db, activity_id) if activity["phase"] == "CLOSED" else None
+    if activity["phase"] != "CLOSED":
+        raise ApiError(409, "ACTIVITY_NOT_ENDED")
+    data = snapshot(db, activity_id)
     if data is None:
         raise ApiError(409, "RESULT_NOT_READY")
     return data["snapshot"]
