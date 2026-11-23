@@ -22,7 +22,7 @@
 | Blank／blanks | blank_id、item_id | 每個作答項目唯一答案，不和標號格混用 |
 | SourceBinding／source_bindings | blank_id、number_range、label_range、answer_range、top_left_anchor、observed_user_value | 範圍為 sheetId+零起算左閉右開 GridRange；label 可空；answer_range 支援跨欄合併 |
 | ActivityReference／由 002 提供 | activity_id、owner_teacher_id、import_id、import_version、ended | 此功能以 provider 讀取，不另寫一份可分歧的活動狀態 |
-| ResultSnapshot／由 003 提供 | activity_id、import_id、import_version、result_version、ended、units | 結束後不可變；一個主題號一個 UnitResult，必須覆蓋整個 catalog |
+| ResultSnapshot／由 003 提供 | activity_id、import_id、import_version、result_version、ended、units | 僅已結束且結算完成可提供，結算後不可變；一個主題號一個 UnitResult，必須覆蓋整個 catalog |
 | UnitResult | question_id、winner_group_id、no_winner、answers | 有勝組時所有小題恰好一次且答案非空；無勝組則 winner=null、answers=[] |
 | ItemAnswer | item_id、blank_id、answer_text | answer_text 為字串；去空白只作有效性檢查，保存原字串不 trim |
 | ExportPreview／export_previews | preview_id、teacher_id、activity_id、import_id、import_version、result_version、structure_hash、value_hash、items、created_at、status | 僅 server-side 保存完整內容；綁定精確來源及結果，不可用任意 client DTO 替換 |

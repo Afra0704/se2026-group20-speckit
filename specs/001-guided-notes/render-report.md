@@ -36,3 +36,6 @@ JAR SHA256 為 `E9BC9E6B2EB715E8C0C929F3DCB5FC1923BE13F37599B09C293C66D354E88686
 Plan 階段於 2026-11-23 補上 Operation Repository／Source Lease、idempotent operation 及恢復 claim，
 時序圖明確採每主題號一次 RAW batch，單一請求成功具原子性，逾時為未知。
 重新執行相同 CLI，三份圖與同目錄 PNG 同步更新，人工圖意審查仍待組員。
+
+2026-11-23 設計整合：與 002 統一主題號／items、import_id／import_version 及結算後回填，
+六張 001／002 圖以本機 PlantUML 1.2026.10 重渲染。002 原始作者版本與審查記錄保留在其文件，這次整合後的新增圖意仍待共同複核。

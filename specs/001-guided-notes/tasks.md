@@ -77,7 +77,7 @@
 
 ### Tests for User Story 2
 
-- [ ] T026 [P] [US2] 在 `tests/contract/test_result_snapshot.py` 測試七組 examples、有勝組／無勝組、未結束、錯 import／result version、缺主題號／小題、混勝組、重複資料；錯誤拒絕回填，依賴 Phase 2 及 T014 的 catalog 契約定案。
+- [ ] T026 [P] [US2] 在 `tests/contract/test_result_snapshot.py` 測試七組 examples、有勝組／無勝組、未結束、已結束但結算未就緒（RESULT_NOT_READY）、錯 import／result version、缺主題號／小題、混勝組、重複資料；錯誤拒絕回填，依賴 Phase 2 及 T014 的 catalog 契約定案。
 - [ ] T027 [P] [US2] 在 `tests/unit/test_export_service.py` 定義原值／預定值／覆寫確認、同題組一次 RAW 請求、文字等號／前導零／中文換行、無勝組略過及精確 stringValue 回讀的預期，依賴 Phase 2。
 - [ ] T028 [P] [US2] 在 `tests/integration/test_export_routes.py` 定義 CSRF／ownership、只接受 activity_id、篡改 preview、同 key 同作業、不同 payload 同 key、同來源並行及 read-back 失敗的報告，依賴 Phase 2。
 
@@ -85,7 +85,7 @@
 
 - [ ] T029 [US2] 在 `src/guided_notes/notes/models.py` 定義 ActivityReference、ResultSnapshot、UnitResult、ItemAnswer、ExportPreview、PreviewItem、WriteOperation／WriteItem／WriteReport；落實「結束後不可變；一個主題號一個 UnitResult，必須覆蓋整個 catalog」、「有勝組時所有小題恰好一次且答案非空；無勝組則 winner=null、answers=[]」、「answer_text 為字串；去空白只作有效性檢查，保存原字串不 trim」，action 嚴格為「write、already_matches、skip、requires_overwrite_confirmation」；winner 使用契約欄位 winner_group_id，依賴 T026–T027。
 - [ ] T030 [US2] 在 `src/guided_notes/notes/repository.py` 建立 previews／operations／items／source_leases，落實「UNIQUE(teacher_id, idempotency_key)，重複 key 不建立第二份作業，不同 payload 同 key 回 409」、「來源複合主鍵，短交易條件取得／續期／釋放」；owner token、同源互斥、30 秒 timeout 與 300 秒 lease 配合，不在網路期間持交易，依賴 T029、T028。
-- [ ] T031 [US2] 在 `src/guided_notes/notes/export_service.py` 接 server-side get_ended_snapshot，核對 ownership、ended、版本與完整成員；以主題號／小題身份比對來源，語意、結構及值指紋分離，純座標移動可重建預覽，題意或成員變更停止，不接受瀏覽器傳入勝組／目標替代資料，依賴 T021、T029–T030。
+- [ ] T031 [US2] 在 `src/guided_notes/notes/export_service.py` 接 server-side get_ended_snapshot，核對 ownership、ended 且結算完成、版本與完整成員；以主題號／小題身份比對來源，語意、結構及值指紋分離，純座標移動可重建預覽，題意或成員變更停止，不接受瀏覽器傳入勝組／目標替代資料，依賴 T021、T029–T030。
 - [ ] T032 [US2] 在 `src/guided_notes/notes/sheets_gateway.py` 實作 numeric sheetId 單格 DataFilter 的 RAW 字串批次寫入，每主題號所有待寫答案單次請求，只改答案 anchor，不修改標號／格式／merge；讀回 userEnteredValue，依賴 T018、T027。
 - [ ] T033 [US2] 在 `src/guided_notes/notes/export_service.py` 實作 ready→consumed／invalidated 的預覽狀態、確認、精確 overwrite_item_ids、idempotent operation、source lease、結果及來源的寫前重檢，逐提交單位執行；執行期限到則剩餘 not_processed，釋放來源並保留報告，依賴 T030–T032。
 - [ ] T034 [US2] 在 `src/guided_notes/notes/export_service.py` 建立回讀判定與報告，遵守「userEnteredValue.stringValue == answer_text」、「成功只能由回讀比對產生」；項目狀態為 not_processed／verified／failed／unknown／skipped／conflict，整體 queued／writing／recovering／completed／needs_attention；「整體只有 verified 與 skipped 時為 completed；全 skipped 亦可完成，報告明列零格寫入」，verified_at 可空，依賴 T033。
@@ -130,7 +130,7 @@
 ### Implementation for User Story 4
 
 - [ ] T049 [US4] 在 `src/guided_notes/notes/import_service.py` 提供契約 get_catalog(teacher_context, import_id, import_version)，與同學將已確認 catalog 接入其實際活動入口；在 `specs/001-guided-notes/contracts/interfaces.md` 記錄真實 provider 位置，單題／題組均以主題號作唯一單位，不另開每小題搶答；若前期已完成則沿用，依賴 T047、US1。
-- [ ] T050 [US4] 在 `src/guided_notes/notes/export_service.py` 對接同學的真實 get_ended_snapshot，核對 ownership、ended、精確小題集合與不可變結果，禁止以瀏覽器勝組資料代替；與同學確認其學生端全格填完提交、整組一次順位的輸出符合契約，在 `specs/001-guided-notes/contracts/interfaces.md` 留對齊結果，依賴 T048–T049 及 002／003 provider 可用。
+- [ ] T050 [US4] 在 `src/guided_notes/notes/export_service.py` 對接同學的真實 get_ended_snapshot，核對 ownership、ended 且結算完成、精確小題集合與不可變結果，禁止以瀏覽器勝組資料代替；與同學確認其學生端全格填完提交、整組一次順位的輸出符合契約，在 `specs/001-guided-notes/contracts/interfaces.md` 留對齊結果，依賴 T048–T049 及 002／003 provider 可用。
 - [ ] T051 [US4] 執行 T047–T048，核對題組每次一個批次、標號及 merges 保留、同勝組恢復與 SC-006；將測試替代／真實接線分開記錄於 `specs/001-guided-notes/validation.md`，依賴 T050。
 - [ ] T052 [US4] 兩位組員依 quickstart M03／M04，以教師及至少兩組學生操作真正題組提交與回填，核對全部小題同送、整組順位、勝組唯一及三格回填位置；在 `specs/001-guided-notes/validation.md` 記錄執行者、commit、畫面與結果，依賴 T051 及 002／003 完整流程。
 

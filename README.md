@@ -5,7 +5,7 @@
 
 ## 目前進度
 
-截至 2026-11-23，憲章 v1.0.0 已通過組員審查（使用者回報），001 匯入與回填已完成規格、三類圖及實作計畫。Q2 題組與 Q3 回填恢復已與 OpenSpec 組確認（使用者回報）。應用程式與測試尚待 tasks／implement，尚無可啟動系統。
+截至 2026-11-23，憲章 v1.0.0 已通過組員審查（使用者回報），001 匯入與回填及 002 身分與活動階段的設計已整合至 integration/001-002-design，兩功能均有規格、三類圖、計畫與任務。Q2 題組與 Q3 回填恢復已與 OpenSpec 組確認（使用者回報）。應用程式與測試尚待 tasks／implement，尚無可啟動系統。
 
 | 項目 | 狀態 |
 | --- | --- |
@@ -87,7 +87,7 @@ git pull --ff-only
 git switch -c 001-guided-notes
 ```
 
-一個 PR 聚焦一個可驗收的工作。送出前檢查 diff、更新相關規格與圖表，執行適合本次變更的驗證。提交前確認工作目錄沒有機敏資料。
+每位組員在自己的功能分支按階段提交，以規格與圖表、實作、驗證等可追溯的工作作為 commit 邊界。每條功能分支累積完成後，再集中開一個 PR 至 `master`，由另一位組員互審。口頭審查也要在對應文件或 PR 留下審查方式、範圍與結果。送出前檢查 diff、相關規格及圖表、驗證證據與機敏資料。
 
 ```powershell
 git status
@@ -119,3 +119,11 @@ git push -u origin HEAD
 ## 需求依據
 
 共同需求依課程提供的《期末專題說明》與《SpecKit 教學》整理。課程更新或兩組確認後，請更新 [共同需求與變更紀錄](docs/shared-requirements.md)。Spec Kit 操作可參考 [官方文件](https://github.com/github/spec-kit)。
+
+## 目前的設計整合分支
+
+`integration/001-002-design` 合併 001 與 codex/002-identity-activity-phases，統一目錄及介面。
+[001 計畫](specs/001-guided-notes/plan.md) 與 [002 計畫](specs/002-identity-activity-phases/plan.md) 均為待實作設計。
+共同採 src/guided_notes、Python 3.13、import_id／import_version、主題號作提交單位，且結算完成才可回填。
+設計整合可先送一個 PR 至 master，兩人取得共同基準後回各自功能分支實作。
+共用骨架由 002 先建立，001 接 notes Blueprint。先核對實際狀態與未提交變更，再更新分支。

@@ -45,7 +45,10 @@ else authorized
  Notes -> Activity : obtain activity and bound import version
  Activity --> Notes : activity identity, import version, ended state
  Notes -> Results : obtain specified result snapshot
- Results --> Notes : unit results: one winner and all member answers
+ Results --> Notes : settled immutable snapshot, or RESULT_NOT_READY
+ break activity not ended or result not settled
+  Notes --> Teacher : wait for activity closure and settlement
+ end
  Notes -> Notes : validate ended state, identities, set membership and same winner
  alt invalid / unfinished activity
   Notes --> Teacher : explain mismatch; no write

@@ -8,7 +8,7 @@
 - `create_app(test_config=None)` 由共用 shell 建立一次，註冊 auth、activity、notes Blueprints，設定 DB、CSRF、Google gateway 及 providers。
 - 002 的 `require_teacher()` 返回 `TeacherContext(teacher_id)`，來源／活動 ownership 必須在後端檢查；不能信任 body、query 或 cookie 中自填的 role。
 - 001 提供 `get_catalog(teacher_context, import_id, import_version)` 給 002，回傳 CatalogDTO。002 檢查教師擁有來源，固定活動引用該版本。
-- 002／003 提供 `get_ended_snapshot(teacher_context, activity_id)`，驗證 ownership，返回 ResultSnapshotDTO 或 ACTIVITY_NOT_ENDED。snapshot 結束後不可變，回填前仍需重檢結果版本。
+- 002／003 提供 `get_ended_snapshot(teacher_context, activity_id)`，驗證 ownership，只有活動 CLOSED 且結算完成才返回 ResultSnapshotDTO；未結束回 ACTIVITY_NOT_ENDED，已結束但仍結算回 RESULT_NOT_READY。snapshot 結算後不可變，回填前仍需重檢結果版本。
 - 單機只設定一個教師 Google profile；Google token 屬 gateway 的本機設定，不能放在上述 DTO、Flask session cookie 或回傳給瀏覽器。
 - 僅供學生的 catalog view 可含主題號、小題標號及識別；教師来源綁定與未公開勝組不出現在學生回應。
 
@@ -108,7 +108,7 @@ context 僅限已授權教師可見的定位欄位。驗證先查權限再提供
 | 401 | TEACHER_LOGIN_REQUIRED | 應用登入 |
 | 403 | TEACHER_REQUIRED、CSRF_INVALID、SOURCE_READ_FORBIDDEN、SOURCE_WRITE_FORBIDDEN | 權限與授權檢查，區分應用身分與來源權限 |
 | 404 | CATALOG_NOT_FOUND、PREVIEW_NOT_FOUND、OPERATION_NOT_FOUND、SOURCE_NOT_FOUND | 核對識別及 ownership |
-| 409 | PREVIEW_STALE、SOURCE_CHANGED、SOURCE_STRUCTURE_CHANGED、RESULT_VERSION_CHANGED、ACTIVITY_NOT_ENDED、SOURCE_BUSY、IDEMPOTENCY_CONFLICT、OVERWRITE_CONFIRMATION_REQUIRED | 顯示原因，重新預覽／等待／核對結果 |
+| 409 | PREVIEW_STALE、SOURCE_CHANGED、SOURCE_STRUCTURE_CHANGED、RESULT_VERSION_CHANGED、ACTIVITY_NOT_ENDED、RESULT_NOT_READY、SOURCE_BUSY、IDEMPOTENCY_CONFLICT、OVERWRITE_CONFIRMATION_REQUIRED | 顯示原因，重新預覽／等待／核對結果 |
 | 422 | HEADER_MISSING、HEADER_AMBIGUOUS、DUPLICATE_QUESTION、DUPLICATE_SUBITEM、ANSWER_AMBIGUOUS、ANSWER_OVERLAP、RESULT_INVALID | 定位修正，禁止確認 |
 | 503 | SOURCE_READ_UNAVAILABLE、GOOGLE_REAUTH_REQUIRED、GOOGLE_RATE_LIMITED | 讀取有限重試或教師 CLI 重授權；寫入的不確定結果以 unknown 報告 |
 
@@ -119,3 +119,11 @@ context 僅限已授權教師可見的定位欄位。驗證先查權限再提供
 3. 003 整組選唯一勝組、回傳完整小題答案及明確 no_winner，提供 immutable result_version。
 4. ended snapshot 與 owner 由 provider 認定；本機示範可用受控測試 provider，正式路由不接受瀏覽器送入勝組。
 5. errors、版本及 examples.json 加入契約測試。未確認的 D01–D04、D06、D08 交由相關功能共同定案。
+
+## 001／002 已統一的接線（2026-11-23）
+
+- package 為 src/guided_notes，001 notes、002 activities、003 quiz；Python 3.13。
+- import_id／import_version 統一使用 CatalogDTO，001 對外函式位於 notes/import_service.py；002 的 activities/teacher.py 呼叫，不重寫 001 的儲存或格式辨識。
+- CatalogDTO 的 questions 順序為來源順序，question_id 是提交單位，items 包含所有小題；002 的 position／order_index 為該陣列的本機排序記錄。
+- 002／003 的 get_ended_snapshot 必須在 CLOSED 且結算完成時才交付全部 units。結算中回 RESULT_NOT_READY（409），001 不建立可確認的回填預覽。
+- 共用 app factory、config.py、auth.py、db.py、http.py、pyproject／uv.lock 由 002 先建立；001 接 Blueprint 與既有連線。notes 模組不建立第二個 Flask app 或另一份活動資料庫。
