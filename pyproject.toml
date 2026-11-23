@@ -1,0 +1,15 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "guided-notes"
+version = "0.1.0"
+requires-python = ">=3.13,<3.14"
+dependencies = ["flask>=3.1,<4", "jinja2>=3.1,<4"]
+
+[dependency-groups]
+dev = ["pytest>=8,<10"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/guided_notes"]

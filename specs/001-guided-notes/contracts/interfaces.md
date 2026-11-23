@@ -7,6 +7,7 @@
 
 - `create_app(test_config=None)` 由共用 shell 建立一次，註冊 auth、activity、notes Blueprints，設定 DB、CSRF、Google gateway 及 providers。
 - 002 的 `require_teacher()` 返回 `TeacherContext(teacher_id)`，來源／活動 ownership 必須在後端檢查；不能信任 body、query 或 cookie 中自填的 role。
+- 001 可先用 `create_app({"NOTES_BLUEPRINT": notes_blueprint, ...})` 在測試注入自己的 Blueprint，沿用 `guided_notes.db.connection()` 與 `write_transaction()`，再在整合階段接上正式 app 註冊。
 - 001 提供 `get_catalog(teacher_context, import_id, import_version)` 給 002，回傳 CatalogDTO。002 檢查教師擁有來源，固定活動引用該版本。
 - 002／003 提供 `get_ended_snapshot(teacher_context, activity_id)`，驗證 ownership，只有活動 CLOSED 且結算完成才返回 ResultSnapshotDTO；未結束回 ACTIVITY_NOT_ENDED，已結束但仍結算回 RESULT_NOT_READY。snapshot 結算後不可變，回填前仍需重檢結果版本。
 - 單機只設定一個教師 Google profile；Google token 屬 gateway 的本機設定，不能放在上述 DTO、Flask session cookie 或回傳給瀏覽器。
@@ -55,7 +56,7 @@ CatalogDTO 不包含來源範圍、原值、憑證或題目敘述。題組前端
 ## Teacher HTTP / UI contracts
 
 以下路由為實作目標，尚未建立。所有 `/teacher/notes` route 必須登入教師，並檢查對象 ownership；
-所有 POST 驗證 CSRF token。JSON POST 使用 `X-CSRFToken`，頁面隱藏欄位由共用 Flask-WTF 提供。
+所有 POST 使用共用 app 的 CSRF 驗證。JSON POST 使用 `X-CSRFToken`，既有 002 也可使用 `X-CSRF-Token`。HTML 表單用 `name="csrf_token"` 的隱藏欄位，值由共用 Jinja 的 `csrf_token()` 取得。
 
 | Route | 輸入 | 成功結果 |
 | --- | --- | --- |
