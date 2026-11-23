@@ -5,14 +5,14 @@
 
 ## 目前進度
 
-截至 2026-11-23，已完成 GitHub repo 連結、SpecKit 初始化、起步協作文件與憲章 v1.0.0 的編寫。憲章待組員 PR 審查，應用程式、功能規格及設計圖尚待建立，尚無可啟動的系統或應用程式測試。
+截至 2026-11-23，憲章 v1.0.0 已通過組員審查（使用者回報），001 匯入與回填已完成規格、三類圖及實作計畫。Q2 題組與 Q3 回填恢復已與 OpenSpec 組確認（使用者回報）。應用程式與測試尚待 tasks／implement，尚無可啟動系統。
 
 | 項目 | 狀態 |
 | --- | --- |
 | SpecKit | Specify CLI 1.2.1，Codex 整合，PowerShell 腳本 |
-| 憲章 | [憲章 v1.0.0](.specify/memory/constitution.md) 已編寫，待組員 PR 審查 |
+| 憲章 | [憲章 v1.0.0](.specify/memory/constitution.md) 已通過組員審查（使用者回報） |
 | 共同需求 | [共同需求與待確認決策](docs/shared-requirements.md)，待 OpenSpec 組確認建議項目 |
-| 功能規格與圖表 | 尚待依子功能建立 |
+| 功能規格與圖表 | [001 規格](specs/001-guided-notes/spec.md)、[計畫](specs/001-guided-notes/plan.md)、三類圖及 PNG 已產出，待設計互審 |
 | 技術棧與分工 | 下列內容為建議，待組員確認 |
 
 ## 兩小組協調
@@ -51,11 +51,11 @@ Get-ChildItem .agents/skills -Directory | Select-Object Name
 
 安裝完成後若找不到 `specify`，執行 `uv tool update-shell` 並重新開啟 PowerShell。已安裝其他版本的組員先對齊團隊版本。clone 會取得已提交的 SpecKit 技能、範本與腳本。
 
-Python、Flask、Jinja、少量原生 JavaScript 與 SQLite 是目前建議技術棧，尚待 plan 階段定案。應用程式的安裝、啟動及測試指令將在實作後依實測結果補上。
+001 計畫採 Python 3.13、Flask、Jinja、少量原生 JavaScript、SQLite 與官方 Google 用戶端，兩位組員需對齊共用 shell 與介面。依賴解析已完成，安裝及應用整合尚待實作。目標啟動與驗收步驟見 [驗收指南](specs/001-guided-notes/quickstart.md)，其中實作後命令尚不可在目前 repo 執行。
 
 ## SpecKit 開發流程
 
-憲章已依專題附錄建立，待組員審查。後續修訂可在 Codex 對話執行 `$speckit-constitution`。每個子功能各自保留 spec、plan、tasks，依序執行以下技能。
+憲章已依專題附錄建立並通過組員審查（使用者回報）。後續修訂可在 Codex 對話執行 `$speckit-constitution`。每個子功能各自保留 spec、plan、tasks，依序執行以下技能。
 
 ```text
 $speckit-specify

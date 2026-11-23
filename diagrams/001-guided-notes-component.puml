@@ -1,0 +1,45 @@
+@startuml
+!pragma layout smetana
+skinparam shadowing false
+skinparam defaultFontName SansSerif
+skinparam componentStyle rectangle
+skinparam nodesep 65
+skinparam ranksep 70
+title 001 Guided Notes - Component Diagram (Merged Headers / Main Questions and Subitems)
+component "Teacher Workspace" as UI
+component "Teacher Authorization\n(adjacent module)" as Auth
+component "Activity Module\nended state / bound import" as Activity
+component "Result Module\nversioned winning answers" as Results
+package "Guided Notes Feature" {
+ component "Import and Recognition\nHeaders, merged ranges / subitems" as Import
+ component "Confirmed Catalog\nand Source Bindings" as Catalog
+ component "Export Preview, Write-back\nand Read-back Recovery" as Export
+ component "Source Access" as Access
+ component "Operation Repository\nand Source Lease" as Store
+}
+cloud "Original Google Sheets" as Sheets
+UI --> Import : select / preview / confirm
+UI --> Export : preview / confirm / report
+Import --> Auth : authorize
+Export --> Auth : authorize and recheck
+Import --> Catalog : publish versioned mapping
+Catalog --> Activity : versioned main questions and items
+Export --> Catalog : resolve target bindings
+Import --> Store : persist confirmed version
+Export --> Store : claim / persist / release
+Export --> Activity : validate binding and ended state
+Export --> Results : obtain and recheck result version
+Import --> Access : read source
+Export --> Access : inspect / write / read back
+Access --> Sheets : authorized source operations
+note bottom of Catalog
+Activity receives main questions and ordered subitems.
+Source positions stay in this feature.
+end note
+note bottom of Export
+Changed source invalidates preview.
+Only read-back matches are successful.
+A merged main number defines one unit and winner.
+No winner is skipped; confirm conflicts.
+end note
+@enduml

@@ -1,0 +1,134 @@
+@startuml
+!pragma layout smetana
+skinparam shadowing false
+skinparam defaultFontName SansSerif
+hide empty methods
+title 001 Guided Notes - Main Questions, Subitems and Merged Ranges
+class SourceDocument {
+ spreadsheetIdentity
+ worksheetIdentity
+ displayName
+}
+class ImportedCatalog {
+ importIdentity
+ importVersion
+ questionCount
+ answerItemCount
+ confirmed
+}
+class MainQuestion {
+ questionIdentity = unitIdentity
+ displayNumber
+ kind: single or question-set
+ sourceNumberRange
+}
+class AnswerItem {
+ itemIdentity
+ subitemLabel [optional]
+ memberOrder
+}
+class Blank {
+ blankIdentity
+}
+class SourceBinding {
+ answerRange
+ topLeftAnchor
+ labelRange [optional]
+ observedOriginalContent
+}
+class ActivityReference {
+ activityIdentity
+ importIdentity
+ importVersion
+ ended
+}
+class ResultSnapshot {
+ resultVersion
+ activityIdentity
+ importIdentity
+ importVersion
+}
+class UnitResult {
+ questionIdentity
+ winnerGroupIdentity [optional]
+ explicitNoWinner
+}
+class ItemAnswer {
+ itemIdentity
+ blankIdentity
+ answerText
+}
+class ExportPreview {
+ previewIdentity
+ resultVersion
+ sourceObservations
+ valid
+ teacherConfirmed
+}
+class PreviewItem {
+ targetRange
+ originalText
+ proposedText
+ difference
+}
+class WriteOperation {
+ operationIdentity
+ previewIdentity
+ idempotencyKey
+ teacherIdentity
+ resultVersion
+ state
+}
+class SourceLease {
+ spreadsheetIdentity
+ worksheetIdentity
+ ownerToken
+ operationIdentity
+ expiresAt
+}
+class WriteReport {
+ operationIdentity
+ resultVersion
+ overallOutcome
+}
+class WriteItem {
+ questionIdentity
+ itemIdentity
+ blankIdentity
+ outcome
+ locatedError
+}
+SourceDocument "1" -- "0..*" ImportedCatalog
+ImportedCatalog "1" *-- "1..*" MainQuestion
+MainQuestion "1" *-- "1..*" AnswerItem
+AnswerItem "1" *-- "1" Blank
+Blank "1" -- "1" SourceBinding
+ActivityReference "0..*" --> "1" ImportedCatalog
+ResultSnapshot "0..*" --> "1" ActivityReference
+ResultSnapshot "1" *-- "1..*" UnitResult
+UnitResult --> MainQuestion : same version and exact item membership
+UnitResult "1" *-- "0..*" ItemAnswer
+ItemAnswer --> AnswerItem : same main question
+ExportPreview --> ImportedCatalog
+ExportPreview --> ResultSnapshot
+ExportPreview "1" *-- "0..*" PreviewItem
+WriteOperation --> ExportPreview
+SourceLease --> WriteOperation : one active writer per source
+WriteReport --> WriteOperation
+WriteReport --> ExportPreview
+WriteReport "1" *-- "0..*" WriteItem
+note right of MainQuestion
+One main number = one submission unit.
+Single: one item. Set: all subitems.
+One winner per main question.
+end note
+note right of SourceBinding
+Use headers and merged ranges.
+Preserve (1), (2) labels and formatting.
+Write only the answer range top-left anchor.
+end note
+note right of WriteItem
+Verified / failed / not processed / unknown / skipped.
+Retry reads first; confirm conflicts.
+end note
+@enduml
