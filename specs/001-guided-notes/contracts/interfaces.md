@@ -148,3 +148,18 @@ context 僅限已授權教師可見的定位欄位。驗證先查權限再提供
 `GatewayError.write_outcome` 為 failed／unknown（讀取為 null）；所有寫入都不自動重試。讀取 429／暫時 5xx 最多三次，延遲 1+jitter、2+jitter 秒。
 缺少 settled provider 時不可呼叫回填，結算中由 provider 拋 RESULT_NOT_READY（409）；本輪未把這個跨模組檢查標為完成。
 目前沒有 `get_catalog()` 持久化實作、Flask routes、CLI 或 DB；接線前先同步 002 骨架並驗證套件鎖檔。
+
+### 同日續作：完整離線核心
+
+上段「沒有 CLI」是第一個進度 commit 的狀態；目前已有獨立 CLI，仍無 Flask 註冊與 DB。
+
+- `google_authorization.authorize(client, token, *, repo_root, interactive=False)` 回傳官方 credentials；預設不開瀏覽器，失效回安全 AuthError。環境／路徑只能由教師本機設定傳入，不接受 HTTP body 指定 token 路徑。`notes.cli.main()` 提供 check-config／authorize-sheets；002 Flask CLI 可沿用 helper。
+- `import_service.build_import_bundle(spreadsheet_id, recognized, *, import_id=None, import_version=1)` 返回 ImportBundle，包含候選 catalog 與教師來源資料。UUID 依 import／版本／主題號／小題識別產生，與座標無關。這不是已發布版本；repository 必須在短交易內分配版本、保存與確認後，才能提供 get_catalog。
+- `fingerprints(recognized)` 分開 semantic／structure／value hash；`match_source(bundle, current)` 先驗語意／sheetId，再按精確主題號與有序小題重綁目前答案範圍，變更題意或集合時 SOURCE_STRUCTURE_CHANGED。
+- `export_service.build_export_preview(bundle, current, snapshot, *, activity_id)` 建立教師預覽，動作為 write／already_matches／skip／requires_overwrite_confirmation；來源及 snapshot 必須從可信服務取得。
+- `build_recovery_preview(previous, current, snapshot, *, activity_id)` 保持原結果版本與勝組；先以目前結構重綁，再用目前值判斷原值／已完成／衝突。
+- `prepare_writes(preview, current, snapshot, *, activity_id, overwrite_item_ids)` 重新檢查來源／結果及精確覆寫確認集合，返回每主題號一批 AnchorWrite；本函式不送出請求，也不取得授權或 source lease。
+- `classify_readback(preview, observed_by_blank, outcomes_by_question)` 返回逐項／單位與整體狀態。observed_by_blank 映射 blank_id→userEnteredValue，缺 key 表示未取得觀察、`{}` 才是觀察到空白。outcomes_by_question 是 accepted／failed／unknown；未送出的題目不放入映射。接受回應但回讀失敗仍 unknown；只有精確字串一致才 verified。這是領域判定，DB 尚須補 operation／attempt／verified_at 與所有權等欄位。
+
+**接線順序不能省略**：teacher ownership／settled provider → 保存 server-owned preview → 使用者確認 → 短交易 consume／idempotency／lease → 重檢來源與結果 → prepare_writes → gateway.write_unit → 回讀並 classify → 保存報告／釋放 lease。網路階段不持 SQLite 寫交易。
+目前沒有 production 的執行 driver，測試中的 InMemorySheets 僅是替代來源；不能拿它代替正式 provider／儲存。

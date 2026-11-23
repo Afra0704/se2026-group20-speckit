@@ -17,10 +17,21 @@ class ImportedCatalog {
  confirmed
 }
 class MainQuestion {
+ candidateOrPublishedIdentity
  questionIdentity = unitIdentity
  displayNumber
  kind: single or question-set
  sourceNumberRange
+}
+class ImportBundle {
+ candidateCatalog
+ recognizedSource
+ spreadsheetIdentity
+}
+class Fingerprints {
+ semanticHash
+ structureHash
+ valueHash
 }
 class AnswerItem {
  itemIdentity
@@ -99,6 +110,9 @@ class WriteItem {
  locatedError
 }
 SourceDocument "1" -- "0..*" ImportedCatalog
+ImportBundle --> ImportedCatalog : candidate IDs; repository publishes later
+ImportBundle --> Fingerprints : current observations
+ExportPreview --> Fingerprints : freshness guard
 ImportedCatalog "1" *-- "1..*" MainQuestion
 MainQuestion "1" *-- "1..*" AnswerItem
 AnswerItem "1" *-- "1" Blank
@@ -126,6 +140,11 @@ note right of SourceBinding
 Use headers and merged ranges.
 Preserve (1), (2) labels and formatting.
 Write only the answer range top-left anchor.
+end note
+note left of ImportBundle
+Offline core builds candidates, never publishes.
+Current source is reidentified before recovery.
+Authorization, persistence and leases stay external.
 end note
 note right of WriteItem
 Verified / failed / not processed / unknown / skipped.

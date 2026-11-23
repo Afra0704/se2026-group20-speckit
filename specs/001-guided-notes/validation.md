@@ -84,3 +84,52 @@ $env:PYTHONPATH = 'D:\os_final\src'
 - 002 需提供共享依賴環境、app factory、auth／DB；001 後續接 Google CLI、預覽持久化及 routes。003 需提供 CLOSED 且已結算的可信快照，未結算回 RESULT_NOT_READY；本輪不以純 DTO 驗證器替代 provider。
 - 實際介面簽章、安全錯誤代碼及先後條件記於 contracts/interfaces.md「離線實作交接」。
 - 真實 SDK／Sheets、完整 HTTP／DB／活動流程、組員人工驗收、analyze／converge 仍未完成。
+
+## 2026-11-23：完成共用骨架前的離線領域核心
+
+### 授權範圍與版本
+
+使用者要求先完成不依賴同學的部分，允許先 commit 保留進度。已建立本機進度 commit `05186ed`，包含前輪 40 項測試成果；本輪在同一分支繼續，尚未 push／開 PR。
+本輪沒有新增共用 app factory、教師登入、DB、pyproject.toml 或 uv.lock。未碰既有不明名稱的未追蹤檔案。
+check-prerequisites 指向 001，requirements.md 仍 16／16，檢查表未修改。沒有 extensions.yml，因此無前後 hooks。
+
+### 已完成的可獨立測試部分
+
+- `import_service.py`：候選 catalog 與非座標 UUID4／UUID5 識別、版本識別、semantic／structure／value 指紋、純位置移動重綁、題意／題號／成員改變停止。尚非 DB 已發布版本。
+- `export_service.py`：完整快照驗證後產生預覽，保留字串／原值與同一勝組；確認精確覆寫集合；舊預覽遇來源或結果改變停止；恢復先重新定位再按目前值分類，相同答案不列入待寫；回讀分類與逐單位完成條件。這是純資料判定，尚無 production 寫入 driver。
+- `google_authorization.py`／`cli.py`：repo 外且不同的 client／token 路徑、Desktop config／scope 檢查、token 載入／刷新、CLI-only loopback 同意、原子保存。一般請求不開瀏覽器，invalid_grant／儲存失敗只回安全代碼。Windows 私人目錄權限依使用者／ACL 管理。
+- `tests/integration/test_offline_recovery_flow.py`：受控來源模擬全題組寫入後回應遺失，回讀證實成功後恢復不重送；無真實 Google／DB／HTTP。
+- `tests/integration/test_import_capacity.py`：100 個主題號 × 10 小題，1000 個唯一 blank、100 個每次 10 項的 mock RAW 批次。
+- T027／T038／T053 已有適用成果及驗證，新增完成三項，累計 **10／59**。含接線的 T019／T020／T021／T031／T033／T034／T041 等雖有核心進度，保持未完成。
+
+### 最終驗證
+
+執行者 Codex，Python 3.13.1，無 Google 憑證／網路來源，PYTHONPATH 僅 src。先建立新測試，import_service／export_service／google_authorization 尚不存在時確認 ModuleNotFoundError，再完成實作。
+
+| 指令（Python 3.13.1） | 實際結果 |
+| --- | --- |
+| `-m unittest discover -s tests/unit -q` | 58／58，退出碼 0 |
+| `-m unittest discover -s tests/contract -q` | 10／10，退出碼 0 |
+| `-m unittest discover -s tests/integration -q` | 4／4，退出碼 0 |
+| `-m guided_notes.notes.cli --help` | 成功列出 check-config／authorize-sheets，退出碼 0 |
+| `git diff --check` | 通過；只有既有 LF／CRLF 提示 |
+
+合計 **72／72**。容量觀察在 tracemalloc 開啟下為 **1.398 秒、peak 4.27 MiB**；只代表本機合成案例，不是延遲 SLA、拒收上限或 Sheets API 負載測試。
+
+### 官方 SDK 實際 smoke（與離線測試分開）
+
+首次沙箱安裝遇 DNS 限制，經工具核准後以 uv 安裝至忽略的 `tmp/sdk-smoke`，不改共用環境：google-api-python-client 2.202.0、google-auth 2.63.1、google-auth-oauthlib 1.5.0、google-auth-httplib2 0.4.4（含間接依賴共 25 套件）。
+Python 3.13 成功 import 官方 SDK，使用合成 token 建立 service／numeric sheetId getByDataFilter／RAW batchUpdateByDataFilter 的 request 物件，**沒有呼叫 execute、沒有 Google 授權或來源讀寫**。查核 InstalledAppFlow.run_local_server 的 host／port／timeout_seconds／kwargs 簽章；真正 loopback／consent 尚未實測。
+SDK import 出現系統 grpcio 未來版本支援的 FutureWarning，不影響本次 request 建構；正式環境仍待 002 鎖檔安裝驗證，不以此暫存環境取代共同基準。
+
+### 圖表與剩餘接線
+
+Class 新增 ImportBundle／Fingerprints，Component 標示 CLI-only consent，Sequence 修正恢復先讀目前結構與重新辨識錨點；三張 PlantUML CLI 渲染退出碼 0、同目錄 PNG 更新。AI 檢視 Class／Component 圖面，新增圖意待組員審查；命令見 render-report。
+本輪可獨立測試的領域切片已就緒，但**不是整個 001 完成**。剩餘包括：
+
+1. 002 的正式套件環境、app factory、teacher context、DB；001 接 ownership／CSRF、來源及活動授權。
+2. ImportPreview 持久化、並行確認只發布一次、不可變 catalog、get_catalog、版本與來源歸屬約束。
+3. export preview／operation／attempt／source lease／idempotency／verified_at、重啟恢復與執行期限；production driver 按介面文件先檢查後寫入並保存報告。
+4. 003 的 CLOSED 且已結算可信 snapshot，結果未就緒必須拒絕，不能由純 DTO 檢查替代。
+5. Flask CLI 註冊、routes／UI；真實 OAuth／完整 Sheets 中繼資料、可讀不可寫、外部競態、兩位組員完整人工驗收。
+6. 全功能 analyze／converge 與 PR 互審仍待接線及收尾階段，本次不宣稱已通過完整交付門檻。

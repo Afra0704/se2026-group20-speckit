@@ -123,7 +123,7 @@ git push -u origin HEAD
 ## 目前的設計整合分支
 
 `integration/001-002-design` 合併 001 與 codex/002-identity-activity-phases，統一目錄及介面。
-[001 計畫](specs/001-guided-notes/plan.md) 與 [002 計畫](specs/002-identity-activity-phases/plan.md) 均為待實作設計。
+[001 計畫](specs/001-guided-notes/plan.md) 的離線核心已實作，完整應用接線仍待完成；[002 計畫](specs/002-identity-activity-phases/plan.md) 的共用骨架由同學負責。
 共同採 src/guided_notes、Python 3.13、import_id／import_version、主題號作提交單位，且結算完成才可回填。
 設計整合已透過 PR #3 合入 master；001 實作分支為 `codex/001-guided-notes-implementation`。
 共用骨架由 002 先建立，001 接 notes Blueprint。先核對實際狀態與未提交變更，再更新分支。
@@ -149,3 +149,7 @@ python -m unittest discover -s tests/integration -v
 ```
 
 integration 目前僅有離線元件交接測試，尚無 HTTP／登入／DB 的整合驗證。
+
+2026-11-23 續作已完成可獨立測試的匯入候選 UUID／版本、來源指紋與重綁、回填預覽／覆寫確認、回讀與恢復判定，以及獨立 Google OAuth CLI。新命令與 CMD 寫法見 [授權說明](docs/google-sheets-setup.md)。完整網頁、持久化與活動結果接線仍待 002／003。
+
+第一個離線核心進度 commit：`05186ed`。本機 commit 不代表已推上 GitHub；新圖與後續核心仍需組員審查。

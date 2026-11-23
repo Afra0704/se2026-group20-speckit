@@ -32,6 +32,11 @@ Export --> Results : obtain and recheck result version
 Import --> Access : read source
 Export --> Access : inspect / write / read back
 Access --> Sheets : authorized source operations
+note left of Access
+Desktop OAuth helper is CLI-only for consent.
+Normal calls load/refresh credentials before writing.
+SDK transport has no automatic write replay.
+end note
 note bottom of Catalog
 Activity receives main questions and ordered subitems.
 Source positions stay in this feature.

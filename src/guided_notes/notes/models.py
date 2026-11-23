@@ -11,7 +11,8 @@ from uuid import UUID
 class ContractError(ValueError):
     def __init__(self, code, message="資料不符合交換契約。"):
         self.code = code
-        self.http_status = 409 if code in {"ACTIVITY_NOT_ENDED", "RESULT_VERSION_CHANGED"} else 422
+        self.http_status = 409 if code in {"ACTIVITY_NOT_ENDED", "RESULT_VERSION_CHANGED",
+            "SOURCE_STRUCTURE_CHANGED", "PREVIEW_STALE", "OVERWRITE_CONFIRMATION_REQUIRED"} else 422
         super().__init__(message)
 
 

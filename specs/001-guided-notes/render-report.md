@@ -39,3 +39,11 @@ Plan 階段於 2026-11-23 補上 Operation Repository／Source Lease、idempoten
 
 2026-11-23 設計整合：與 002 統一主題號／items、import_id／import_version 及結算後回填，
 六張 001／002 圖以本機 PlantUML 1.2026.10 重渲染。002 原始作者版本與審查記錄保留在其文件，這次整合後的新增圖意仍待共同複核。
+
+2026-11-23 離線核心續作：Class 補 ImportBundle／Fingerprints 與候選不等於發布的界線；Component 補 CLI-only consent；Sequence 恢復流程改為先讀目前結構並重辨識錨點。以下命令實際完成，退出碼 0，三張同目錄 PNG 更新；AI 已檢視圖面，新增圖意待同學審查。
+
+```powershell
+& 'C:/Program Files/Java/jdk-24/bin/java.exe' '-Djava.awt.headless=true' -jar D:/os_final/tmp/tools/plantuml-1.2026.10.jar -charset UTF-8 -tpng 'D:/os_final/diagrams/001-guided-notes-*.puml'
+```
+
+ImportBundle／Fingerprints 對應 import_service.py，ExportPreview／PreviewItem 與純恢復對應 export_service.py，Source Access 的憑證核心對應 google_authorization.py／cli.py。Store／WriteOperation／授權與 DB 整合仍未實作，不將整張圖或功能標記完成。

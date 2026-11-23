@@ -188,3 +188,8 @@ SC-005 人工驗收要求兩位組員各自完整操作，不以分拆情境的�
 使用者後續明確授權純資料、gateway、模擬測試與授權準備文件，允許這些切片先於共用骨架執行；任務調整見 tasks.md。models.py 先提供無框架 DTO 驗證，Source Access 先完成可注入 service 的 SheetsGateway。getByDataFilter 以 numeric sheetId 讀取，避免表名更動造成 A1 定位競態；官方 API 查核與實際驗證範圍分別記於 research／validation。HTTP／DB／provider 依賴維持原順序，不以離線測試替代。
 
 本輪設計沒有需豁免的憲章違反。保留單體程式與標準庫 SQLite；source lease、不可變快照及逐項狀態用於跨系統失敗恢復，具有 FR-005、FR-011、FR-015 的明確依據。
+
+### 同日續作：共用骨架前的完成範圍
+
+使用者授權先將不依賴同學的核心完成，先提交進度 commit，再於離線核心驗證後提交。本輪提供 import_service 的候選 catalog／UUID／指紋／重綁、export_service 的純預覽／確認檢查／恢復與回讀分類，以及 google_authorization／獨立 cli。Python 標準庫可執行全部離線測試；SDK 安裝與建構另於被忽略的 tmp/sdk-smoke 驗證，不建立第二份正式套件／app／DB。
+這些候選與預覽並未發布／持久化；同學骨架完成後，仍須按原 plan 執行 transaction、ownership、settled provider、lease、idempotency、routes 與 UI，再測真實來源／人工驗收。不能用純函式或測試 provider 推定系統已有安全回填入口。

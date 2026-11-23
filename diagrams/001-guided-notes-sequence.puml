@@ -111,8 +111,9 @@ alt authorized
  Activity --> Notes : current state
  Notes -> Results : recheck original result version
  Results --> Notes : current result version
- Notes -> Sheets : read targets before retry
- Sheets --> Notes : observed values or read error
+ Notes -> Sheets : re-read structure and current values
+ Sheets --> Notes : source structure, values or read error
+ Notes -> Notes : validate semantics; reidentify current anchors
  Notes -> Notes : same answer = verified; no winner = skipped
  alt source inaccessible / main-question / subitem membership or result changed
   Notes -> Store : persist conflict or unknown; release lease

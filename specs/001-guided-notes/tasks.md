@@ -9,6 +9,8 @@
 
 **本輪使用者授權的續作**：T005、T014、T018、T032 的純資料／Google 邊界部分可在共用骨架前完成，依賴以 mock 取代；T018 不等待 T016 的 Flask 路由測試、T032 不等待 T027 的整個 export service。正常 app 的授權與前置檢查不因此省略。T026／T029／T044 僅完成 DTO／gateway 子部分，仍待 provider、作業與恢復接線，保留未完成。
 
+**後續授權的完整離線切片**：使用者要求所有不依賴同學骨架的核心先完成。T027／T038 的純預覽／恢復測試與 T053 容量可先完成，不等待 DB／provider／人工操作；依賴明確限縮為純資料與受控 gateway。其餘含 HTTP、DB、真實 provider、人工作業的任務，即使已完成部分核心，仍維持未完成。
+
 ## Format: `[ID] [P?] [Story] Description`
 
 每項採 `- [ ] Tnnn [P] [USn] 描述與檔案路徑`。只有故事期帶 US 標籤。
@@ -18,7 +20,7 @@
 ## Path Conventions
 
 所有任務路徑相對 repo 根目錄。程式位於 `src/guided_notes/`，測試位於 `tests/`。
-程式與測試檔名是 implement 的目標，資料夾尚未建立；現有設計文件可直接讀取。
+程式與測試檔名是 implement 的目標，部分離線模組與測試已建立；HTTP／DB／provider 接線仍待執行。
 驗證證據統一記於 `specs/001-guided-notes/validation.md`，建立後記錄版本、執行者、日期、情境、預期與實際結果。
 權限、登入及 ended snapshot 由 002／003 提供，001 接 adapter；測試可注入受控 provider，正常應用缺 provider 時拒絕回填。
 
@@ -82,7 +84,7 @@
 ### Tests for User Story 2
 
 - [ ] T026 [P] [US2] 在 `tests/contract/test_result_snapshot.py` 測試七組 examples、有勝組／無勝組、未結束、已結束但結算未就緒（RESULT_NOT_READY）、錯 import／result version、缺主題號／小題、混勝組、重複資料；錯誤拒絕回填，依賴 Phase 2 及 T014 的 catalog 契約定案。
-- [ ] T027 [P] [US2] 在 `tests/unit/test_export_service.py` 定義原值／預定值／覆寫確認、同題組一次 RAW 請求、文字等號／前導零／中文換行、無勝組略過及精確 stringValue 回讀的預期，依賴 Phase 2。
+- [X] T027 [P] [US2] 在 `tests/unit/test_export_service.py` 定義原值／預定值／覆寫確認、文字等號／前導零／中文換行、精確 stringValue 回讀；同題組一次 RAW 與無勝組略過由 test_sheets_gateway／test_writeback_recovery 共同驗證。依本次離線順序調整先完成純函式測試，不宣稱 HTTP／DB 接線完成。
 - [ ] T028 [P] [US2] 在 `tests/integration/test_export_routes.py` 定義 CSRF／ownership、只接受 activity_id、篡改 preview、同 key 同作業、不同 payload 同 key、同來源並行及 read-back 失敗的報告，依賴 Phase 2。
 
 ### Implementation for User Story 2
@@ -106,7 +108,7 @@
 
 ### Tests for User Story 3
 
-- [ ] T038 [P] [US3] 在 `tests/unit/test_writeback_recovery.py` 定義原值／預定答案／第三種內容、公式同顯示值、題意或結果版變更、無勝組及部分題組的恢復矩陣；明確驗證文字型別、勝組快照及已 verified 不重寫，依賴 US2 離線核心完成。
+- [X] T038 [P] [US3] 在 `tests/unit/test_writeback_recovery.py` 定義原值／預定答案／第三種內容、公式同顯示值、結果版變更、無勝組及部分題組恢復；題意／成員變更另由 test_import_service 驗證。明確驗證文字型別、勝組快照及已 verified 不重寫，依本次離線順序調整，真實作業恢復仍待 T039–T043。
 - [ ] T039 [P] [US3] 在 `tests/integration/test_writeback_restart.py` 定義第一題組成功後第二題組 timeout、寫入成功但回讀失敗、程式重啟、租約到期／失去 owner、兩作業爭用及 provider 版更換，驗證不直接重送，依賴 US2 離線核心完成。
 
 ### Implementation for User Story 3
@@ -144,7 +146,7 @@
 
 **Purpose**: 完成跨故事回歸、人工驗收、圖文一致及可審查交付。
 
-- [ ] T053 在 `tests/integration/test_import_capacity.py` 以合成 100 個主題號、每題至多 10 個作答項目檢查掃描完整性及批次請求數，記錄時間與記憶體觀察到 `specs/001-guided-notes/validation.md`；這是設計容量案例，不新增拒收上限，依賴所有故事離線核心完成。
+- [X] T053 在 `tests/integration/test_import_capacity.py` 以合成 100 個主題號、每題 10 個作答項目驗證掃描完整性、1000 個唯一 blank、100 次每次 10 項的 mock 批次，記錄時間與記憶體至 validation.md。依本次離線順序調整，不等待完整活動／DB；這是合成容量觀察，不新增拒收上限或真實 API 效能承諾。
 - [ ] T054 由兩位組員交叉完成 quickstart M01–M10 尚未執行的真實來源案例，包含不同題數、移動欄列、變更答案合併寬度、原值與格式比對、可讀不可寫及無勝組，在 `specs/001-guided-notes/validation.md` 逐項標示預期／實際；已驗收項目引用既有證據，依賴 T025、T037、T046、T052。
 - [ ] T055 執行 `uv run --locked pytest tests/unit tests/contract tests/integration` 及 quickstart 的實際安裝／CLI smoke，複查所有 teacher routes 的 ownership／CSRF、來源位置與 token 未洩漏、錯誤與日誌分類；在 `specs/001-guided-notes/validation.md` 記錄完整結果及剩餘限制，依賴 T053–T054；只有新增修改或失敗時重跑受影響檢查。
 - [ ] T056 逐項核對 `diagrams/001-guided-notes-component.puml`、`diagrams/001-guided-notes-class.puml`、`diagrams/001-guided-notes-sequence.puml` 與實際模組／資料關係／時序；有差異時同步 plan／data-model／contracts、重渲染同目錄 PNG，於 `specs/001-guided-notes/render-report.md` 記錄命令及組員圖意審查，依賴 T055。
@@ -264,6 +266,8 @@ B 可協助 [P] 測試及 T001／T025／T046／T052 人工互驗。
 同日續作：使用者明確授權純資料／gateway／授權文件切片，新增完成 T005／T014／T018／T032，累計 7／59；40 項離線測試通過。其他部分完成的任務維持未勾選，實際 SDK／HTTP／DB／provider／人工驗收待前置依賴。
 
 ## Notes
+
+最新狀態：進度 commit 05186ed 後，離線匯入／回填／恢復與 OAuth helper／獨立 CLI 已完成；新增勾選 T027／T038／T053，累計 10／59。T019 仍缺 Flask CLI 註冊，T020／T021 缺 DB 發布與版本約束，T031／T033／T034／T041 缺 production 授權／provider／lease／持久化；不因核心函式已完成而勾選整項。以下 3／59、7／59 為歷史階段記錄。
 
 2026-11-23：本次先完成 3／59 項離線任務。T021 須實作 data-model 的 ImportPreview 持久化及並行確認只發布一次，並同時提供 get_catalog；T041 恢復須先重新辨識目前位置及核對語意後才回讀，禁止沿用舊座標；T054 要求兩位組員各自完成完整操作並分別記錄。這些設計補正尚未通過完整 analyze，不宣稱已消除所有分析發現。
 

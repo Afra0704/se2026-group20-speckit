@@ -1,6 +1,6 @@
 # Data Model: Guided Notes 匯入與回填
 
-對應 [spec.md](spec.md) 及 [介面契約](contracts/interfaces.md)。以下為設計，資料表及程式尚未建立。
+對應 [spec.md](spec.md) 及 [介面契約](contracts/interfaces.md)。資料表尚未建立；DTO 與無框架候選／預覽／恢復核心已實作，其餘實體仍為接線設計。
 欄位使用 snake_case。日期採 UTC ISO 8601，UI 以 Asia/Taipei 顯示；識別及版本不得以來源座標代替。
 
 ## 識別與計數
@@ -35,6 +35,8 @@ Repository 的 catalog／preview 內部資料可採經驗證 JSON 欄位儲存�
 DTO 與資料表不必逐一分檔；先維持 models.py 與 repository.py，避免為每一項建立通用框架。
 
 ## 指紋與來源匹配
+
+2026-11-23：ImportBundle 保存候選 CatalogDTO、spreadsheet_id 與 RecognitionResult；Fingerprints 由 import_service 計算三種 hash。純函式尚未發布版本，repository 須再分配／保存版本並持久化教師來源資料。export_service 的 ExportPreview／PreviewItem 可先完成領域判定，DB 接線時再保存 preview_id、owner、origin_operation_id、timestamps 與狀態，不可把 browser 傳回的物件直接反序列化為可信預覽。
 
 - `semantic_hash` 包含主題號、單題／題組、小題序號、題目文字及組成順序；排除座標與答案。換行統一為 LF，其餘題目內容不任意忽略。
 - `structure_hash` 包含 numeric sheetId、已辨識表頭／主題號／標號／答案的座標及 merge spans。單純工作表改名可重新顯示，不改來源身份。
