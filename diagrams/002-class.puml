@@ -1,0 +1,48 @@
+@startuml
+!pragma layout smetana
+title 002 身分與活動階段｜邏輯資料關係
+skinparam defaultFontName "Microsoft JhengHei"
+class "匯入清單參考（001）" as ImportedList {
+  清單識別
+  清單版本
+  可用性
+}
+class "題目參考（001）" as Question {
+  題目識別
+  顯示題號
+  題組參考（條件性）
+}
+class "活動" as Activity {
+  活動識別
+  管理教師
+  權威階段
+}
+class "活動身分" as Access {
+  有效角色
+  活動範圍
+}
+class "活動組別" as Group {
+  組別識別
+}
+class "作答情境（提供 003）" as Context {
+  活動識別、有效角色
+  組別識別（學生）
+  權威階段、清單參考
+  有效題目識別
+}
+ImportedList "1" -- "1..*" Question : 有序題目
+Activity "*" --> "1" ImportedList : 建立時固定版本
+Activity "1" -- "0..*" Access : 授權範圍
+Activity "1" -- "0..*" Group : 所屬組別
+Access "*" --> "0..1" Group : 學生所屬組別
+Context ..> Activity
+Context ..> Access
+Context ..> Question
+Context ..> Group
+note bottom of Context
+  學生輸入活動碼並自填組別。
+  準備中 → 搶答中 → 已結束。
+  已結束不可重開。
+  題組語意待 D05／D10。
+end note
+@enduml

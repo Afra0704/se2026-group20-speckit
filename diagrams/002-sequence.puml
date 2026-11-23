@@ -1,0 +1,68 @@
+@startuml
+title 002 身分與活動階段｜建立、加入、切換與同步
+skinparam defaultFontName "Microsoft JhengHei"
+actor 教師 as Teacher
+actor "學生組 A／B" as Students
+participant "002 身分與活動階段" as Activity
+participant "001 匯入清單" as Importer
+participant "003 搶答與結果" as Quiz
+
+Teacher -> Activity : 獨立登入並建立活動（清單參考）
+Activity -> Importer : 核對清單可用性與題目
+Importer --> Activity : 清單與有序題目，或不可使用
+alt 教師有權限且清單有效
+  Activity --> Teacher : 固定清單版本，回傳活動與準備中階段
+else 建立遭拒
+  Activity --> Teacher : 顯示原因，不建立活動
+end
+
+group 以下為建立成功後的操作
+  Students -> Activity : 輸入活動碼並自填組別
+  alt 準備中或搶答中，活動碼有效且組別非空白
+    Activity --> Students : 自身組別、目前階段與題目
+    note over Students : 開始前也可看題，開始後才可交答
+  else 活動碼無效、組別空白或活動已結束
+    Activity --> Students : 拒絕加入
+  end
+
+  Teacher -> Activity : 開啟搶答（須有活動管理權）
+  Activity --> Teacher : 回傳當前階段
+  Students -> Activity : 同步或重新整理後重取
+  Activity --> Students : 授權後回傳權威階段及自身組別
+  Students -> Quiz : 以組別向 003 提交
+  Quiz -> Activity : 核對可信作答情境與階段
+  Activity --> Quiz : 已驗證情境或拒絕
+  note over Quiz
+    系統確認結束前已成功受理才計入。
+    進行中教師可查作答狀況。
+    學生不得取得其他組作答資訊。
+  end note
+  Teacher -> Activity : 結束搶答（須有活動管理權）
+  Activity --> Teacher : 回傳當前階段
+  opt 教師要求重新開啟已結束的活動
+    Teacher -> Activity : 要求開啟
+    Activity --> Teacher : 拒絕，維持已結束
+  end
+  Students -> Activity : 同步、重新整理或重連
+  alt 原授權有效
+    Activity --> Students : 自動恢復活動與組別，回傳最新階段
+  else 已結束，授權失效，但同一瀏覽器仍有原加入紀錄
+    Activity --> Students : 要求驗證原加入紀錄
+    Students -> Activity : 送出原瀏覽器加入證明
+    Activity --> Students : 驗證成功後允許查閱結果
+  else 已結束且無法驗證原加入紀錄
+    Activity --> Students : 拒絕恢復結果存取
+  end
+  group 已授權的師生查閱結果
+    Teacher -> Quiz : 查閱活動結果
+    Students -> Quiz : 查閱活動結果
+    alt 已結束，結算中
+      Quiz --> Teacher : 已結束、結算中
+      Quiz --> Students : 已結束、結算中
+    else 已結束，已結算
+      Quiz --> Teacher : 各組答案、順位與勝組
+      Quiz --> Students : 勝組名稱及答案、本組答案及順位
+    end
+  end
+end
+@enduml

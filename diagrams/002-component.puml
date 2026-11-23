@@ -1,0 +1,27 @@
+@startuml
+!pragma layout smetana
+title 002 身分與活動階段｜組件圖
+skinparam defaultFontName "Microsoft JhengHei"
+left to right direction
+actor 教師 as Teacher
+actor 學生 as Student
+component "教師介面" as TeacherView
+component "學生介面" as StudentView
+component "001 Guided Notes\n匯入清單" as Importer
+component "002 身分與活動階段\n活動、授權、組別、權威階段" as Activity
+component "003 搶答與結果\n提交、作答狀況、結算" as Quiz
+Teacher --> TeacherView
+Student --> StudentView
+TeacherView --> Activity : 建立、開啟、結束、讀取
+StudentView --> Activity : 按組加入、同步、重新整理
+Activity --> Importer : 建立時固定清單版本與有序題目
+Quiz --> Activity : 核對活動、角色、組別、階段、題目
+TeacherView --> Quiz : 授權後的作答狀況及結果
+StudentView --> Quiz : 組別提交與可見資料
+note bottom of Quiz
+  結束前隔離其他組作答資訊。
+  結算後教師可見各組結果。
+  學生只看勝組與本組結果。
+  截止前成功受理才計入。
+end note
+@enduml
