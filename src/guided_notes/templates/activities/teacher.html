@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-Hant">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>教師活動管理</title>
+<main data-role="teacher" data-csrf="{{ csrf }}">
+  <h1>教師活動管理</h1>
+  <a href="{{ url_for('index') }}">學生加入</a>
+  <form id="login">
+    <label>教師帳號 <input name="username" autocomplete="username" required></label>
+    <label>密碼 <input name="password" type="password" autocomplete="current-password" required></label>
+    <button>登入</button>
+  </form>
+  <form id="create">
+    <label>匯入清單識別 <input name="import_id" required></label>
+    <label>清單版本 <input name="import_version" type="number" value="1" min="1" required></label>
+    <button>建立活動</button>
+  </form>
+  <p id="activity-code"></p>
+  <button id="start" type="button" disabled>開啟搶答</button>
+  <button id="close" type="button" disabled>結束活動</button>
+  <p id="activity-state" role="status"></p>
+  <ol id="questions"></ol>
+  {% include "activities/results.html" %}
+</main>
+<script type="module" src="{{ url_for('static', filename='activity-sync.js') }}"></script>
+</html>

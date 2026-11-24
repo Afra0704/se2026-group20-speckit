@@ -61,6 +61,24 @@ helper 一般模式只載入／更新既有 token，失效會回 GOOGLE_REAUTH_R
 
 ## 當前可用與待處理
 
+### 2026-11-24 正式環境與唯讀雲端驗證
+
+PR #4 的共用骨架已整合，Google 套件已納入正式 pyproject／uv.lock，現在直接用 `.venv`，不再依賴 `tmp/sdk-smoke`。
+使用者已完成 OAuth 授權。兩份副本已以 Google Sheets API 直接讀取並動態辨識：題組副本 4 題／6 格（兩題各兩小題及兩個單題），單題副本 6 題／6 格。
+這是讀取及辨識驗證，沒有回填，也不代表完整人工驗收。
+
+在 CMD 可重跑以下指令（將連結換成自己的副本；兩個憑證環境變數沿用前述私人路徑）：
+
+```bat
+cd /d D:\os_final
+set "NOTES_GOOGLE_CLIENT_SECRETS=C:\Users\user\guided-notes-private\client.json"
+set "NOTES_GOOGLE_TOKEN=C:\Users\user\guided-notes-private\token.json"
+.venv\Scripts\python.exe -m guided_notes.notes.cli inspect-sheet --url "你的Google-Sheets連結"
+```
+
+連結需含 gid，或另加 `--sheet-id 數字`。指令僅讀取、輸出題號／題數／格數與零起算錨點，不輸出題目敘述、原答案或憑證，不執行寫入。API 受限或憑證失效時回安全錯誤代碼；不自動開啟登入。
+上方「尚待共用骨架」等敘述是前輪階段記錄，現在仍待接入的是 001 的 Flask CLI 註冊、網頁匯入、DB 發布與回填作業。
+
 | 項目 | 狀態 |
 | --- | --- |
 | URL／gid 驗證、列工作表、numeric sheetId 讀取 | 已完成 mock 測試 |

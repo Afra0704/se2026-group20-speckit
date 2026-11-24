@@ -29,7 +29,7 @@
 **Purpose**: 對齊共用骨架、建立可重現環境及離線測試資料。
 
 - [ ] T001 與另一位組員核對 `specs/001-guided-notes/contracts/interfaces.md` 的 app factory、teacher context、provider、識別及欄位；在同檔記錄負責人與介面審查結果，並記錄 `diagrams/001-guided-notes-component.puml`、`diagrams/001-guided-notes-class.puml`、`diagrams/001-guided-notes-sequence.puml` 的組員圖意審查，保留 D01–D04、D06、D08 等未決事項，不代替 002／003 決策。
-- [ ] T002 建立或沿用共用 `pyproject.toml`，設定 src layout、Python 3.13 及 research 的依賴範圍，產生並提交 `uv.lock`；以 `uv sync --locked --python 3.13` 及 quickstart 的 import smoke 驗證，將實際結果寫入 `specs/001-guided-notes/validation.md`。
+- [X] T002 沿用 002 的共用 `pyproject.toml`／src layout／Python 3.13，加入 Google 官方依賴並更新 uv.lock；已完成 uv sync --locked、正式 .venv import smoke 與整合測試，結果見 validation.md。依已合併共用骨架採其 server-side CSRF，不另裝第二套 Flask-WTF。
 - [X] T003 [P] 在 `tests/fixtures/sheets_layouts.json` 建立單題跨欄答案、跨列題號兩小題題組、混合單題、移動欄列、重複標號、缺表頭及答案交疊的合成 GridData／merges，保留真空白、公式、格式與起始索引；於 `tests/fixtures/README.md` 說明預期題數／作答格數。依本次離線順序調整獨立驗證。
 - [ ] T004 [P] 在 `tests/conftest.py` 建立暫存 SQLite、授權／學生 context、可注入 ended snapshot 及可記錄批次／失敗／逾時的 Sheets substitute；測試不需憑證且不連真實來源，依賴 T002。
 - [X] T005 依 quickstart 在 `README.md` 連結 `docs/google-sheets-setup.md`，記錄 Desktop OAuth project、Sheets API、測試使用者及 repo 外 client JSON 的準備方式，核對 `.gitignore` 排除憑證與 token；將可用／待設定的狀態記於 `specs/001-guided-notes/validation.md`，保留實際帳號設定給教師操作。
@@ -266,6 +266,8 @@ B 可協助 [P] 測試及 T001／T025／T046／T052 人工互驗。
 同日續作：使用者明確授權純資料／gateway／授權文件切片，新增完成 T005／T014／T018／T032，累計 7／59；40 項離線測試通過。其他部分完成的任務維持未勾選，實際 SDK／HTTP／DB／provider／人工驗收待前置依賴。
 
 ## Notes
+
+2026-11-24 最新進度：PR #4 共用骨架已合入本機 001 分支，新增完成 T002，累計 11／59。正式環境 89 項測試及 98 子案例通過；兩份真實雲端副本唯讀辨識成功。T025／T054 等完整人工操作仍未完成，不以唯讀 CLI 取代網頁匯入、發布與回填驗收。以下 10／59 等為歷史階段紀錄。
 
 最新狀態：進度 commit 05186ed 後，離線匯入／回填／恢復與 OAuth helper／獨立 CLI 已完成；新增勾選 T027／T038／T053，累計 10／59。T019 仍缺 Flask CLI 註冊，T020／T021 缺 DB 發布與版本約束，T031／T033／T034／T041 缺 production 授權／provider／lease／持久化；不因核心函式已完成而勾選整項。以下 3／59、7／59 為歷史階段記錄。
 

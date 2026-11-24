@@ -133,3 +133,42 @@ Class 新增 ImportBundle／Fingerprints，Component 標示 CLI-only consent，S
 4. 003 的 CLOSED 且已結算可信 snapshot，結果未就緒必須拒絕，不能由純 DTO 檢查替代。
 5. Flask CLI 註冊、routes／UI；真實 OAuth／完整 Sheets 中繼資料、可讀不可寫、外部競態、兩位組員完整人工驗收。
 6. 全功能 analyze／converge 與 PR 互審仍待接線及收尾階段，本次不宣稱已通過完整交付門檻。
+
+## 2026-11-24：整合 PR #4 與真實雲端唯讀驗證
+
+使用者回報 PR #4 已合併。已核對 origin/master=c428ba0 包含 ef660ee 三項審查修正，於 codex/001-guided-notes-implementation 合併 master，無衝突且保留 001／002 兩邊程式。沒有推送或自動合併新的 GitHub PR。
+
+### 正式環境
+
+沿用 002 的 Python 3.13／src layout／Flask app／教師授權／DB／CSRF，Google 四個直接依賴加入同一 pyproject／uv.lock，不建立另一套 app 或 DB。uv lock 與 uv sync --locked 實際成功，解析 39 套件；Python 3.13.1 的正式 .venv 可 import Flask／Google SDK。共用 CSRF 已審查並在 001 介面記錄，因此不再另裝原建議 Flask-WTF。
+初次離線解析因快取不完整失敗，經工具核准後連線解析／安裝成功；不將離線失敗誤列為套件不相容。
+
+### 測試
+
+執行者 Codex，本機正式 .venv：
+
+| 指令 | 實際 |
+| --- | --- |
+| `.venv/Scripts/python.exe -m pytest tests/unit tests/contract tests/integration -q` | **89 passed、98 subtests passed，15.85 秒，退出碼 0** |
+| `node tests/activity-sync.test.cjs` | Stale phase response: passed |
+| 正式環境 import smoke | Formal environment imports OK |
+
+新增 tests/unit/test_inspect_cli.py 三項測試：唯讀且不輸出題目／原值、缺 gid 先拒絕、無效 URL 先拒絕；mock gateway 僅呼叫 read_sheet，沒有 write_unit。
+
+### 真實 Google Sheets 讀取
+
+使用者已授權，並在本對話提供兩份講義副本，明確同意先只讀取。透過私人目錄中的既有 credentials／token，直接以官方 Sheets API 讀取 GridData／merges；未呼叫任何寫入方法，未下載 .xlsx。
+沙箱初次回 GOOGLE_REAUTH_REQUIRED，允許連線後使用既有授權成功，未要求使用者重登。沒有輸出、記錄或提交 token／client JSON 內容，也不在本文件保存私人副本的 spreadsheetId 或問題／答案原文。
+
+| 來源 | 認得主題號 | 作答格 | 結構與錨點（A1） |
+| --- | --- | --- | --- |
+| 使用者提供第一份：題組副本 | 4 | 6 | 題號1：H5、H6；題號2：H8、H9；題號3：G11；題號4：G13 |
+| 使用者提供第二份：單題副本 | 6 | 6 | G5、G7、G9、G11、G13、G15 |
+
+同一結果再由正式環境的新 `inspect-sheet --url ...` 唯讀指令重現；輸出 read_only=true，兩次退出碼均為 0。API 回傳的 merges 數分別 13、21，解析成功。此處是 AI 的來源讀取／辨識證據，未作答、未回填，尚未由兩位組員完成網頁預覽／確認／活動人工驗收。
+
+### 下一段接線
+
+新增完成 T002，累計 11／59。其餘任務未因合併或讀取成功而自動勾選。
+001 將以 notes_ 表名前綴接入同一 DB，避免與 002 questions 表衝突；沿用共用登入與 CSRF，實作持久化預覽／確認發布／get_catalog，再接教師頁面。需要的共用骨架已可用，不再將它列為阻塞；production 回填仍待 source lease／idempotency／可信結算 provider 與人工驗收。
+目前三圖的 Source Access 責任已涵蓋此唯讀診斷，沒有變更作答或寫入流程，不需為 CLI 額外新增圖；完整程式／圖意核對仍依 T056 執行。

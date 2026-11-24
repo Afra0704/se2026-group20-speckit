@@ -150,6 +150,10 @@ python -m unittest discover -s tests/integration -v
 
 integration 目前僅有離線元件交接測試，尚無 HTTP／登入／DB 的整合驗證。
 
+2026-11-24 更新：已接入 PR #4 的共用骨架，正式 `pyproject.toml`／`uv.lock` 包含 Google 套件，`.venv` 已建立；目前合併後共 89 項測試與 98 子案例通過（含 002 的 HTTP／登入／DB 邊界）。001 的網頁匯入及持久化仍未接入。
+可用 `.venv\Scripts\python.exe -m pytest tests/unit tests/contract tests/integration -q` 執行合併後全部測試。
+新增獨立唯讀診斷 `notes.cli inspect-sheet`，正式環境用法見 docs/google-sheets-setup.md。
+
 2026-11-23 續作已完成可獨立測試的匯入候選 UUID／版本、來源指紋與重綁、回填預覽／覆寫確認、回讀與恢復判定，以及獨立 Google OAuth CLI。新命令與 CMD 寫法見 [授權說明](docs/google-sheets-setup.md)。完整網頁、持久化與活動結果接線仍待 002／003。
 
 第一個離線核心進度 commit：`05186ed`。本機 commit 不代表已推上 GitHub；新圖與後續核心仍需組員審查。

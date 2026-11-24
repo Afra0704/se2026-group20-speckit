@@ -36,7 +36,7 @@ Google 授權不等同應用的教師登入。External／Testing token 到期時
 ```powershell
 uv python install 3.13
 uv sync --locked --python 3.13
-uv run --locked python -c "import flask, flask_wtf, googleapiclient.discovery, google.auth, google_auth_oauthlib, sqlite3; print('imports ok')"
+uv run --locked python -c "import flask, googleapiclient.discovery, google.auth, google_auth_oauthlib, sqlite3; print('imports ok')"
 ```
 
 環境變數的名稱及 app 設定對應列在以下範例；實作必須啟動時驗證路徑與必要設定。

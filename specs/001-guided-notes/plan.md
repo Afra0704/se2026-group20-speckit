@@ -18,7 +18,7 @@ D03、D04 自填組別、D06 與 D09 活動重連採共同需求已回報確認�
 
 **Language/Version**: 設計基準為 CPython 3.13.x、Windows x64。宿主 `python` 實測為 3.14.7，實作時用 uv 選定 3.13 建立專案環境。
 
-**Primary Dependencies**: Flask 3.1、Jinja2 3.1、Flask-WTF 1.x、google-api-python-client 2.x、google-auth 2.x、google-auth-oauthlib 1.x、google-auth-httplib2 0.x。相容解析快照及選擇理由見 [research.md](research.md)。
+**Primary Dependencies**: Flask 3.1、Jinja2 3.1、google-api-python-client 2.x、google-auth 2.x、google-auth-oauthlib 1.x、google-auth-httplib2 0.x。2026-11-24 接入已審查的 002 共用 server-side CSRF，取代原建議 Flask-WTF，避免兩套 token／錯誤邊界並存。相容解析快照及選擇理由見 [research.md](research.md)。
 
 **Storage**: Python 標準庫 sqlite3，單一本機資料庫 `instance/app.sqlite3`；Google 憑證與 token 放 repo 外，路徑由環境變數指定。
 
