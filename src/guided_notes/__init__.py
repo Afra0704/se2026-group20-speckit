@@ -22,7 +22,13 @@ def create_app(test_config=None):
     from .quiz.activity_routes import quiz
 
     app.cli.add_command(init_teacher)
-    for blueprint in (teacher, student, state, quiz):
+    if app.config["CLASSROOM_MODE"]:
+        from .activities.classroom_routes import rooms
+
+        blueprints = (teacher, rooms, quiz)
+    else:
+        blueprints = (teacher, student, state, quiz)
+    for blueprint in blueprints:
         app.register_blueprint(blueprint)
     notes = app.config.get("NOTES_BLUEPRINT")
     if notes is not None:
@@ -31,7 +37,8 @@ def create_app(test_config=None):
 
     @app.get("/")
     def index():
-        return render_template("activities/student.html", csrf=csrf_token())
+        template = "activities/classroom.html" if app.config["CLASSROOM_MODE"] else "activities/student.html"
+        return render_template(template, csrf=csrf_token(), role="student")
 
     @app.get("/csrf")
     def csrf():
@@ -39,6 +46,8 @@ def create_app(test_config=None):
 
     @app.before_request
     def protect_writes():
+        if app.config["CLASSROOM_MODE"] and request.endpoint in {"teacher.create", "teacher.start", "teacher.close"}:
+            raise http.ApiError(404, "ACTIVITY_NOT_FOUND")
         if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
             check_csrf()
 

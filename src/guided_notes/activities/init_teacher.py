@@ -11,8 +11,8 @@ from ..db import write_transaction
 @with_appcontext
 def init_teacher(username, password):
     username = username.strip()
-    if not username or len(username) > 128 or len(password) < 8:
-        raise click.ClickException("Use a valid username and a password of at least eight characters.")
+    if not username or len(username) > 128 or not 4 <= len(password) <= 1024 or not password.strip():
+        raise click.ClickException("Use a valid username and a password of at least four characters.")
     with write_transaction() as db:
         cursor = db.execute(
             "INSERT INTO teachers(username, password_hash) VALUES (?, ?) ON CONFLICT(username) DO NOTHING",

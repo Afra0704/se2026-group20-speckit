@@ -1,0 +1,42 @@
+@startuml
+!pragma layout smetana
+title 004 課堂與活動切換｜類別圖
+skinparam defaultFontName "Microsoft JhengHei"
+class "課程" as Course {
+  course_id
+  教師、名稱
+}
+class "課堂" as Room {
+  classroom_id
+  加入碼、階段
+}
+class "課堂組別" as Group {
+  group_id
+  自填組名
+}
+class "加入紀錄" as Join {
+  原瀏覽器證明
+}
+class "活動" as Activity {
+  activity_id
+  名稱、階段、開始與結束時間
+}
+class "講義版本（001）" as Catalog {
+  import_id
+  import_version
+}
+class "已結算快照（003）" as Result {
+  result_version
+}
+Course "1" -- "*" Room
+Course "1" -- "*" Catalog
+Room "1" -- "*" Activity
+Room "1" -- "*" Group
+Group "1" -- "*" Join
+Activity "*" --> "1" Catalog : 固定引用
+Activity "1" -- "0..1" Result
+note right of Room
+  同堂最多一個搶答中活動。
+  本次從空白開發資料庫開始。
+end note
+@enduml

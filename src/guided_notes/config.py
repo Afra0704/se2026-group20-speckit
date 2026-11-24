@@ -3,13 +3,16 @@ from pathlib import Path
 
 
 def defaults(instance_path):
+    classroom_mode = os.environ.get("GUIDED_NOTES_CLASSROOM_MODE") == "1"
     secret = os.environ.get("GUIDED_NOTES_SECRET_KEY")
     if secret == "replace-with-a-local-random-secret":
         secret = None
     return {
         "SECRET_KEY": secret,
+        "CLASSROOM_MODE": classroom_mode,
         "DATABASE": os.environ.get(
-            "GUIDED_NOTES_DATABASE", str(Path(instance_path) / "guided-notes.sqlite3")
+            "GUIDED_NOTES_DATABASE",
+            str(Path(instance_path) / ("classroom-004.sqlite3" if classroom_mode else "guided-notes.sqlite3")),
         ),
         "SESSION_COOKIE_SECURE": os.environ.get("GUIDED_NOTES_HTTPS") == "1",
         "SESSION_COOKIE_HTTPONLY": True,

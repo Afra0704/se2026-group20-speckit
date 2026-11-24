@@ -51,6 +51,14 @@ def init_app(app):
             db.close()
 
     with app.app_context():
-        connection().executescript(
-            (Path(__file__).parent / "activities" / "schema.sql").read_text(encoding="utf-8")
-        )
+        db = connection()
+        schemas = Path(__file__).parent / "activities"
+        tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        if app.config["CLASSROOM_MODE"] and "activities" in tables and "classrooms" not in tables:
+            raise RuntimeError("004 classroom mode requires a separate database; the selected database uses 002.")
+        if not app.config["CLASSROOM_MODE"] and "classrooms" in tables:
+            raise RuntimeError("The selected database uses 004 classroom mode.")
+        sql = (schemas / "schema.sql").read_text(encoding="utf-8")
+        if app.config["CLASSROOM_MODE"]:
+            sql += "\n" + (schemas / "classroom_schema.sql").read_text(encoding="utf-8")
+        db.executescript("BEGIN IMMEDIATE;\n" + sql + "\nCOMMIT;")

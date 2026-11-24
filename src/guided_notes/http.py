@@ -4,9 +4,10 @@ from .db import DatabaseBusy
 
 
 class ApiError(Exception):
-    def __init__(self, status, code):
+    def __init__(self, status, code, *, retry_after=None):
         self.status = status
         self.code = code
+        self.retry_after = retry_after
 
 
 def payload():
@@ -26,7 +27,12 @@ def string(data, name, maximum=256, *, strip=True):
 def init_app(app):
     @app.errorhandler(ApiError)
     def api_error(error):
-        return jsonify(error=error.code), error.status
+        body = {"error": error.code}
+        headers = {}
+        if error.retry_after is not None:
+            body["retry_after"] = error.retry_after
+            headers["Retry-After"] = str(error.retry_after)
+        return jsonify(body), error.status, headers
 
     @app.errorhandler(DatabaseBusy)
     def busy(_error):

@@ -1,7 +1,7 @@
-from flask import Blueprint, render_template, session
+from flask import Blueprint, current_app, flash, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash
 
-from ..auth import csrf_token, issue_grant, limit_attempts, require_teacher
+from ..auth import check_teacher_login_limit, csrf_token, issue_grant, record_teacher_login_failure, require_teacher
 from ..db import connection, write_transaction
 from ..http import ApiError, payload, string
 from .teacher import fixed_questions, store_activity, transition
@@ -11,20 +11,50 @@ teacher = Blueprint("teacher", __name__)
 
 @teacher.get("/teacher")
 def page():
-    return render_template("activities/teacher.html", csrf=csrf_token())
+    if not current_app.config["CLASSROOM_MODE"]:
+        return render_template("activities/teacher.html", csrf=csrf_token())
+    courses = []
+    logged_in = False
+    try:
+        context = require_teacher()
+    except ApiError as error:
+        if error.status not in (401, 403):
+            raise
+    else:
+        logged_in = True
+        courses = connection().execute(
+            "SELECT id AS course_id, title FROM courses WHERE teacher_id = ? ORDER BY created_at, id",
+            (context.teacher_id,),
+        ).fetchall()
+    return render_template("activities/classroom.html", csrf=csrf_token(), role="teacher",
+                           initial_courses=courses, teacher_logged_in=logged_in)
 
 
 @teacher.post("/teacher/session")
 def login():
     data = payload()
+    browser_form = current_app.config["CLASSROOM_MODE"] and not request.is_json
     username, password = string(data, "username", 128), string(data, "password", 1024, strip=False)
-    limit_attempts("teacher")
+    try:
+        check_teacher_login_limit()
+    except ApiError as error:
+        if not browser_form or error.status != 429:
+            raise
+        flash(f"密碼輸錯次數過多，請等 {error.retry_after} 秒再試。", "error")
+        return redirect(url_for("teacher.page"), code=303)
     row = connection().execute("SELECT * FROM teachers WHERE username = ? AND active = 1", (username,)).fetchone()
     if row is None or not check_password_hash(row["password_hash"], password):
+        record_teacher_login_failure()
+        if browser_form:
+            flash("帳號或密碼不正確。", "error")
+            return redirect(url_for("teacher.page"), code=303)
         raise ApiError(401, "INVALID_LOGIN")
     with write_transaction() as db:
         token = issue_grant(db, teacher_id=row["id"])
     session["teacher_grant"] = token
+    if browser_form:
+        flash("已登入。")
+        return redirect(url_for("teacher.page"), code=303)
     return "", 204
 
 
