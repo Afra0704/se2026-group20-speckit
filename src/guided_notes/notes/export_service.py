@@ -1,13 +1,14 @@
-"""Pure preview, recovery and read-back decisions; no write executor or storage.
+"""Preview/recovery decisions and teacher-owned read-only preview persistence.
 
-All inputs must come from server repositories/providers after ownership and
-settlement checks. These functions must not be exposed directly to client DTOs.
+Pure core inputs come from server repositories/providers after ownership and
+settlement checks. HTTP preview orchestration below never performs a write.
 """
 from copy import deepcopy
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+import json
 
 from .import_service import Fingerprints, ImportBundle, digest, fingerprints, match_source
-from .models import ContractError, validate_snapshot
+from .models import ContractError, validate_catalog, validate_snapshot
 from .recognition import RecognizedItem
 from .sheets_gateway import AnchorWrite
 
@@ -155,3 +156,62 @@ def classify_readback(preview, observed_by_blank, outcomes_by_question):
         units.append({"question_id": qid, "winner_group_id": winners[qid], "status": status, "items": members})
     return {"status": "completed" if complete else "needs_attention", "units": units,
             "items": items, "counts": counts}
+
+
+def _bundle(db, teacher_id, import_id, version):
+    from . import repository as repo
+    source = repo.owned_import(db, teacher_id, import_id)
+    row = repo.catalog_row(db, teacher_id, import_id, version)
+    return source, ImportBundle(source["spreadsheet_id"], validate_catalog(json.loads(row["dto"])),
+                                repo.unpack_recognition(row["recognized"]))
+
+
+def create_saved_preview(teacher_context, activity_id, gateway_factory):
+    """Pin a trusted ended result and observed source; no write/lease is claimed."""
+    from ..activities.teacher import get_activity_reference
+    from ..auth import require_teacher
+    from ..db import connection, write_transaction
+    from ..http import ApiError
+    from ..quiz.results_gateway import get_ended_snapshot
+    from .recognition import recognize
+    from . import repository as repo
+
+    reference = get_activity_reference(teacher_context, activity_id)
+    if not reference["ended"]:
+        raise ApiError(409, "ACTIVITY_NOT_ENDED")
+    source, bundle = _bundle(connection(), teacher_context.teacher_id,
+                              reference["import_id"], reference["import_version"])
+    # Validate result completeness/binding before even constructing Google client.
+    snapshot = validate_snapshot(get_ended_snapshot(teacher_context, activity_id), bundle.catalog,
+                                 activity_id=activity_id)
+    current = recognize(gateway_factory().read_sheet(source["spreadsheet_id"], source["sheet_id"]))
+    preview = build_export_preview(bundle, current, snapshot, activity_id=activity_id)
+    if require_teacher() != teacher_context:
+        raise ApiError(403, "TEACHER_REQUIRED")
+    if get_activity_reference(teacher_context, activity_id) != reference:
+        raise ApiError(409, "RESULT_VERSION_CHANGED")
+    _check_result(preview, get_ended_snapshot(teacher_context, activity_id), activity_id)
+    # Provider/source network calls must all end before opening the short transaction.
+    with write_transaction() as db:
+        if require_teacher(db) != teacher_context:
+            raise ApiError(403, "TEACHER_REQUIRED")
+        return repo.insert_export_preview(db, source["source_id"], preview, current)
+
+
+def get_saved_preview(teacher_context, preview_id):
+    """GET uses local observations only, not a freshness check or write trigger."""
+    from ..auth import require_teacher
+    from ..db import connection
+    from ..http import ApiError
+    from . import repository as repo
+    if require_teacher() != teacher_context:
+        raise ApiError(403, "TEACHER_REQUIRED")
+    db = connection()
+    row = repo.owned_export_preview(db, teacher_context.teacher_id, preview_id)
+    _, bundle = _bundle(db, teacher_context.teacher_id, row["import_id"], row["import_version"])
+    preview = build_export_preview(bundle, repo.unpack_recognition(row["observed_recognition"]),
+                                   json.loads(row["snapshot"]), activity_id=row["activity_id"])
+    if row["actions"]:
+        actions = json.loads(row["actions"])
+        preview = replace(preview, items=tuple(replace(item, action=actions[item.blank_id]) for item in preview.items))
+    return row, preview

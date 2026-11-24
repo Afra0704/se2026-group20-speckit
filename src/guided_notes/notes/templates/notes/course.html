@@ -1,0 +1,27 @@
+{% extends "notes/base.html" %}
+{% block title %}課程講義{% endblock %}
+{% block content %}
+<h1>{{ course.title }} · 講義</h1>
+<p class="muted">講義保留在課程中，每個活動可選用明確版本。課堂建立與活動切換由課程管理功能提供。</p>
+<section class="card"><h2>匯入講義到這門課</h2>
+  <form method="post" action="{{ url_for('notes.worksheets') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="course_id" value="{{ course.course_id }}">
+    <label>Google Sheets 連結<input name="spreadsheet_url" type="url" required></label>
+    <button>讀取工作表清單</button>
+  </form>
+</section>
+<section class="card"><h2>課程講義與版本</h2>
+{% if course.lectures %}<ul>{% for lecture in course.lectures %}<li><ul>{% for v in lecture.versions %}
+  <li><a href="{{ url_for('notes.view_catalog', import_id=lecture.import_id, version=v.import_version) }}">{{ v.title }} · 第 {{ v.import_version }} 版</a> · {{ v.question_count }} 題／{{ v.answer_item_count }} 個作答格 · 來源分頁：{{ v.source_title }}</li>
+{% endfor %}</ul></li>{% endfor %}</ul>{% else %}<p>這門課尚未加入講義。</p>{% endif %}
+</section>
+<section class="card"><h2>加入尚未分配的舊講義</h2>
+{% if unassigned %}<form method="post" action="{{ url_for('notes.assign_course_lecture', course_id=course.course_id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <label>講義<select name="import_id" required>{% for lecture in unassigned %}<option value="{{ lecture.import_id }}">{{ lecture.title }}</option>{% endfor %}</select></label>
+  <p class="muted">將整份講義及所有版本加入這門課；不修改既有活動或雲端內容。已分配的講義不能直接移到另一門課。</p>
+  <button>確認加入這門課</button>
+</form>{% else %}<p>目前沒有尚未分配的舊講義。</p>{% endif %}
+</section>
+{% endblock %}

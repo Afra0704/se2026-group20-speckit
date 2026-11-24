@@ -42,21 +42,24 @@ def source(db, teacher_id, spreadsheet_id, sheet_id, title):
                       (teacher_id, spreadsheet_id, sheet_id)).fetchone()["source_id"]
 
 
-def insert_preview(db, source_id, recognized, hashes, name_mode="source", custom_title=None):
+def insert_preview(db, source_id, recognized, hashes, name_mode="source", custom_title=None, course_id=None):
     pid = str(uuid4())
     db.execute("""INSERT INTO notes_import_previews
         (preview_id,source_id,recognized,semantic_hash,structure_hash,value_hash,created_at,status)
         VALUES(?,?,?,?,?,?,?,'ready')""", (pid, source_id, dumps(asdict(recognized)),
             hashes.semantic_hash, hashes.structure_hash, hashes.value_hash, now()))
     db.execute("INSERT INTO notes_preview_names VALUES(?,?,?)", (pid, name_mode, custom_title))
+    if course_id is not None:
+        db.execute("INSERT INTO notes_preview_courses VALUES(?,?)", (pid, course_id))
     return pid
 
 
 def owned_preview(db, teacher_id, preview_id):
     row = db.execute("""SELECT p.*,s.teacher_id,s.spreadsheet_id,s.sheet_id,s.display_title,
-        coalesce(n.name_mode,'source') AS name_mode,n.custom_title
+        coalesce(n.name_mode,'source') AS name_mode,n.custom_title,pc.course_id
         FROM notes_import_previews p JOIN notes_sources s USING(source_id)
         LEFT JOIN notes_preview_names n USING(preview_id)
+        LEFT JOIN notes_preview_courses pc USING(preview_id)
         WHERE p.preview_id=? AND s.teacher_id=?""", (preview_id, teacher_id)).fetchone()
     if row is None:
         raise ApiError(404, "PREVIEW_NOT_FOUND")
@@ -100,3 +103,44 @@ def save_catalog(db, bundle, hashes, name_mode="source", custom_title=None):
                 dumps(asdict(candidate.number_range)), dumps(asdict(recognized.label_range)) if recognized.label_range else None,
                 dumps(asdict(recognized.answer_range)), *recognized.answer_range.anchor,
                 dumps(recognized.observed_user_value)))
+
+
+def insert_export_preview(db, source_id, preview, observed_recognition, origin_operation_id=None):
+    pid = str(uuid4())
+    catalog, snapshot = preview.bundle.catalog, preview.snapshot
+    db.execute("""INSERT INTO notes_export_previews VALUES(?,?,?,?,?,?,?,?,?,?,?,?,'ready')""",
+        (pid, source_id, catalog["import_id"], catalog["import_version"], snapshot["activity_id"],
+         snapshot["result_version"], dumps(snapshot), dumps(asdict(observed_recognition)),
+         preview.source_fingerprints.semantic_hash, preview.source_fingerprints.structure_hash,
+         preview.source_fingerprints.value_hash, now()))
+    db.execute("INSERT INTO notes_export_context VALUES(?,?,?)", (pid, origin_operation_id,
+        dumps({item.blank_id: item.action for item in preview.items})))
+    return pid
+
+
+def owned_export_preview(db, teacher_id, preview_id):
+    row = db.execute("""SELECT p.*,s.teacher_id,s.spreadsheet_id,s.sheet_id,s.display_title,
+        coalesce(n.name_mode,'source') AS name_mode,n.custom_title,x.origin_operation_id,x.actions
+        FROM notes_export_previews p JOIN notes_sources s USING(source_id)
+        LEFT JOIN notes_export_context x USING(preview_id)
+        LEFT JOIN notes_catalog_names n ON n.import_id=p.import_id AND n.version=p.import_version
+        WHERE p.preview_id=? AND s.teacher_id=?""", (preview_id, teacher_id)).fetchone()
+    if row is None:
+        raise ApiError(404, "PREVIEW_NOT_FOUND")
+    return row
+
+
+def owned_operation(db, teacher_id, operation_id):
+    row = db.execute("""SELECT o.*,p.activity_id,p.import_id,p.import_version,p.result_version,
+        p.source_id,s.spreadsheet_id,s.sheet_id FROM notes_write_operations o
+        JOIN notes_export_previews p USING(preview_id) JOIN notes_sources s USING(source_id)
+        WHERE o.operation_id=? AND o.teacher_id=? AND s.teacher_id=?""",
+        (operation_id, teacher_id, teacher_id)).fetchone()
+    if row is None:
+        raise ApiError(404, "OPERATION_NOT_FOUND")
+    return row
+
+
+def operation_by_key(db, teacher_id, key):
+    return db.execute("SELECT operation_id,request_hash FROM notes_write_operations WHERE teacher_id=? AND idempotency_key=?",
+                      (teacher_id, key)).fetchone()

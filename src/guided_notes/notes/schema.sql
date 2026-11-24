@@ -100,3 +100,76 @@ ON CONFLICT(preview_id) DO NOTHING;
 INSERT INTO notes_catalog_names(import_id,version,name_mode,custom_title)
 SELECT import_id,version,'source',NULL FROM notes_catalogs WHERE 1
 ON CONFLICT(import_id,version) DO NOTHING;
+
+-- A preview records observations and intentions only; no write operation exists yet.
+CREATE TABLE IF NOT EXISTS notes_export_previews (
+    preview_id TEXT PRIMARY KEY,
+    source_id TEXT NOT NULL REFERENCES notes_sources(source_id),
+    import_id TEXT NOT NULL,
+    import_version INTEGER NOT NULL,
+    activity_id TEXT NOT NULL,
+    result_version TEXT NOT NULL,
+    snapshot TEXT NOT NULL,
+    observed_recognition TEXT NOT NULL,
+    semantic_hash TEXT NOT NULL,
+    structure_hash TEXT NOT NULL,
+    value_hash TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    status TEXT NOT NULL CHECK(status IN ('ready','consumed','invalidated')),
+    FOREIGN KEY(import_id,import_version) REFERENCES notes_catalogs(import_id,version)
+);
+CREATE INDEX IF NOT EXISTS notes_export_previews_source ON notes_export_previews(source_id,created_at);
+
+-- 002 owns courses. No shadow course table or automatic legacy allocation.
+CREATE TABLE IF NOT EXISTS notes_import_courses (
+    import_id TEXT PRIMARY KEY REFERENCES notes_imports(import_id),
+    course_id TEXT NOT NULL CHECK(length(course_id) BETWEEN 1 AND 128),
+    assigned_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS notes_import_courses_course ON notes_import_courses(course_id);
+CREATE TABLE IF NOT EXISTS notes_preview_courses (
+    preview_id TEXT PRIMARY KEY REFERENCES notes_import_previews(preview_id),
+    course_id TEXT NOT NULL CHECK(length(course_id) BETWEEN 1 AND 128)
+);
+CREATE TRIGGER IF NOT EXISTS notes_import_courses_no_move
+BEFORE UPDATE ON notes_import_courses BEGIN SELECT RAISE(ABORT,'course assignment is fixed'); END;
+
+CREATE TABLE IF NOT EXISTS notes_write_operations (
+    operation_id TEXT PRIMARY KEY,
+    preview_id TEXT NOT NULL UNIQUE REFERENCES notes_export_previews(preview_id),
+    teacher_id INTEGER NOT NULL REFERENCES teachers(id),
+    idempotency_key TEXT NOT NULL,
+    request_hash TEXT NOT NULL,
+    origin_operation_id TEXT REFERENCES notes_write_operations(operation_id),
+    root_operation_id TEXT REFERENCES notes_write_operations(operation_id),
+    status TEXT NOT NULL CHECK(status IN ('queued','writing','recovering','completed','needs_attention')),
+    blocks_source INTEGER NOT NULL CHECK(blocks_source IN (0,1)),
+    error_code TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    UNIQUE(teacher_id,idempotency_key)
+);
+CREATE TABLE IF NOT EXISTS notes_write_items (
+    operation_id TEXT NOT NULL REFERENCES notes_write_operations(operation_id),
+    question_id TEXT NOT NULL,
+    item_id TEXT NOT NULL,
+    blank_id TEXT NOT NULL,
+    status TEXT NOT NULL CHECK(status IN ('not_processed','verified','failed','unknown','skipped','conflict')),
+    error_code TEXT,
+    verified_at TEXT,
+    observed_value TEXT,
+    PRIMARY KEY(operation_id,blank_id)
+);
+CREATE TABLE IF NOT EXISTS notes_source_leases (
+    spreadsheet_id TEXT NOT NULL,
+    sheet_id INTEGER NOT NULL,
+    operation_id TEXT NOT NULL REFERENCES notes_write_operations(operation_id),
+    owner_token TEXT NOT NULL,
+    expires_at REAL NOT NULL,
+    PRIMARY KEY(spreadsheet_id,sheet_id)
+);
+CREATE TABLE IF NOT EXISTS notes_export_context (
+    preview_id TEXT PRIMARY KEY REFERENCES notes_export_previews(preview_id),
+    origin_operation_id TEXT REFERENCES notes_write_operations(operation_id),
+    actions TEXT NOT NULL
+);

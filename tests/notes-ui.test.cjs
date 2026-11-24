@@ -68,9 +68,35 @@ function namingScenario() {
   assert.equal(input.required,false);
 }
 
+function previewActivityScenario(stored, initial, expected) {
+  const input = {value: initial};
+  const browser = {
+    document: {querySelectorAll: selector => selector === "[data-current-activity]" ? [input] : []},
+    localStorage: {getItem: () => stored},
+  };
+  vm.runInNewContext(fs.readFileSync("src/guided_notes/notes/static/notes.js", "utf8"), browser);
+  assert.equal(input.value, expected);
+}
+
+function writebackConfirmationScenario() {
+  const button = {disabled:false};
+  let submit;
+  const form = {querySelector:() => button, addEventListener:(event, handler) => {submit=handler;}};
+  const browser = {document:{querySelectorAll:selector => selector === "form[data-writeback-confirm]" ? [form] : []}};
+  vm.runInNewContext(fs.readFileSync("src/guided_notes/notes/static/notes.js", "utf8"), browser);
+  submit();
+  assert.equal(button.disabled,true);
+  assert.match(button.textContent,/回讀/);
+}
+
 (async () => {
   namingScenario();
+  writebackConfirmationScenario();
+  previewActivityScenario('{"id":"last-activity"}', "", "last-activity");
+  previewActivityScenario('{"id":"last-activity"}', "typed-activity", "typed-activity");
+  previewActivityScenario("broken-json", "", "");
+  previewActivityScenario('{"id":123}', "", "");
   await scenario(false);
   await scenario(true);
-  console.log("Notes naming controls, activity handoff and failure recovery: passed");
+  console.log("Notes naming, preview activity selection, activity handoff and failure recovery: passed");
 })().catch(error => {console.error(error); process.exitCode = 1;});

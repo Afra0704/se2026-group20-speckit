@@ -64,6 +64,21 @@ def valid_identifier(value):
     return isinstance(value, str) and bool(value.strip())
 
 
+def get_activity_reference(teacher_context, activity_id):
+    """Teacher-only pinned activity identity for adjacent feature adapters."""
+    from ..auth import require_teacher
+    from ..db import connection
+    db = connection()
+    if teacher_context != require_teacher(db):
+        raise ApiError(403, "FORBIDDEN")
+    row = db.execute("SELECT id,import_id,import_version,phase FROM activities WHERE id=? AND teacher_id=?",
+                     (activity_id, teacher_context.teacher_id)).fetchone()
+    if row is None:
+        raise ApiError(404, "ACTIVITY_NOT_FOUND")
+    return {"activity_id": row["id"], "import_id": row["import_id"],
+            "import_version": row["import_version"], "ended": row["phase"] == "CLOSED"}
+
+
 def store_activity(db, teacher, import_id, version, questions):
     activity_id = secrets.token_urlsafe(18)
     code = secrets.token_hex(5).upper()

@@ -3,6 +3,10 @@
 <h1>講義已保存</h1><p class="muted">{{ title }} · 第 {{ catalog.import_version }} 版</p>
 <p class="muted">來源分頁：<a href="{{ source_url }}" target="_blank" rel="noopener noreferrer">{{ source_title }}</a></p>
 <div class="metrics"><strong>{{ catalog.question_count }} 題</strong><strong>{{ catalog.answer_item_count }} 個作答格</strong></div>
+{% if course %}
+<section class="card"><h2>{{ course.title }}</h2><a href="{{ url_for('notes.course_page', course_id=course.course_id) }}">返回課程講義</a>
+<p>已保存此課程的講義版本。請由課程管理的課堂入口選擇講義並開始活動；該入口待 002 接線。</p></section>
+{% else %}
 <section class="card"><h2>開始課堂活動</h2><p>活動會固定使用此版本，更換講義版本不會改動既有活動。</p>
   <form data-activity-form>
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -11,6 +15,7 @@
     <button>使用這份講義建立活動</button><p data-feedback role="status"></p>
   </form>
 </section>
+{% endif %}
 <section class="card"><h2>題目清單</h2><ol>{% for q in catalog.questions %}<li>題號 {{ q.display_number }} · {{ q['items']|length }} 個作答格</li>{% endfor %}</ol></section>
 <section class="card scroll"><h2>此版本的來源對應</h2><table>
   <thead><tr><th>題號</th><th>小題</th><th>已保存的答案格範圍</th></tr></thead>

@@ -2,6 +2,7 @@
 {% block title %}確認講義對應{% endblock %}
 {% block content %}
 <h1>確認講義對應</h1><p class="muted">{{ preview.title }}</p>
+{% if course %}<p>加入課程：{{ course.title }} · <a href="{{ url_for('notes.course_page', course_id=course.course_id) }}">返回課程講義</a></p>{% endif %}
 <p class="muted">來源分頁：{{ preview.source_title }} · {{ '自訂講義名稱' if preview.name_mode == 'custom' else '沿用工作表名稱' }}</p>
 <div class="metrics"><strong>{{ preview.question_count }} 題</strong><strong>{{ preview.answer_item_count }} 個作答格</strong></div>
 <p class="notice">每個主題號是一題。題組的全部小題一起提交，並共用同一勝組；請逐項核對下方對應。</p>

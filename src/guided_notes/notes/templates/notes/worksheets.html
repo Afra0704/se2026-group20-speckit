@@ -5,6 +5,7 @@
 {% if worksheets %}<form method="post" action="{{ url_for('notes.create_preview') }}">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <input type="hidden" name="spreadsheet_url" value="{{ spreadsheet_url }}">
+  {% if course %}<input type="hidden" name="course_id" value="{{ course.course_id }}"><p>加入課程：{{ course.title }}</p>{% endif %}
   <label>工作表<select name="sheet_id" required>{% for sheet in worksheets %}<option value="{{ sheet.sheet_id }}" {% if sheet.sheet_id == gid %}selected{% endif %}>{{ sheet.title }}</option>{% endfor %}</select></label>
   <p class="muted">一次匯入一個分頁。其他分頁可稍後分別匯入，不會自動合併。</p>
   <fieldset data-name-options>

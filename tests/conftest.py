@@ -52,3 +52,12 @@ def joined(app, activity):
     for client, name in zip(clients, ("甲組", "乙組")):
         assert post(client, "/activity-memberships", code=activity["code"], group_name=name).status_code == 201
     return clients
+
+
+@pytest.fixture
+def writable(app):
+    """Recorded Sheets failure substitute; settled results are injected per test."""
+    from writeback_support import WritableSheets
+    gateway = WritableSheets()
+    app.config.update(NOTES_GATEWAY=gateway, GET_CATALOG=None)
+    return gateway

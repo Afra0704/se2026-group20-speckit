@@ -10,7 +10,7 @@
     h1 { margin-bottom: 8px; } .muted { color: #516576; } .card { background: white; border: 1px solid #d5e0e7; border-radius: 12px; padding: 24px; margin: 20px 0; }
     label { display: block; margin: 14px 0; } input, select { display: block; width: 100%; box-sizing: border-box; padding: 12px; margin-top: 6px; border: 1px solid #94aab9; border-radius: 6px; font: inherit; }
     button { background: #155f88; color: white; border: 0; border-radius: 6px; padding: 12px 20px; font: inherit; cursor: pointer; } button:disabled { opacity: .55; cursor: wait; }
-    input[type="radio"] { display: inline-block; width: auto; margin: 0 8px 0 0; }
+    input[type="radio"], input[type="checkbox"] { display: inline-block; width: auto; margin: 0 8px 0 0; }
     fieldset { border: 1px solid #d5e0e7; border-radius: 8px; margin: 20px 0; padding: 16px; }
     [hidden] { display: none !important; }
     table { width: 100%; border-collapse: collapse; } th, td { text-align: left; border-bottom: 1px solid #d5e0e7; padding: 12px; vertical-align: top; } td { white-space: pre-wrap; overflow-wrap: anywhere; }
@@ -19,7 +19,7 @@
   </style>
 </head>
 <body><main>
-  <nav aria-label="主要導覽"><a href="{{ url_for('teacher.page') }}">教師活動管理</a><a href="{{ url_for('notes.index') }}">講義匯入</a></nav>
+  <nav aria-label="主要導覽"><a href="{{ url_for('teacher.page') }}">教師活動管理</a><a href="{{ url_for('notes.index') }}">講義匯入</a><a href="{{ url_for('notes.export_form') }}">活動回填預覽</a></nav>
   {% block content %}{% endblock %}
 </main><script src="{{ url_for('notes.static', filename='notes.js') }}" defer></script></body>
 </html>

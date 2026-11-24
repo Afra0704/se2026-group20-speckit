@@ -31,7 +31,7 @@
 - [ ] T001 與另一位組員核對 `specs/001-guided-notes/contracts/interfaces.md` 的 app factory、teacher context、provider、識別及欄位；在同檔記錄負責人與介面審查結果，並記錄 `diagrams/001-guided-notes-component.puml`、`diagrams/001-guided-notes-class.puml`、`diagrams/001-guided-notes-sequence.puml` 的組員圖意審查，保留 D01–D04、D06、D08 等未決事項，不代替 002／003 決策。
 - [X] T002 沿用 002 的共用 `pyproject.toml`／src layout／Python 3.13，加入 Google 官方依賴並更新 uv.lock；已完成 uv sync --locked、正式 .venv import smoke 與整合測試，結果見 validation.md。依已合併共用骨架採其 server-side CSRF，不另裝第二套 Flask-WTF。
 - [X] T003 [P] 在 `tests/fixtures/sheets_layouts.json` 建立單題跨欄答案、跨列題號兩小題題組、混合單題、移動欄列、重複標號、缺表頭及答案交疊的合成 GridData／merges，保留真空白、公式、格式與起始索引；於 `tests/fixtures/README.md` 說明預期題數／作答格數。依本次離線順序調整獨立驗證。
-- [ ] T004 [P] 在 `tests/conftest.py` 建立暫存 SQLite、授權／學生 context、可注入 ended snapshot 及可記錄批次／失敗／逾時的 Sheets substitute；測試不需憑證且不連真實來源，依賴 T002。
+- [X] T004 [P] 在 `tests/conftest.py` 建立暫存 SQLite、授權／學生 context、可注入 ended snapshot 及可記錄批次／失敗／逾時的 Sheets substitute；測試不需憑證且不連真實來源，依賴 T002。
 - [X] T005 依 quickstart 在 `README.md` 連結 `docs/google-sheets-setup.md`，記錄 Desktop OAuth project、Sheets API、測試使用者及 repo 外 client JSON 的準備方式，核對 `.gitignore` 排除憑證與 token；將可用／待設定的狀態記於 `specs/001-guided-notes/validation.md`，保留實際帳號設定給教師操作。
 
 **Checkpoint**: 兩人取得相同介面與可用 Python 環境，離線 fixtures／substitutes 就緒。Google 設定若未完成，保留人工驗收為待執行，離線工作可繼續。
@@ -83,20 +83,20 @@
 
 ### Tests for User Story 2
 
-- [ ] T026 [P] [US2] 在 `tests/contract/test_result_snapshot.py` 測試七組 examples、有勝組／無勝組、未結束、已結束但結算未就緒（RESULT_NOT_READY）、錯 import／result version、缺主題號／小題、混勝組、重複資料；錯誤拒絕回填，依賴 Phase 2 及 T014 的 catalog 契約定案。
+- [X] T026 [P] [US2] 在 `tests/contract/test_result_snapshot.py` 測試七組 examples、有勝組／無勝組、未結束、已結束但結算未就緒（RESULT_NOT_READY）、錯 import／result version、缺主題號／小題、混勝組、重複資料；錯誤拒絕回填，依賴 Phase 2 及 T014 的 catalog 契約定案。
 - [X] T027 [P] [US2] 在 `tests/unit/test_export_service.py` 定義原值／預定值／覆寫確認、文字等號／前導零／中文換行、精確 stringValue 回讀；同題組一次 RAW 與無勝組略過由 test_sheets_gateway／test_writeback_recovery 共同驗證。依本次離線順序調整先完成純函式測試，不宣稱 HTTP／DB 接線完成。
-- [ ] T028 [P] [US2] 在 `tests/integration/test_export_routes.py` 定義 CSRF／ownership、只接受 activity_id、篡改 preview、同 key 同作業、不同 payload 同 key、同來源並行及 read-back 失敗的報告，依賴 Phase 2。
+- [X] T028 [P] [US2] 在 `tests/integration/test_export_routes.py` 定義 CSRF／ownership、只接受 activity_id、篡改 preview、同 key 同作業、不同 payload 同 key、同來源並行及 read-back 失敗的報告，依賴 Phase 2。
 
 ### Implementation for User Story 2
 
-- [ ] T029 [US2] 在 `src/guided_notes/notes/models.py` 定義 ActivityReference、ResultSnapshot、UnitResult、ItemAnswer、ExportPreview、PreviewItem、WriteOperation／WriteItem／WriteReport；落實「結束後不可變；一個主題號一個 UnitResult，必須覆蓋整個 catalog」、「有勝組時所有小題恰好一次且答案非空；無勝組則 winner=null、answers=[]」、「answer_text 為字串；去空白只作有效性檢查，保存原字串不 trim」，action 嚴格為「write、already_matches、skip、requires_overwrite_confirmation」；winner 使用契約欄位 winner_group_id，依賴 T026–T027。
-- [ ] T030 [US2] 在 `src/guided_notes/notes/repository.py` 建立 previews／operations／items／source_leases，落實「UNIQUE(teacher_id, idempotency_key)，重複 key 不建立第二份作業，不同 payload 同 key 回 409」、「來源複合主鍵，短交易條件取得／續期／釋放」；owner token、同源互斥、30 秒 timeout 與 300 秒 lease 配合，不在網路期間持交易，依賴 T029、T028。
-- [ ] T031 [US2] 在 `src/guided_notes/notes/export_service.py` 接 server-side get_ended_snapshot，核對 ownership、ended 且結算完成、版本與完整成員；以主題號／小題身份比對來源，語意、結構及值指紋分離，純座標移動可重建預覽，題意或成員變更停止，不接受瀏覽器傳入勝組／目標替代資料，依賴 T021、T029–T030。
+- [X] T029 [US2] 在 `src/guided_notes/notes/models.py` 定義 ActivityReference、ResultSnapshot、UnitResult、ItemAnswer、ExportPreview、PreviewItem、WriteOperation／WriteItem／WriteReport；落實「結束後不可變；一個主題號一個 UnitResult，必須覆蓋整個 catalog」、「有勝組時所有小題恰好一次且答案非空；無勝組則 winner=null、answers=[]」、「answer_text 為字串；去空白只作有效性檢查，保存原字串不 trim」，action 嚴格為「write、already_matches、skip、requires_overwrite_confirmation」；winner 使用契約欄位 winner_group_id，依賴 T026–T027。
+- [X] T030 [US2] 在 `src/guided_notes/notes/repository.py` 建立 previews／operations／items／source_leases，落實「UNIQUE(teacher_id, idempotency_key)，重複 key 不建立第二份作業，不同 payload 同 key 回 409」、「來源複合主鍵，短交易條件取得／續期／釋放」；owner token、同源互斥、30 秒 timeout 與 300 秒 lease 配合，不在網路期間持交易，依賴 T029、T028。
+- [X] T031 [US2] 在 `src/guided_notes/notes/export_service.py` 接 server-side get_ended_snapshot，核對 ownership、ended 且結算完成、版本與完整成員；以主題號／小題身份比對來源，語意、結構及值指紋分離，純座標移動可重建預覽，題意或成員變更停止，不接受瀏覽器傳入勝組／目標替代資料，依賴 T021、T029–T030。
 - [X] T032 [US2] 在 `src/guided_notes/notes/sheets_gateway.py` 實作 numeric sheetId 單格 DataFilter 的 RAW 字串批次寫入，每主題號所有待寫答案單次請求，只改答案 anchor，不修改標號／格式／merge；讀回 userEnteredValue。依本輪調整先由 gateway mock 驗證；T027／T033–T034 的授權、完整題組檢查、lease、寫後回讀報告尚未完成。
-- [ ] T033 [US2] 在 `src/guided_notes/notes/export_service.py` 實作 ready→consumed／invalidated 的預覽狀態、確認、精確 overwrite_item_ids、idempotent operation、source lease、結果及來源的寫前重檢，逐提交單位執行；執行期限到則剩餘 not_processed，釋放來源並保留報告，依賴 T030–T032。
-- [ ] T034 [US2] 在 `src/guided_notes/notes/export_service.py` 建立回讀判定與報告，遵守「userEnteredValue.stringValue == answer_text」、「成功只能由回讀比對產生」；項目狀態為 not_processed／verified／failed／unknown／skipped／conflict，整體 queued／writing／recovering／completed／needs_attention；「整體只有 verified 與 skipped 時為 completed；全 skipped 亦可完成，報告明列零格寫入」，verified_at 可空，依賴 T033。
-- [ ] T035 [US2] 在 `src/guided_notes/notes/routes.py` 接 POST export-previews、POST export-previews/{id}/confirm、GET operations/{id}，重送 writing 作業回 202、終態回 200；驗證錯誤依契約，原始 Google payload 不回傳，依賴 T034。
-- [ ] T036 [US2] 在 `src/guided_notes/notes/templates/notes/export_preview.html`、`src/guided_notes/notes/templates/notes/report.html` 及 `src/guided_notes/notes/static/notes.js` 顯示原值／答案／勝組／覆寫確認與逐格狀態，未知不得顯示完成，完成後按需查詢報告，依賴 T035。
+- [X] T033 [US2] 在 `src/guided_notes/notes/export_service.py` 實作 ready→consumed／invalidated 的預覽狀態、確認、精確 overwrite_item_ids、idempotent operation、source lease、結果及來源的寫前重檢，逐提交單位執行；執行期限到則剩餘 not_processed，釋放來源並保留報告，依賴 T030–T032。
+- [X] T034 [US2] 在 `src/guided_notes/notes/export_service.py` 建立回讀判定與報告，遵守「userEnteredValue.stringValue == answer_text」、「成功只能由回讀比對產生」；項目狀態為 not_processed／verified／failed／unknown／skipped／conflict，整體 queued／writing／recovering／completed／needs_attention；「整體只有 verified 與 skipped 時為 completed；全 skipped 亦可完成，報告明列零格寫入」，verified_at 可空，依賴 T033。
+- [X] T035 [US2] 在 `src/guided_notes/notes/routes.py` 接 POST export-previews、POST export-previews/{id}/confirm、GET operations/{id}，重送 writing 作業回 202、終態回 200；驗證錯誤依契約，原始 Google payload 不回傳，依賴 T034。
+- [X] T036 [US2] 在 `src/guided_notes/notes/templates/notes/export_preview.html`、`src/guided_notes/notes/templates/notes/report.html` 及 `src/guided_notes/notes/static/notes.js` 顯示原值／答案／勝組／覆寫確認與逐格狀態，未知不得顯示完成，完成後按需查詢報告，依賴 T035。
 - [ ] T037 [US2] 執行 T026–T028，使用 fixture 完成從匯入版本到預覽、確認、回讀的完整流程，逐項核對 FR-006–FR-012、SC-002–SC-004；真實副本依 quickstart M04／M07／M09／M10 另留人工證據，將已執行及未執行部分寫入 `specs/001-guided-notes/validation.md`，依賴 T036。
 
 **Checkpoint**: 可用指定快照獨立展示單題及完整題組回填。只有已回讀一致的項目標成功，失敗與未知留待 US3 恢復。
@@ -109,16 +109,16 @@
 ### Tests for User Story 3
 
 - [X] T038 [P] [US3] 在 `tests/unit/test_writeback_recovery.py` 定義原值／預定答案／第三種內容、公式同顯示值、結果版變更、無勝組及部分題組恢復；題意／成員變更另由 test_import_service 驗證。明確驗證文字型別、勝組快照及已 verified 不重寫，依本次離線順序調整，真實作業恢復仍待 T039–T043。
-- [ ] T039 [P] [US3] 在 `tests/integration/test_writeback_restart.py` 定義第一題組成功後第二題組 timeout、寫入成功但回讀失敗、程式重啟、租約到期／失去 owner、兩作業爭用及 provider 版更換，驗證不直接重送，依賴 US2 離線核心完成。
+- [X] T039 [P] [US3] 在 `tests/integration/test_writeback_restart.py` 定義第一題組成功後第二題組 timeout、寫入成功但回讀失敗、程式重啟、租約到期／失去 owner、兩作業爭用及 provider 版更換，驗證不直接重送，依賴 US2 離線核心完成。
 
 ### Implementation for User Story 3
 
-- [ ] T040 [US3] 在 `src/guided_notes/notes/repository.py` 實作未終態作業轉 recovering、租約條件續期／釋放及原 operation／result_version 關聯；遵守「recovering 不能直接重送」與「重新確認的恢復預覽建立新 attempt，連回原 operation 並保留勝組快照」，依賴 T038–T039。
-- [ ] T041 [US3] 在 `src/guided_notes/notes/export_service.py` 實作先回讀再重建恢復預覽，原值未變可確認續填、相同答案 verified、第三種內容 conflict、題目／小題／結果變更停止；對純位置變動重建 binding；恢復一律保持原勝組與結果版本，依賴 T040。
-- [ ] T042 [US3] 在 `src/guided_notes/notes/routes.py` 實作 POST operations/{id}/recovery-preview，綁 owner 與 origin_operation_id，重用 confirm route 並要求新的 idempotency key，GET 報告不得觸發寫入，依賴 T041。
-- [ ] T043 [US3] 在 `src/guided_notes/notes/templates/notes/report.html`、`src/guided_notes/notes/templates/notes/export_preview.html` 及 `src/guided_notes/notes/static/notes.js` 加入恢復與衝突對照操作，提示預覽失效、已完成／待處理範圍、保留原勝組及再次確認，依賴 T042。
-- [ ] T044 [US3] 在 `src/guided_notes/notes/sheets_gateway.py` 對讀取 429／暫時 5xx 加有限退避與 jitter；寫入 timeout／不明 5xx 先回讀，不自動重送舊範圍，403／格式錯誤不盲重試；在 `tests/unit/test_google_retries.py` 用假時鐘及受控 transport 驗證，依賴 T041。
-- [ ] T045 [US3] 執行 T038、T039、T044，確認跨 request 的部分完成及單 request 已知無效的原子性分類；在 `specs/001-guided-notes/validation.md` 記錄 FR-009、FR-011、FR-015、SC-004 的實際結果，依賴 T043–T044。
+- [X] T040 [US3] 在 `src/guided_notes/notes/repository.py` 實作未終態作業轉 recovering、租約條件續期／釋放及原 operation／result_version 關聯；遵守「recovering 不能直接重送」與「重新確認的恢復預覽建立新 attempt，連回原 operation 並保留勝組快照」，依賴 T038–T039。
+- [X] T041 [US3] 在 `src/guided_notes/notes/export_service.py` 實作先回讀再重建恢復預覽，原值未變可確認續填、相同答案 verified、第三種內容 conflict、題目／小題／結果變更停止；對純位置變動重建 binding；恢復一律保持原勝組與結果版本，依賴 T040。
+- [X] T042 [US3] 在 `src/guided_notes/notes/routes.py` 實作 POST operations/{id}/recovery-preview，綁 owner 與 origin_operation_id，重用 confirm route 並要求新的 idempotency key，GET 報告不得觸發寫入，依賴 T041。
+- [X] T043 [US3] 在 `src/guided_notes/notes/templates/notes/report.html`、`src/guided_notes/notes/templates/notes/export_preview.html` 及 `src/guided_notes/notes/static/notes.js` 加入恢復與衝突對照操作，提示預覽失效、已完成／待處理範圍、保留原勝組及再次確認，依賴 T042。
+- [X] T044 [US3] 在 `src/guided_notes/notes/sheets_gateway.py` 對讀取 429／暫時 5xx 加有限退避與 jitter；寫入 timeout／不明 5xx 先回讀，不自動重送舊範圍，403／格式錯誤不盲重試；沿用 `tests/unit/test_sheets_gateway.py` 的假 sleep／jitter 及受控 transport 驗證，不新增重複測試，依賴 T041。
+- [X] T045 [US3] 執行 T038、T039、T044，確認跨 request 的部分完成及單 request 已知無效的原子性分類；在 `specs/001-guided-notes/validation.md` 記錄 FR-009、FR-011、FR-015、SC-004 的實際結果，依賴 T043–T044。
 - [ ] T046 [US3] 由另一位組員依 quickstart M06／M08 操作副本及恢復畫面，記錄外部編輯可偵測的差異與無法保證的讀寫競態、標明回讀時刻，在 `specs/001-guided-notes/validation.md` 留人工證據；無真實操作保持未完成，依賴 T045。
 
 **Checkpoint**: 恢復先讀後寫、內容衝突需明確確認、重啟後可追蹤原作業。外部競態限制與實際結果一致。
@@ -130,7 +130,7 @@
 
 ### Tests for User Story 4
 
-- [ ] T047 [P] [US4] 在 `tests/contract/test_question_set_exchange.py` 驗證兩題三格、子題順序、單位層唯一勝組、精確成員集合及舊匯入版本引用；缺項、混勝組、重複／額外小題與未知 blank_id 皆拒收，依賴 US1／US2 的 DTO 定案。
+- [X] T047 [P] [US4] 在 `tests/contract/test_question_set_exchange.py` 驗證兩題三格、子題順序、單位層唯一勝組、精確成員集合及舊匯入版本引用；缺項、混勝組、重複／額外小題與未知 blank_id 皆拒收，依賴 US1／US2 的 DTO 定案。
 - [ ] T048 [P] [US4] 在 `tests/integration/test_question_set_flow.py` 定義混合講義的 catalog→002／003 adapter→ended snapshot→回填→部分完成恢復流程，以受控 provider 驗證所有小題共用原勝組及完整確認；另保留實際模組整合情境，依賴 US1–US3 離線核心完成。
 
 ### Implementation for User Story 4
@@ -287,3 +287,34 @@ B 可協助 [P] 測試及 T001／T025／T046／T052 人工互驗。
 - [X] T062 在 test_lecture_names.py 與 notes-ui.test.cjs 驗證命名選擇、版本保留、來源變動、非法輸入、兩分頁各自匯入及舊資料升級；同步 spec／plan／contracts／三圖與 PNG。新畫面／圖意及跨組同步由人工作業續辦，不推定已完成。
 
 本增量後合計 29／62 項完成（既有核心 26／59，加上本輪 3／3）。回填作業、完整人工驗收、互審與 OpenSpec 同步狀態維持原待辦。
+
+## Phase 9: 已結算活動的唯讀回填預覽
+
+2026-11-24 使用者要求先做其他功能，課程／一次性課堂提案等待同學確認，不實作該提案。先抽出 T031／T035／T036 的唯讀預覽切片：依賴已發布 catalog、共用授權與已存在 get_ended_snapshot，無須等待 T030 的寫入作業／租約。只保存預覽、不提供確認寫入端點；原任務涉及寫入及恢復的部分保持未完成。正式結算尚未提供時回 RESULT_NOT_READY，測試使用 server-side GET_SETTLED_RESULTS substitute，不提供瀏覽器假勝組入口。
+
+- [X] T063 新增教師專用活動引用 adapter，將真實活動的 import/version 與可信 ended snapshot 核對；實作 server-owned 預覽持久化與權限重檢，來源移動可重辨識，題意或結果變更拒收。
+- [X] T064 提供建立／查看回填預覽的 HTML 與 JSON，列出題號、小題、勝組識別、原始值型別、預定文字、範圍及四種動作；GET 不重讀 Google，明示尚未寫入，加入教師頁入口。
+- [X] T065 測試 ownership／CSRF、未結束／未結算、結果完整性與版本、來源移動與變更、授權失效、文字保留、HTML escaping 與重啟保存；同步圖文與驗證證據，不代勾真實結算／寫入／人工驗收。
+
+本切片後 32／65 項完成。T028–T031／T035–T036 的完整作業與 UI、T050 的正式結果交接，以及所有原人工驗收任務仍未完成；T063–T065 只表示獨立唯讀切片已有實作及自動驗證，不代表可回填或全功能交付。
+
+## Phase 10: 001 課程講義切片
+
+2026-11-24 使用者回報 SpecKit 同學同意提案、分工已確認，授權先做 001 可做部分。002 課程 provider 尚未存在，先用 server substitute 測試；不等待課堂／活動切換完成，也不建立第二套課程 schema。既有未提交修改全部沿用。新增 adapter 約定屬待同學接線審查，不推定 OpenSpec 已同意。
+
+- [X] T066 建立 course provider 邊界與 notes_ 課程關聯附表，提供 list_course_catalogs／get_course_catalog，所有版本固定歸屬，跨教師／跨課程拒絕；缺 provider 安全回 503。
+- [X] T067 將 course context 串過列分頁、preview、確認及來源變動，提供課程講義 HTML／JSON 與舊未分配講義的明確分配操作；保留舊資料及 CatalogDTO，不自動搬移或建立課堂。
+- [X] T068 先測課程隔離／provider 缺少／輸入與權限／確認不可換課程／版本／重啟與舊資料／來源變動及分配重送，再同步文件、三圖與 PNG，提供 002 接線範例，人工及真實 002 接線另留未完成。
+- [ ] T069 與 002 依 docs/001-course-handoff.md 審查並接上真實 course provider、課程頁連結與活動精確版本限制，對齊 course FK／刪除政策及舊資料方案，完成兩課程／跨活動／不同批學生的人工驗收與圖意互審；記錄 OpenSpec 同步及 Issue 編號，沒有真實接線保持未完成。
+
+本輪新增三項已完成實作與自動驗證，以及一項真實接線／人工審查待辦，合計 35／69。T069 與完整回填／恢復／原人工驗收仍未完成，不以 test provider 代替正式課程功能。
+
+## 2026-11-25 既有回填任務續作順序
+
+使用者明確要求沿用既有實作，不補跑 specify／plan 流程，完成可獨立進行的部分。續作 T004、T026、T028–T031、T033–T045 與題組契約測試；先建立模擬寫入／失敗來源，再完成持久化、來源租約、確認、回讀與恢復。002／003 正式結算尚未提供時，以受控 GET_SETTLED_RESULTS 驗證既有 adapter；T050／T052／T069 及真實講義人工驗收不因此完成。
+
+實作依原圖表與契約，不新增使用者功能。為避免 export_service.py 同時承擔純函式與長作業，執行協調分檔至 notes/writeback.py，仍使用 export_service 的既有核心與 repository。來源互斥以實體 spreadsheet_id＋sheet_id 作鍵（不以各教師的 source_id 分開），加程序內 mutex 及短交易 DB lease；未知／中斷來源必須先恢復，不因 lease 過期直接重送。任何正式 Google 寫入均需真實已結算 provider 及教師明確確認，本輪工具僅使用替代來源測試。
+
+2026-11-25 實作模型落點：T029 沿用 models.py 的嚴格 DTO 驗證、export_service.py 的 ExportPreview／PreviewItem，以及 schema／repository／writeback 的作業與報告結構，不另建立同義空殼類別。T040–T041 的持久化協調分檔 writeback.py。T026 的未結束／未結算 provider 情境重用 test_export_previews.py。T044 沿用既有 gateway 測試，再由 writeback restart 測試驗證先讀後恢復，不重複建立 test_google_retries.py。
+
+本輪新增完成 T004、T026、T028–T031、T033–T036、T039–T045、T047 共 18 項，累計 53／69。T037／T046 的真實寫入人工證據、T048 的完整實際模組整合、T050–T052 正式結算／兩組學生驗收與 T069 課程接線仍未完成，並保留最終分析／收斂／互審待辦。

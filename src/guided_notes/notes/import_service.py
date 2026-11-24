@@ -94,15 +94,21 @@ def get_catalog(teacher_context, import_id, import_version):
                                                    import_id, import_version)["dto"]))
 
 
-def create_preview(teacher_context, gateway, spreadsheet_id, sheet_id, name_mode="source", custom_title=None):
+def create_preview(teacher_context, gateway, spreadsheet_id, sheet_id, name_mode="source", custom_title=None,
+                   course_id=None):
     from ..auth import require_teacher
     from ..db import write_transaction
     from .recognition import recognize
     from . import repository as repo
+    from .course_catalogs import get_owned_course
     name_mode, custom_title = normalize_lecture_name(name_mode, custom_title)
+    if course_id is not None:
+        get_owned_course(teacher_context, course_id)
     sheet = gateway.read_sheet(spreadsheet_id, sheet_id)
     recognized = recognize(sheet)
     hashes = fingerprints(recognized)
+    if course_id is not None:
+        get_owned_course(teacher_context, course_id)
     with write_transaction() as db:
         current_teacher = require_teacher(db)
         if current_teacher != teacher_context:
@@ -110,7 +116,7 @@ def create_preview(teacher_context, gateway, spreadsheet_id, sheet_id, name_mode
             raise ApiError(403, "TEACHER_REQUIRED")
         source_id = repo.source(db, teacher_context.teacher_id, spreadsheet_id, sheet_id,
                                 sheet["properties"].get("title", str(sheet_id)))
-        return repo.insert_preview(db, source_id, recognized, hashes, name_mode, custom_title)
+        return repo.insert_preview(db, source_id, recognized, hashes, name_mode, custom_title, course_id)
 
 
 def confirm_preview(teacher_context, preview_id, gateway_factory, existing_import_id=None):
@@ -119,6 +125,7 @@ def confirm_preview(teacher_context, preview_id, gateway_factory, existing_impor
     from ..http import ApiError
     from .recognition import recognize
     from . import repository as repo
+    from .course_catalogs import check_import_context, get_owned_course
 
     def existing_result(row, db):
         if row["status"] == "confirmed":
@@ -132,10 +139,14 @@ def confirm_preview(teacher_context, preview_id, gateway_factory, existing_impor
 
     db = connection()
     row = repo.owned_preview(db, teacher_context.teacher_id, preview_id)
+    course_id = row["course_id"]
+    if course_id is not None:
+        get_owned_course(teacher_context, course_id)
     result = existing_result(row, db)
     if result is not None:
         return result, None
     if existing_import_id is not None:
+        check_import_context(db, teacher_context.teacher_id, existing_import_id, course_id)
         target = repo.owned_import(db, teacher_context.teacher_id, existing_import_id)
         if target["source_id"] != row["source_id"]:
             raise ApiError(409, "SOURCE_CHANGED")
@@ -144,6 +155,8 @@ def confirm_preview(teacher_context, preview_id, gateway_factory, existing_impor
     current = recognize(current_sheet)
     title = current_sheet["properties"].get("title", row["display_title"])
     hashes = fingerprints(current)
+    if course_id is not None:
+        get_owned_course(teacher_context, course_id)
     with write_transaction() as db:
         if require_teacher(db) != teacher_context:
             raise ApiError(403, "TEACHER_REQUIRED")
@@ -155,13 +168,16 @@ def confirm_preview(teacher_context, preview_id, gateway_factory, existing_impor
         if (row["semantic_hash"], row["structure_hash"], row["value_hash"]) != (
                 hashes.semantic_hash, hashes.structure_hash, hashes.value_hash):
             db.execute("UPDATE notes_import_previews SET status='invalidated' WHERE preview_id=?", (preview_id,))
-            next_id = repo.insert_preview(db, row["source_id"], current, hashes, row["name_mode"], row["custom_title"])
+            next_id = repo.insert_preview(db, row["source_id"], current, hashes, row["name_mode"], row["custom_title"], course_id)
             return None, next_id
         if existing_import_id is None:
             import_id = str(uuid4())
             version = 1
             db.execute("INSERT INTO notes_imports VALUES(?,?)", (import_id, row["source_id"]))
+            if course_id is not None:
+                db.execute("INSERT INTO notes_import_courses VALUES(?,?,?)", (import_id, course_id, repo.now()))
         else:
+            check_import_context(db, teacher_context.teacher_id, existing_import_id, course_id)
             target = repo.owned_import(db, teacher_context.teacher_id, existing_import_id)
             if target["source_id"] != row["source_id"]:
                 raise ApiError(409, "SOURCE_CHANGED")

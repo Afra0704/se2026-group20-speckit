@@ -1,7 +1,7 @@
 # Quickstart Validation Guide
 
 此指南對應 [plan.md](plan.md)、[format.md](contracts/format.md) 及 [interfaces.md](contracts/interfaces.md)。
-2026-11-24 已完成教師匯入頁面、工作表選擇、預覽確認、同一 DB 的版本保存與 get_catalog 接線。Flask init-db／authorize-sheets 已註冊。API／HTML 表單測試與真實雲端匯入驗證已完成；瀏覽器畫面與兩位組員完整人工驗收尚待執行。production 回填／恢復仍未完成。
+2026-11-25 已完成教師匯入、版本保存、課程講義邊界、回填確認／報告／恢復的 HTTP 與 DB 接線；Flask init-db／authorize-sheets 已註冊。自動回填驗證使用替代來源及可信結算 substitute，正式結算 provider、課程 provider 與兩位組員完整人工驗收仍待執行，不代表已對真實副本寫入。
 
 ## 目前可執行的 CMD 啟動流程
 
@@ -110,6 +110,30 @@ uv run --locked pytest tests/unit tests/contract tests/integration
 | = 開頭、前導零、中文換行 | gateway integration | RAW 字串保存，非 formula；精確回讀，FR-010 |
 
 ## 真實 Sheets 人工驗收
+
+### 課程內講義（001 已實作，002 待接線）
+
+002 提供 course_service.get_owned_course 後，從其課程頁連到 `/teacher/notes/courses/<course_id>`。001 提供從這門課匯入、查看所有明確版本及把未分配舊講義加入課程；既有未分配講義的匯入與活動流程保留。課程內講義須從 002 的課堂入口建立活動，001 不另造課堂或加入碼。
+
+目前本機尚無正式 002 course provider，因此手動開啟課程網址會回 503 COURSE_UNAVAILABLE，屬預期接線限制；不要為了展示而將測試假課程 provider 放進正常設定。可先執行 `.venv\Scripts\python.exe -m pytest tests/integration/test_course_catalogs.py -q` 驗證 001 邊界。
+
+交給同學的函式、路由、欄位及錯誤範例見 [接線文件](../../docs/001-course-handoff.md)。OpenSpec 同步、正式課程／課堂／活動切換與兩人完整人工驗收待完成。
+
+### 已接線的回填與恢復入口（2026-11-25）
+
+重新啟動既有服務後，在教師頁點「活動回填預覽」。同一瀏覽器會自動帶入最近教師活動的 activity_id；也可手動輸入活動識別，不能用學生加入碼代替。按「讀取來源並建立預覽」會讀取該活動綁定的講義及可信已結算結果，列出原值／答案／勝組識別／範圍與預定動作。
+
+活動未結束會提示先結束；已結束但結果模組尚未完成正式結算時顯示「結果尚未結算」，這是目前正確的阻擋。請同學接妥 GET_SETTLED_RESULTS 與不可變 snapshot 後，再進行真實勝組預覽；不要將測試假結果放進正式啟動設定。
+
+預覽本身不寫來源，保存後可重啟查看，但不是即時資料。確認頁提供「確認回填並回讀核對」，原格已有不同內容時必須勾選該項覆寫確認；送出後轉到逐格報告。來源或結果改變時拒絕舊預覽；題意／成員改變需重新匯入並核對活動版本。
+
+報告區分回讀一致、無勝組略過、明確失敗、未知、衝突及未處理；只有全部適用項目 verified 才算整組完成。未知／部分完成時按「先回讀並建立恢復預覽」，檢查新位置與衝突，再次確認。恢復保持原結果版本與勝組，已為相同文字的格不重寫。
+
+確認重送使用同一 Idempotency-Key 回原作業，不重新寫入。HTML 表單自動帶 key；JSON 呼叫需自行提供 header，body 為 `{"confirm":true,"overwrite_item_ids":[]}`。恢復必須使用新 preview 與新 key。GET 報告不連 Google、不觸發寫入。
+
+單程序／共用 DB 以物理試算表＋工作表 mutex 與 300 秒 lease 互斥；未完成來源先恢復，不能靠過期 lease 直接新建另一作業。程式中斷後，若舊 lease 尚有效，需待到期再建立恢復預覽；報告查詢會將已失去有效 lease 的 writing 作業標 recovering。預設 120 秒執行預算在題組邊界停止，不會中斷已送出的請求或啟動背景 worker。外部編輯與 Google 逾時請求無跨系統鎖定／取消保證，回讀時間只代表觀察當下。
+
+M04–M10 仍需真實副本人工驗收，不因自動測試通過而視為完成。
 
 由 A、B 交叉執行，在自己的可編輯副本操作。以下全部尚未執行。
 

@@ -6,6 +6,12 @@
 
 ## Summary
 
+2026-11-25 既有回填實作：notes/writeback.py 負責同步確認／執行／報告／恢復，export_service 保留純判定及預覽。repository／schema 保存 operations、逐格紀錄、物理來源複合鍵 lease 及 recovery origin／actions，避免修改舊 preview 表。每次 send 前持久化 unknown，只有回讀一致才 verified；未終態 lease 過期後查報告改 recovering，不自動送出。程序內 mutex＋300 秒 DB lease 防止同來源交錯，不確定或部分完成保留 blocks_source，須同 lineage 的明確恢復；一次 request 預設 120 秒，僅在題組邊界停止，不建立背景 worker。這是原已規劃 T028–T045 的接線，非新增規格迭代。
+
+2026-11-24 課程講義切片（T066–T068）：新增 notes/course_catalogs.py 作 002 provider 邊界，預期 activities.course_service.get_owned_course，回 {course_id,teacher_id,title}；缺少入口回 COURSE_UNAVAILABLE。course_id 為不透明 URL-safe 字串（1–128 個英文字母／數字／底線／連字號，UUID 可直接使用）。notes_import_courses 以 import_id 為主鍵，一份 import 固定屬於零或一個課程，notes_preview_courses 保存選定 context。課程清單包含各講義所有明確版本的顯示 metadata，get_course_catalog 限制同課程的精確版本。舊資料保持未分配，可明確加入課程；不自動搬移或改寫 catalog。002 尚未接線，只在測試注入 GET_OWNED_COURSE。
+
+2026-11-24 續作切片：先完成已結算活動的唯讀回填預覽（T063–T065）。002 的教師專用 get_activity_reference 提供固定 import/version；003 既有 get_ended_snapshot 驗證結束及結算。001 核對兩者、讀來源並保存 server-owned snapshot／觀察／三種指紋，讀取後重檢教師與結果。GET 只展示保存觀察，不觸發外部讀寫；寫入確認、lease 與恢復仍待後續。課程／一次性課堂提案不納入本輪實作。
+
 採單一 Flask 本機服務、Jinja 頁面與少量 JavaScript，使用 Google 官方用戶端讀取儲存格及合併範圍。
 每個主題號形成一個提交單位，題組保留有序小題識別。SQLite 保存不可變匯入版本、來源對應、預覽與回填紀錄。
 回填只接收伺服器取得的已結束活動快照，每題組一個批次寫入請求，寫後回讀，未知結果先查明再恢復。

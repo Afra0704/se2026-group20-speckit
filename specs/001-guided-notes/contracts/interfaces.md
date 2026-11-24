@@ -55,7 +55,7 @@ CatalogDTO 不包含來源範圍、原值、憑證或題目敘述。題組前端
 
 ## Teacher HTTP / UI contracts
 
-2026-11-24 匯入、預覽、確認與 catalog 查詢路由已建立；export／operation 路由仍為待實作目標。所有 `/teacher/notes` route 必須登入教師，並檢查對象 ownership；
+2026-11-25 匯入、catalog、export confirm／operation／recovery 路由均已建立；正式課程／結算 provider 與人工驗收待接線。所有 `/teacher/notes` route 必須登入教師，並檢查對象 ownership；
 所有 POST 使用共用 app 的 CSRF 驗證。JSON POST 使用 `X-CSRFToken`，既有 002 也可使用 `X-CSRF-Token`。HTML 表單用 `name="csrf_token"` 的隱藏欄位，值由共用 Jinja 的 `csrf_token()` 取得。
 
 | Route | 輸入 | 成功結果 |
@@ -187,3 +187,37 @@ POST import-previews 可選 `name_mode`（source|custom，預設 source）與 `c
 preview JSON 的 title 為有效顯示名稱，新增 source_title 與 name_mode；不返回任何憑證。命名選擇儲存於 server preview，confirm 不接受 name_mode／custom_title；來源變動新建 preview 時複製原選擇。
 CatalogDTO／ResultSnapshotDTO 不改。教師 HTML 從 notes_catalog_names 取得各版本顯示 metadata，並另外顯示原始分頁與來源連結。不同分頁仍分別建立 sources／imports，不支援跨分頁重綁或自動合併。
 目前沒有 production 的執行 driver，測試中的 InMemorySheets 僅是替代來源；不能拿它代替正式 provider／儲存。
+
+### 2026-11-24 唯讀回填預覽已接線（T063–T065）
+
+- 新增 `activities.teacher.get_activity_reference(teacher_context, activity_id)`，返回真實活動的 activity_id／import_id／import_version／ended，驗證目前教師與 ownership；未知或其他教師活動為 404 ACTIVITY_NOT_FOUND。不改既有活動 DTO／狀態／加入規則，需與同學互審此新增 adapter。
+- `POST /teacher/notes/export-previews` 僅接受 activity_id；HTML 另接受 csrf_token。額外 snapshot／答案／來源等欄位一律 400 INVALID_REQUEST。先核對活動與固定 catalog，再使用既有 `quiz.results_gateway.get_ended_snapshot`；未結束／未結算／不完整或跨版本結果在 Google 呼叫前拒絕。
+- 讀取後重新核對權限、活動引用與完整結果（不只 result_version）。短交易保存 source／catalog 外鍵、可信 snapshot、目前辨識及三種指紋；所有來源／provider 呼叫在交易外。回 201，包含 preview_id、status、activity_id、import_id/version、result_version、title、source_title、sheet_id、created_at、題數／作答數、items、counts、preview_url；不返回原始 Google payload 或完整 snapshot。
+- items 僅含題／小題／blank 識別、顯示標號、winner_group_id、answer_range、original_user_value（保留 string／number／bool／formula 型別）、proposed_text 與 action。四種 action 沿用原契約，counts 是各 action 格數，並非回填成功數。
+- `GET /teacher/notes/export-previews` 提供表單及擁有者保存的預覽清單；HTML POST 成功 303 轉向 `GET /teacher/notes/export-previews/{id}`。該 GET 預設 HTML，Accept: application/json 返回上述資料，只讀本機保存觀察，不驗證外部即時性，也不觸發 Google 讀寫。
+- 確認／operation／恢復 route 尚未提供；沒有預覽確認按鈕，不存在寫入捷徑。沒有正式 GET_SETTLED_RESULTS provider 時維持 RESULT_NOT_READY，測試的 substitute 不加入正常啟動設定。
+
+### 2026-11-24 課程講義接線（T066–T068）
+
+完整交接、範例與 002 待辦見 [001-course-handoff](../../../docs/001-course-handoff.md)。以下為 001 本輪實作約定，待 002 接線審查，不宣稱對方已實作或 OpenSpec 已確認。
+
+- 002 提供 `activities.course_service.get_owned_course(teacher_context, course_id)` → `{course_id,teacher_id,title}`。course_id 為 1–128 個英文字母／數字／底線／連字號；未知／他人課程 404 COURSE_NOT_FOUND。缺 provider 503 COURSE_UNAVAILABLE，001 不自行建立課程。
+- 001 提供 `notes.course_catalogs.list_course_catalogs(teacher_context,course_id)`，返回 course_id、title、lectures（import_id 與 versions metadata）；versions 包含明確 import_version、title、source_title、question_count、answer_item_count、confirmed_at，按版本降冪。沒有來源座標／憑證。
+- `get_course_catalog(teacher_context,course_id,import_id,import_version)` 核對教師／課程／關聯後返回原 CatalogDTO。002 建立課程活動必須呼叫此入口，不能只用舊的教師範圍 get_catalog。
+- GET `/teacher/notes/courses/{course_id}` 為 HTML 匯入與版本清單；GET `.../catalogs` 及 `.../catalogs/{import_id}/versions/{version}` 為教師 JSON。
+- POST worksheets／import-previews 可帶 course_id，後端在建構 Google client 前驗證；service 亦在讀取前後驗證。course_id 缺省保持 legacy；顯式 null／空白／非法格式 400。preview 回傳 course_id（legacy null）；confirm 若帶 course_id 一律 400，不接受換課程。
+- POST `/teacher/notes/courses/{course_id}/lectures` 明確將自己未分配的 import 及所有版本加入課程，僅接受 import_id（HTML 另 csrf_token），成功 200 `{course_id,import_id}`；HTML 303 回課程頁。同關聯重送不重複，不同課程 409 COURSE_MISMATCH；不改 DTO／來源／舊活動。
+- 不改原 snapshot 契約或活動碼；002 課程生命週期／刪除政策與活動 reference 仍須對齊，正式 FK 及課堂接線不在此切片完成範圍。
+
+### 2026-11-25 既有回填作業與恢復已接線
+
+本節取代 11/24 的「僅預覽」實作狀態；不改上方原定公開 DTO 與路由。
+
+- confirm 僅接受 confirm／overwrite_item_ids；JSON 必須 Idempotency-Key header（1–128 個可見 ASCII、無空白），HTML 表單另帶 csrf_token／idempotency_key。key 綁教師與正規化 payload，同 key 改 preview／覆寫集合 409 IDEMPOTENCY_CONFLICT，已 consumed preview 改 key 409 PREVIEW_STALE。缺少／多餘覆寫項目 409，缺項驗證不 consume preview。
+- 短交易保存 operation、逐格狀態與 preview consumed，物理 spreadsheet_id＋sheet_id lease／owner token，網路呼叫在交易外。相同 key 執行中回 202，終態回 200；正常確認完成後 HTML 303 到報告。
+- 寫前／逐題組重檢教師、真實活動引用、完整結果及來源。每次 send 前先保存 unknown，故中斷不會被誤認未送出。每題組一次既有 RAW gateway；已相同／無勝組不寫。寫後即重新辨識來源並按身份讀值，只有精確 stringValue 相同為 verified。
+- 寫前失效回 409（或對應權限／來源錯誤），context 含 operation_id，可查終止報告；舊 preview invalidated。送出後失敗／未知以 needs_attention 報告表達，未送出的單位保留 not_processed，不自動重送。lease 遺失停止後續寫入。
+- GET operations 僅讀本機；無有效 lease 的 queued／writing 可改 recovering，但不連 Google／不寫 Sheets。報告含原契約欄位及安全 error_code；不含原始 API payload／答案／憑證。
+- POST recovery-preview 僅接受空 JSON（HTML 另 csrf_token），先重檢原結果與目前來源／語意，再回讀；201 回原預覽格式及 origin_operation_id，HTML 303。新預覽保存原勝組、原 result_version 與判定 actions；再以新 key 明確確認才會寫入。即使已全部相同也可返回無待寫項的新預覽，舊報告同時記錄已回讀一致。
+- 同源未完成 attempt 保留 blocks_source；只有該 lineage 的恢復可接續，完成後解除 root lineage 阻擋。程序 mutex 與 DB lease 皆以物理來源作鍵，跨教師各自的 source_id 也不得交錯。單程序／共用 DB 為適用邊界，不能代替 Google 外部編輯鎖。
+- 執行預算預設 120 秒（server config NOTES_WRITE_SECONDS 可供測試調整），在題組邊界保留剩餘工作，不啟動未管理背景執行緒。lease 300 秒、SDK 30 秒 timeout；逾時不能證明遠端取消，恢復仍先讀後確認。

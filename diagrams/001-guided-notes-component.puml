@@ -9,6 +9,7 @@ title 001 Guided Notes - Component Diagram (Merged Headers / Main Questions and 
 component "Teacher Workspace" as UI
 component "Teacher Authorization\n(adjacent module)" as Auth
 component "Activity Module\nended state / bound import" as Activity
+component "002 Course Ownership Provider\nget_owned_course" as Courses
 component "Result Module\nversioned winning answers" as Results
 package "Guided Notes Feature" {
  component "Import and Recognition\nHeaders, merged ranges / subitems" as Import
@@ -26,6 +27,8 @@ No source rename is performed.
 end note
 UI --> Export : preview / confirm / report
 Import --> Auth : authorize
+Import --> Courses : verify course context before Google and publication
+Catalog --> Courses : authorize scoped lecture list / exact version
 Export --> Auth : authorize and recheck
 Import --> Catalog : publish versioned mapping
 Catalog --> Activity : versioned main questions and items
@@ -47,6 +50,11 @@ Activity receives main questions and ordered subitems.
 Source positions stay in this feature.
 end note
 note bottom of Export
+Executor: writeback.py uses export_service pure core.
+DB lease plus process mutex key the physical spreadsheet / sheet.
+Unresolved attempts block unrelated writes until recovery.
+Read-only preview stores provider snapshot and source observations.
+GET displays saved observations without network or writes.
 Changed source invalidates preview.
 Only read-back matches are successful.
 A merged main number defines one unit and winner.

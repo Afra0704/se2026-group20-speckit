@@ -262,3 +262,102 @@ Class 新增 ImportPreview、來源擁有者與發布關係；Sequence 補 serve
 
 Class 補 LectureDisplayName metadata；Component／Sequence 補一次一分頁與命名選擇保存。PlantUML CLI 重渲染三張 PNG，退出碼 0；新的命名畫面與圖意待組員人工審查。本輪未重試先前無法連線的瀏覽器工具，不宣稱已完成人工外觀驗收。
 新增 T060–T062 三項已完成，總計 29／62（原核心 26／59）。完整勝組回填、操作恢復、跨模組與人工驗收待辦維持原狀態。
+
+## 2026-11-24：唯讀勝組答案回填預覽（T063–T065）
+
+執行者 Codex，基準 f96ba71，沿用 codex/001-guided-notes-implementation。使用者要求先等同學確認課程／一次性課堂提案，已將提案記為待討論，未變更現有加入碼／分組／活動階段。規格 requirements checklist 16／16，未修改標記；實作前後均無 .specify/extensions.yml，因此無 hooks 可執行。
+
+新增教師專用 activity-reference adapter，從真實活動取得固定講義版本。回填預覽只接受 activity_id，透過既有 get_ended_snapshot 驗證已結束且結算完成，以該固定 catalog 驗證整組完整性；來源讀取後再次核對教師、活動引用及完整結果，網路呼叫均在 SQLite 短交易外。新增 notes_export_previews 保存原字串答案、原始值型別、目前辨識及三種指紋；既有 catalog／bindings 不改。GET 讀保存觀察，重啟後仍可查看，不重讀 Google，不具有新鮮度保證。
+
+HTML／JSON 顯示講義／活動／結果版本、主題號與小題、勝組識別、合併答案範圍及四種預定動作。公式與文字、數字、布林值分開顯示，HTML escaping；無勝組略過，精確相同文字只標「預覽觀察」，不冒充寫入成功。教師頁加入入口，預覽表單可帶入本瀏覽器最近 activity_id；storage 損壞或缺少時仍可手動輸入。
+
+### 測試與結果
+
+先建立 test_export_previews，既有程式因缺 route 回 404，符合預期失敗。實作期間修正 Jinja 的 dict.items 屬性碰撞，並修正合成 fixture 中省略空白 cell 的測試設定，重驗通過。
+
+| 指令 | 實際結果 |
+| --- | --- |
+| `.venv/Scripts/python.exe -m pytest tests/integration/test_export_previews.py -q` | 18 passed，12.30 秒 |
+| `.venv/Scripts/python.exe -m pytest tests/unit tests/contract tests/integration -q --maxfail=2` | **136 passed、98 subtests passed，41.48 秒，退出碼 0** |
+| `node tests/notes-ui.test.cjs` | 命名、最近活動帶入／保留手動輸入／損壞紀錄，以及原活動交接／失敗恢復通過 |
+| `node tests/activity-sync.test.cjs` | 舊階段回應不覆蓋新狀態，通過 |
+| PlantUML CLI（render-report 同一指令） | 三類 .puml 已更新並產生同目錄 PNG，退出碼 0 |
+
+18 個新案例包含單題、題組、無勝組、原值／公式與相同文字、前後空白／換行／等號保留、結果缺項／混勝組／跨版本／跨活動／機敏額外欄位、來源移動及語意改變、client 篡改拒絕、未登入／學生／他人教師／未知活動／CSRF、Google 權限不足、讀取途中授權失效、結果版本或同版本內容改變，以及重啟持久化／HTML POST 轉向。Sheets substitute 在網路邊界斷言無 DB 寫交易，任何 write_unit 都會使測試失敗。
+
+### 限制與交接
+
+本輪全部使用 pytest 暫存 DB 與受控 GET_SETTLED_RESULTS／Sheets substitute，未讀取私密憑證，未寫入使用者 DB 或任何真實 Google Sheets。沒有將假結算 provider 加入正式設定；正常結果尚未就緒時回 RESULT_NOT_READY。需同學完成正式結算且提供不可變 snapshot，並互審新 get_activity_reference adapter，再進行真實勝組預覽人工驗收。
+
+尚未提供 confirm／operation／recovery routes，沒有寫入確認按鈕；來源租約、idempotency、寫前重檢、實際回填／回讀、部分失敗恢復仍為後續工作。本輪新增畫面及圖意未做真人驗收，不代勾 T025／T037／T046／T050–T059。T063–T065 完成後總計 32／65；完整功能尚未交付。
+
+## 2026-11-24：001 課程講義切片（T066–T068）
+
+執行者 Codex，沿用 f96ba71 所在分支及上一輪全部未提交修改，沒有重建或覆蓋唯讀回填預覽。使用者回報由自己提出的課程／一次性課堂方向獲 SpecKit 同學同意、分工確認，要求先做 001 的部分。共同需求改記此回報，保留確認者姓名、Issue 編號及 OpenSpec 同步未提供；不是雙組皆確認的聲明。規格品質 checklist 16／16，未更改標記；實作前後無 extensions.yml，無 hooks。
+
+### 已實作
+
+- notes/course_catalogs.py 查詢 002 的 get_owned_course（course_id、teacher_id、title），缺 provider 503 COURSE_UNAVAILABLE；不建立課程或課堂資料表。server config GET_OWNED_COURSE 供測試 adapter 注入，不接受 HTTP 自填 provider／ownership。
+- 新增 notes_import_courses／notes_preview_courses 附表，不改 catalog JSON、UUID／版本、來源 bindings 或既有活動。每個 import 固定零或一個課程，所有版本沿用，初始化不自動分配舊資料。
+- 課程 HTML 提供匯入、全部已確認版本及未分配舊講義的明確分配表單；list_course_catalogs／get_course_catalog 與對應教師 JSON routes 供 002 選擇精確版本，同教師跨課程也拒絕。
+- course_id 串過列分頁、server preview、來源變動的替代 preview、確認及保存。讀 Google 前後重檢課程 ownership，所有 provider／Google 呼叫在寫交易外。confirm body 不可換課程，更新既有 import 在交易前及內檢查相同 context。
+- 舊講義明確分配採短交易，同課程重送冪等、不同課程 409 COURSE_MISMATCH；並行不覆蓋。已分配講義的保存頁導回課程講義，待 002 的課堂入口，不從舊按鈕繞過新流程。無課程 legacy 路徑保留。
+
+### 實際驗證
+
+先建立 test_course_catalogs，既有 preview 沒有 course_id 而出現預期 KeyError。實作後課程測試先通過 19 案，再增加不可信 provider／並行分配，單獨通過 25 案；最後新增並行課程 preview 確認及舊活動不變斷言，一併納入完整回歸通過。
+
+| 指令／檢查 | 結果 |
+| --- | --- |
+| `.venv/Scripts/python.exe -m pytest tests/unit tests/contract tests/integration -q --maxfail=2` | **162 passed、98 subtests passed，98.97 秒，退出碼 0** |
+| `node tests/notes-ui.test.cjs` | 通過 |
+| `node tests/activity-sync.test.cjs` | 通過 |
+| PlantUML CLI（render-report 相同命令） | 實作前更新三類圖並渲染同目錄 PNG，退出碼 0 |
+
+新增課程套件共 26 個案例：兩課程清單隔離／明確版本與名稱、跨教師及未知課程、provider 缺少／無效形狀／錯 owner／多餘機敏欄位不輸出、course_id 顯式非法值、確認不可換課程、來源移動後保留課程、跨課程更新與 catalog 拒絕、讀取前／途中撤銷課程權限、舊講義分配冪等／跨課程衝突、舊 DTO 與既有活動不變、HTML escaping／hidden context、CSRF、重啟保留一筆關聯與未分配資料，以及並行分配／並行確認只產生一筆關聯。
+
+測試僅使用 pytest 暫存 SQLite、合成 Sheets 及受控 course provider；未存取私密憑證或寫入真實 Google Sheets，未修改使用者正式資料庫。正式服務需在正常重啟後執行相同冪等新增表初始化，原資料不會自動搬移。
+
+### 待同學接線與人工驗收
+
+docs/001-course-handoff.md 已列預期 `activities.course_service.get_owned_course`、課程講義頁連結、清單／精確版本函式與 HTTP、分配／錯誤範例、course_id 格式及 FK／刪除政策待對齊。這些具體 adapter 命名與欄位尚未取得 002 實際接線審查。
+
+尚無真實 002 course provider／課堂流程，因此不宣稱瀏覽器已有可操作的新課堂系統；正常課程入口回 503，legacy 匯入仍可用。T069 保留正式接線、課程 FK／刪除及舊資料方案、跨活動／不同批學生的人工驗收與圖意互審。完整回填與恢復仍未實作。本切片 T066–T068 完成，新增 T069 待辦，總計 35／69。
+
+## 2026-11-25：既有回填確認、持久化報告與恢復續作
+
+執行者 Codex。使用者要求沿用已有修改，不補跑 specify／plan 新迭代，完成可獨立進行的既有任務。本次沿用 f96ba71 分支及全部未提交匯入／課程／預覽修改，沒有重做已完成切片。requirements checklist 16／16，標記未動；實作前後沒有 .specify/extensions.yml，無 hook 可執行。
+
+### 實作與前置
+
+新增 notes/writeback.py 協調原 export_service 的純預覽／恢復／寫入準備／回讀分類。先建立 test_export_routes，缺少 confirm route 回 404 為預期失敗，再完成確認路由、作業儲存及恢復接線。T004 的替代 Sheets fixture 放 conftest，實作位於 integration/writeback_support.py，ended snapshot 由每案例注入既有 GET_SETTLED_RESULTS；正常 app 未加入假結算或測試資料。
+
+- schema 新增 notes_write_operations、notes_write_items、notes_source_leases、notes_export_context，不改寫舊 catalog／preview 原表。作業綁教師、preview、request hash、原 snapshot 與 origin/root lineage，唯一 key 與 preview 避免重送建立第二份作業。
+- 實體 spreadsheet_id＋sheet_id 同時使用 process mutex 與 300 秒 DB lease，跨教師不同 source_id 仍互斥。網路期間無 SQLite 寫交易，owner token 條件續租／釋放；失去 lease 停止後續寫入。unknown／部分完成保留阻擋，不能靠逾期 lease 或新 preview 繞過先讀後恢復。
+- 確認及每題組寫前檢查教師、活動固定 import/version、完整 immutable 結果及來源；每批送出前先保存 unknown，避免程式中斷後以為未發出。每題組一次 RAW、只寫辨識錨點，保留原字串；相同文字及無勝組不發寫入。
+- 每批後重新讀整張所選 Sheet 並辨識，按題／小題身份取得目前值，精確 stringValue 相同才 verified，記錄 verified_at。回讀失敗為 unknown、明確拒絕為 failed、異值為 conflict，後續題組維持 not_processed。整組未全 verified 不標 completed；全 skipped 也可完成且零寫入。
+- GET 報告不連 Google、不寫 Sheets。無有效 lease 的 writing 作業於查看時改 recovering，同 key 重送回同作業，不自動執行；進行中回 202。恢復先重讀、重新定位及核對原結果，保存新預覽 actions／origin，再以新 key 明確確認；不改原勝組。第三種內容在原報告列 conflict，預覽要求覆寫確認。
+- HTML 表單自帶 CSRF／idempotency key，送出停用按鈕；逐項覆寫 checkbox、報告與恢復入口均已建立。預覽為歷史觀察，消耗／失效後不宣稱尚未寫入；報告提供逐格狀態及回讀時間。
+
+### 自動驗證
+
+| 指令／檢查 | 實際結果 |
+| --- | --- |
+| `.venv/Scripts/python.exe -m pytest tests/unit tests/contract tests/integration -q --maxfail=2` | 初次 194 passed／98 subtests；補充逾時未完成與最後一批回讀成功清除暫時錯誤後，**196 passed、98 subtests passed，73.30 秒，退出碼 0** |
+| `node tests/notes-ui.test.cjs` | 名稱／活動帶入／建立活動交接，以及回填送出停用按鈕通過 |
+| `node tests/activity-sync.test.cjs` | 通過 |
+| PlantUML CLI（render-report 同一命令） | 三類圖與同目錄 PNG 更新，退出碼 0 |
+
+完整回歸後補正恢復報告的 conflict 標記，再重跑 test_writeback_restart.py／test_export_routes.py，**27 passed，20.32 秒，退出碼 0**；該補正沒有修改 Sheets gateway 或其他模組。最後 git diff --check 通過（僅既有 LF／CRLF 提示），checklist 未修改，extensions.yml 仍不存在。
+
+新案例涵蓋一次一題組、原字串與非目標／merge 保留、相同值／無勝組零寫入、明確拒絕／逾時讀到成功／逾時仍未知／回讀失敗、同 key 重送與 payload 衝突、兩作業爭用、跨教師相同物理來源、租約失去與程式重啟、來源移動與題意變更、原結果版本及勝組更換、部分成功只恢復剩餘題組、第三種內容必須明確覆寫、deadline 不起背景 worker，以及教師／其他 owner／CSRF／client 注入拒絕。
+
+T047 新契約測試核對兩題三格、缺小題、重複／額外小題、未知 blank、混勝組及跨版本，重用七組原 examples；原 gateway 的 fake sleep／jitter 測試持續驗證 429／暫時 5xx 有限退避、已知無效 batch 與寫入不自動重送，未建立重複 test_google_retries。
+
+### 真實限制與交接
+
+以上全部使用 pytest 暫存 SQLite 與合成替代來源，沒有讀取私密憑證、修改使用者正式 DB、對真實雲端講義寫入或發送 GitHub 訊息。正式結算仍透過 get_ended_snapshot；沒有已結算 provider 就維持 RESULT_NOT_READY，不能用瀏覽器假答案代替。
+
+適用單程序／同一本機 DB；外部 Google 協作者無法被本機 lease 鎖住，逾時請求也不能保證已遠端取消。預設 120 秒預算只在題組邊界檢查，單次 SDK timeout 30 秒；程序重啟仍有效的 lease 需等待到期，過期也不能跳過恢復。verified_at 僅表示回讀時刻，不保證之後外部未修改。
+
+任務新增完成 18 項，累計 53／69。T037／T046 真實副本寫入與恢復證據、T048／T050–T052 正式模組／兩組學生驗收、T069 課程接線，以及最終完整回歸／分析／收斂／互審仍依既有依賴保留未完成。新畫面／新增圖意須由同學審查，沒有用 AI 自動測試代勾人工驗收。
