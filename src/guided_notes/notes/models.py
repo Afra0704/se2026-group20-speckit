@@ -13,7 +13,21 @@ class ContractError(ValueError):
         self.code = code
         self.http_status = 409 if code in {"ACTIVITY_NOT_ENDED", "RESULT_VERSION_CHANGED",
             "SOURCE_STRUCTURE_CHANGED", "PREVIEW_STALE", "OVERWRITE_CONFIRMATION_REQUIRED"} else 422
+        if code == "INVALID_LECTURE_NAME":
+            self.http_status = 400
         super().__init__(message)
+
+
+def normalize_lecture_name(name_mode="source", custom_title=None):
+    """Teacher display metadata only; never part of question identity or DTOs."""
+    if name_mode == "source":
+        return "source", None
+    if name_mode != "custom" or not isinstance(custom_title, str):
+        raise ContractError("INVALID_LECTURE_NAME")
+    title = custom_title.strip()
+    if not 1 <= len(title) <= 100 or any(ord(char) < 32 or ord(char) == 127 for char in title):
+        raise ContractError("INVALID_LECTURE_NAME")
+    return "custom", title
 
 
 def _require(condition, code):

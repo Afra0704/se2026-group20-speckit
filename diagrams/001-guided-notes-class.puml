@@ -25,6 +25,10 @@ class ImportPreview {
  confirmedImportIdentity [optional]
  confirmedVersion [optional]
 }
+class LectureDisplayName {
+ nameMode: source / custom
+ customTitle [optional]
+}
 class MainQuestion {
  candidateOrPublishedIdentity
  questionIdentity = unitIdentity
@@ -122,6 +126,9 @@ SourceDocument "1" -- "0..*" ImportedCatalog
 SourceDocument "1" -- "0..*" ImportPreview
 ImportPreview --> ImportBundle : recognized candidate
 ImportPreview --> ImportedCatalog : atomic publish once
+ImportPreview "1" *-- "1" LectureDisplayName : saved choice
+ImportedCatalog "1" *-- "1" LectureDisplayName : per-version display metadata
+LectureDisplayName --> SourceDocument : source mode uses worksheet title
 ImportBundle --> ImportedCatalog : candidate IDs; repository publishes later
 ImportBundle --> Fingerprints : current observations
 ExportPreview --> Fingerprints : freshness guard
@@ -157,6 +164,10 @@ note left of ImportBundle
 Offline core builds candidates, never publishes.
 Current source is reidentified before recovery.
 Authorization, persistence and leases stay external.
+end note
+note left of LectureDisplayName
+Teacher display only; CatalogDTO is unchanged.
+Source sheetId and answer bindings never depend on names.
 end note
 note right of WriteItem
 Verified / failed / not processed / unknown / skipped.

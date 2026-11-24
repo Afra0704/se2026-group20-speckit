@@ -42,18 +42,21 @@ def source(db, teacher_id, spreadsheet_id, sheet_id, title):
                       (teacher_id, spreadsheet_id, sheet_id)).fetchone()["source_id"]
 
 
-def insert_preview(db, source_id, recognized, hashes):
+def insert_preview(db, source_id, recognized, hashes, name_mode="source", custom_title=None):
     pid = str(uuid4())
     db.execute("""INSERT INTO notes_import_previews
         (preview_id,source_id,recognized,semantic_hash,structure_hash,value_hash,created_at,status)
         VALUES(?,?,?,?,?,?,?,'ready')""", (pid, source_id, dumps(asdict(recognized)),
             hashes.semantic_hash, hashes.structure_hash, hashes.value_hash, now()))
+    db.execute("INSERT INTO notes_preview_names VALUES(?,?,?)", (pid, name_mode, custom_title))
     return pid
 
 
 def owned_preview(db, teacher_id, preview_id):
-    row = db.execute("""SELECT p.*,s.teacher_id,s.spreadsheet_id,s.sheet_id,s.display_title
+    row = db.execute("""SELECT p.*,s.teacher_id,s.spreadsheet_id,s.sheet_id,s.display_title,
+        coalesce(n.name_mode,'source') AS name_mode,n.custom_title
         FROM notes_import_previews p JOIN notes_sources s USING(source_id)
+        LEFT JOIN notes_preview_names n USING(preview_id)
         WHERE p.preview_id=? AND s.teacher_id=?""", (preview_id, teacher_id)).fetchone()
     if row is None:
         raise ApiError(404, "PREVIEW_NOT_FOUND")
@@ -71,18 +74,21 @@ def owned_import(db, teacher_id, import_id):
 
 def catalog_row(db, teacher_id, import_id, version):
     owned_import(db, teacher_id, import_id)
-    row = db.execute("SELECT * FROM notes_catalogs WHERE import_id=? AND version=?", (import_id, version)).fetchone()
+    row = db.execute("""SELECT c.*,coalesce(n.name_mode,'source') AS name_mode,n.custom_title
+        FROM notes_catalogs c LEFT JOIN notes_catalog_names n USING(import_id,version)
+        WHERE c.import_id=? AND c.version=?""", (import_id, version)).fetchone()
     if row is None:
         raise ApiError(404, "CATALOG_NOT_FOUND")
     return row
 
 
-def save_catalog(db, bundle, hashes):
+def save_catalog(db, bundle, hashes, name_mode="source", custom_title=None):
     catalog = bundle.catalog
     import_id, version = catalog["import_id"], catalog["import_version"]
     db.execute("INSERT INTO notes_catalogs VALUES(?,?,?,?,?,?,?,?)",
         (import_id, version, dumps(catalog), dumps(asdict(bundle.recognized)),
          hashes.semantic_hash, hashes.structure_hash, hashes.value_hash, now()))
+    db.execute("INSERT INTO notes_catalog_names VALUES(?,?,?,?)", (import_id, version, name_mode, custom_title))
     for order, (question, candidate) in enumerate(zip(catalog["questions"], bundle.recognized.questions, strict=True)):
         db.execute("INSERT INTO notes_questions VALUES(?,?,?,?,?,?)", (question["question_id"], import_id,
             version, question["display_number"], question["kind"], order))

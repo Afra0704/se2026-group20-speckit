@@ -50,3 +50,5 @@ ImportBundle／Fingerprints 對應 import_service.py，ExportPreview／PreviewIt
 
 2026-11-24 US1 接線：Class 補 ImportPreview 與 SourceDocument 擁有者，Sequence 補 ready preview 的持久化、確認重讀、短交易發布、失效與重送分支；相同 CLI 命令渲染三張圖，退出碼 0。Component 的 Import／Catalog／Store 已分別對應 import_service、models／repository／notes schema；教師授權沿用 auth，視圖由 notes/routes 及 templates 提供。
 Source Lease／WriteOperation／完整回填執行仍為後續設計，新匯入畫面與本輪圖意待同學互審。
+
+2026-11-24 D12 命名擴充：Class 補 LectureDisplayName 與 preview／catalog 的每版本 metadata 關係；Component 標示一分頁及本機命名；Sequence 顯示命名選擇隨 preview／catalog 保存。再次使用上述 CLI 渲染三張 PNG，退出碼 0。來源識別及 CatalogDTO 未變，新的圖意與 OpenSpec 同步待人工確認。

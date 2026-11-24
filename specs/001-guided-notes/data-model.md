@@ -82,6 +82,12 @@ ImportPreview 保存 preview_id、teacher_id、source_id、候選資料、三種
 整體只有 verified 與 skipped 時為 completed；全 skipped 亦可完成，報告明列零格寫入。
 讀後被外部修改不代表能永久鎖住答案，報告保存 verified_at 與觀察值。
 
+## 2026-11-24 教師顯示名稱 metadata
+
+新增 notes_preview_names（preview_id FK／PK）與 notes_catalog_names（import_id+version 複合 FK／PK），各保存 name_mode=source|custom、custom_title。source 模式 custom_title 為 null；custom 文字在服務層驗證 1–100 字元且不可包含控制字元。名稱不加入 immutable catalog DTO，也不參與任何來源／題目／blank 識別或指紋。
+新增表及 INSERT ... ON CONFLICT DO NOTHING 可對舊 DB 重跑，未有記錄的舊 preview／catalog 回填 source 模式，保留原表與全部資料；已保存的 custom 記錄不被初始化覆蓋。
+名稱以版本為單位：新版本可另取名稱，舊版自訂文字不變。source 模式以 notes_sources.display_title 的最近來源快取顯示；notes_sources 仍只保存原分頁名稱，永不被自訂講義名稱覆蓋。
+
 ## SQLite 一致性
 
 - 開連線後設定 foreign_keys=ON、busy_timeout，連線限本 request 使用。只在短交易修改本機狀態。

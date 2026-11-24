@@ -75,3 +75,28 @@ CREATE TRIGGER IF NOT EXISTS notes_catalogs_no_update
 BEFORE UPDATE ON notes_catalogs BEGIN SELECT RAISE(ABORT,'confirmed catalog is immutable'); END;
 CREATE TRIGGER IF NOT EXISTS notes_catalogs_no_delete
 BEFORE DELETE ON notes_catalogs BEGIN SELECT RAISE(ABORT,'confirmed catalog is immutable'); END;
+
+-- Additive naming metadata: existing immutable catalogs are never rewritten.
+CREATE TABLE IF NOT EXISTS notes_preview_names (
+    preview_id TEXT PRIMARY KEY REFERENCES notes_import_previews(preview_id),
+    name_mode TEXT NOT NULL CHECK(name_mode IN ('source','custom')),
+    custom_title TEXT,
+    CHECK ((name_mode='source' AND custom_title IS NULL) OR
+           (name_mode='custom' AND custom_title IS NOT NULL AND length(trim(custom_title)) BETWEEN 1 AND 100))
+);
+CREATE TABLE IF NOT EXISTS notes_catalog_names (
+    import_id TEXT NOT NULL,
+    version INTEGER NOT NULL,
+    name_mode TEXT NOT NULL CHECK(name_mode IN ('source','custom')),
+    custom_title TEXT,
+    PRIMARY KEY(import_id,version),
+    FOREIGN KEY(import_id,version) REFERENCES notes_catalogs(import_id,version),
+    CHECK ((name_mode='source' AND custom_title IS NULL) OR
+           (name_mode='custom' AND custom_title IS NOT NULL AND length(trim(custom_title)) BETWEEN 1 AND 100))
+);
+INSERT INTO notes_preview_names(preview_id,name_mode,custom_title)
+SELECT preview_id,'source',NULL FROM notes_import_previews WHERE 1
+ON CONFLICT(preview_id) DO NOTHING;
+INSERT INTO notes_catalog_names(import_id,version,name_mode,custom_title)
+SELECT import_id,version,'source',NULL FROM notes_catalogs WHERE 1
+ON CONFLICT(import_id,version) DO NOTHING;

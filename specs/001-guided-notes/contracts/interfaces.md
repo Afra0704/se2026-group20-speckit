@@ -180,4 +180,10 @@ PR #4 已合併並整合至本機 001 分支。app factory／TeacherContext／re
 - JSON catalog 僅公開 DTO；教師 HTML 額外顯示已保存來源對應。HTML／JSON 的匯入均不寫 Google；只有本機 notes_ tables 發生變更。
 - catalog 頁面呼叫既有 `/activities` 建立活動，再沿用 002 的 `guided-notes:teacher` localStorage 恢復活動畫面；提交資料仍僅 import_id／import_version，權限與清單驗證在後端完成。
 - notes routes 的錯誤採原定 nested envelope，將共用 auth／CSRF 的代碼映射為 TEACHER_LOGIN_REQUIRED／TEACHER_REQUIRED／CSRF_INVALID；不改動 002 原有 flat error 回應。
+
+### 教師顯示名稱擴充（共同需求 D12）
+
+POST import-previews 可選 `name_mode`（source|custom，預設 source）與 `custom_title`。custom 模式需字串，trim 後 1–100 個字元且不含換行／控制字元；source 模式忽略未使用的 custom_title。無效輸入 400 INVALID_LECTURE_NAME，發 Google 請求前即檢查。
+preview JSON 的 title 為有效顯示名稱，新增 source_title 與 name_mode；不返回任何憑證。命名選擇儲存於 server preview，confirm 不接受 name_mode／custom_title；來源變動新建 preview 時複製原選擇。
+CatalogDTO／ResultSnapshotDTO 不改。教師 HTML 從 notes_catalog_names 取得各版本顯示 metadata，並另外顯示原始分頁與來源連結。不同分頁仍分別建立 sources／imports，不支援跨分頁重綁或自動合併。
 目前沒有 production 的執行 driver，測試中的 InMemorySheets 僅是替代來源；不能拿它代替正式 provider／儲存。

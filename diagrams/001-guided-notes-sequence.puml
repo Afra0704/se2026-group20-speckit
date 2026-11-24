@@ -10,7 +10,7 @@ participant "Original Google Sheets" as Sheets
 participant "Activity Module" as Activity
 participant "Result Module" as Results
 participant "Operation Repository / Lease" as Store
-Teacher -> Notes : provide link and select worksheet
+Teacher -> Notes : provide link; select one worksheet and lecture naming mode
 Notes -> Auth : check teacher authorization
 alt unauthorized
  Auth --> Notes : denied
@@ -27,7 +27,7 @@ else authorized
   alt duplicate / missing / ambiguous
    Notes --> Teacher : located errors; confirmation unavailable
   else valid
-   Notes -> Store : persist teacher-owned ready import preview
+   Notes -> Store : persist teacher-owned ready preview and naming choice
    Notes --> Teacher : main question count, answer count, subitem labels and targets
    Teacher -> Notes : review detected main questions and all subitems; confirm import
    Notes -> Store : check owner and preview status
@@ -43,7 +43,7 @@ else authorized
      Notes -> Store : invalidate changed preview; create replacement if valid
      Notes --> Teacher : confirm new preview, or access denied
     else still valid
-     Notes -> Store : short transaction: recheck status, allocate version, persist catalog and bindings
+     Notes -> Store : short transaction: recheck status, allocate version, persist catalog, label metadata and bindings
      Store --> Notes : one confirmed immutable catalog
      Notes --> Activity : get_catalog: fixed version and ordered items
     end

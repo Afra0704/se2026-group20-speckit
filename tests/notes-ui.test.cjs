@@ -14,7 +14,7 @@ async function scenario(fail) {
   const locations = [];
   const fields = {csrf_token: "fixture-csrf", import_id: "fixture-catalog", import_version: "2"};
   const browser = {
-    document: {querySelectorAll: () => [form]},
+    document: {querySelectorAll: selector => selector === "form[data-activity-form]" ? [form] : []},
     FormData: class {get(key) {return fields[key];}},
     fetch: async (path, options) => {
       assert.equal(path, "/activities");
@@ -40,8 +40,37 @@ async function scenario(fail) {
   }
 }
 
+function namingScenario() {
+  let mode = "source";
+  let change;
+  const input = {disabled:false,required:false};
+  const wrapper = {hidden:false};
+  const group = {
+    addEventListener(event, callback) {change = callback;},
+    querySelector(selector) {
+      if (selector === "input[name='custom_title']") return input;
+      if (selector === "[data-custom-name]") return wrapper;
+      return {value:mode};
+    }
+  };
+  const browser = {document:{querySelectorAll:selector => selector === "[data-name-options]" ? [group] : []}};
+  vm.runInNewContext(fs.readFileSync("src/guided_notes/notes/static/notes.js", "utf8"),browser);
+  assert.equal(input.disabled,true);
+  assert.equal(wrapper.hidden,true);
+  mode = "custom";
+  change();
+  assert.equal(input.disabled,false);
+  assert.equal(input.required,true);
+  assert.equal(wrapper.hidden,false);
+  mode = "source";
+  change();
+  assert.equal(input.disabled,true);
+  assert.equal(input.required,false);
+}
+
 (async () => {
+  namingScenario();
   await scenario(false);
   await scenario(true);
-  console.log("Notes activity handoff and failure recovery: passed");
+  console.log("Notes naming controls, activity handoff and failure recovery: passed");
 })().catch(error => {console.error(error); process.exitCode = 1;});

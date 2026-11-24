@@ -6,6 +6,14 @@
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <input type="hidden" name="spreadsheet_url" value="{{ spreadsheet_url }}">
   <label>工作表<select name="sheet_id" required>{% for sheet in worksheets %}<option value="{{ sheet.sheet_id }}" {% if sheet.sheet_id == gid %}selected{% endif %}>{{ sheet.title }}</option>{% endfor %}</select></label>
+  <p class="muted">一次匯入一個分頁。其他分頁可稍後分別匯入，不會自動合併。</p>
+  <fieldset data-name-options>
+    <legend>系統內的講義名稱</legend>
+    <label><input type="radio" name="name_mode" value="source" checked>沿用工作表名稱</label>
+    <label><input type="radio" name="name_mode" value="custom">自訂講義名稱</label>
+    <label data-custom-name>自訂名稱<input name="custom_title" maxlength="100" placeholder="例如：第一章複習"></label>
+    <p class="muted">自訂名稱只用於本系統顯示，不會更改 Google Sheets 的分頁名稱。</p>
+  </fieldset>
   <button>辨識題目並預覽</button>
 </form>{% else %}<p>這份試算表沒有可選擇的工作表。</p>{% endif %}
 </section>

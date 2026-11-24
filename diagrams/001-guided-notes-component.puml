@@ -19,6 +19,11 @@ package "Guided Notes Feature" {
 }
 cloud "Original Google Sheets" as Sheets
 UI --> Import : select / preview / confirm
+note left of UI
+Import one selected worksheet at a time.
+Use its source title or a custom lecture label.
+No source rename is performed.
+end note
 UI --> Export : preview / confirm / report
 Import --> Auth : authorize
 Export --> Auth : authorize and recheck

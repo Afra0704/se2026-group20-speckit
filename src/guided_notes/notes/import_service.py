@@ -4,7 +4,7 @@ import hashlib
 import json
 from uuid import UUID, uuid4, uuid5
 
-from .models import ContractError, validate_catalog
+from .models import ContractError, normalize_lecture_name, validate_catalog
 from .recognition import RecognitionResult
 
 
@@ -94,11 +94,12 @@ def get_catalog(teacher_context, import_id, import_version):
                                                    import_id, import_version)["dto"]))
 
 
-def create_preview(teacher_context, gateway, spreadsheet_id, sheet_id):
+def create_preview(teacher_context, gateway, spreadsheet_id, sheet_id, name_mode="source", custom_title=None):
     from ..auth import require_teacher
     from ..db import write_transaction
     from .recognition import recognize
     from . import repository as repo
+    name_mode, custom_title = normalize_lecture_name(name_mode, custom_title)
     sheet = gateway.read_sheet(spreadsheet_id, sheet_id)
     recognized = recognize(sheet)
     hashes = fingerprints(recognized)
@@ -109,7 +110,7 @@ def create_preview(teacher_context, gateway, spreadsheet_id, sheet_id):
             raise ApiError(403, "TEACHER_REQUIRED")
         source_id = repo.source(db, teacher_context.teacher_id, spreadsheet_id, sheet_id,
                                 sheet["properties"].get("title", str(sheet_id)))
-        return repo.insert_preview(db, source_id, recognized, hashes)
+        return repo.insert_preview(db, source_id, recognized, hashes, name_mode, custom_title)
 
 
 def confirm_preview(teacher_context, preview_id, gateway_factory, existing_import_id=None):
@@ -154,7 +155,7 @@ def confirm_preview(teacher_context, preview_id, gateway_factory, existing_impor
         if (row["semantic_hash"], row["structure_hash"], row["value_hash"]) != (
                 hashes.semantic_hash, hashes.structure_hash, hashes.value_hash):
             db.execute("UPDATE notes_import_previews SET status='invalidated' WHERE preview_id=?", (preview_id,))
-            next_id = repo.insert_preview(db, row["source_id"], current, hashes)
+            next_id = repo.insert_preview(db, row["source_id"], current, hashes, row["name_mode"], row["custom_title"])
             return None, next_id
         if existing_import_id is None:
             import_id = str(uuid4())
@@ -168,7 +169,7 @@ def confirm_preview(teacher_context, preview_id, gateway_factory, existing_impor
             version = db.execute("SELECT coalesce(max(version),0)+1 FROM notes_catalogs WHERE import_id=?",
                                  (import_id,)).fetchone()[0]
         bundle = build_import_bundle(row["spreadsheet_id"], current, import_id=import_id, import_version=version)
-        repo.save_catalog(db, bundle, hashes)
+        repo.save_catalog(db, bundle, hashes, row["name_mode"], row["custom_title"])
         db.execute("""UPDATE notes_import_previews SET status='confirmed',requested_import_id=?,
             confirmed_import_id=?,confirmed_version=? WHERE preview_id=?""",
             (existing_import_id, import_id, version, preview_id))

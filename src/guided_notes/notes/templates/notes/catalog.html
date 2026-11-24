@@ -1,6 +1,7 @@
 {% extends "notes/base.html" %}
 {% block content %}
 <h1>講義已保存</h1><p class="muted">{{ title }} · 第 {{ catalog.import_version }} 版</p>
+<p class="muted">來源分頁：<a href="{{ source_url }}" target="_blank" rel="noopener noreferrer">{{ source_title }}</a></p>
 <div class="metrics"><strong>{{ catalog.question_count }} 題</strong><strong>{{ catalog.answer_item_count }} 個作答格</strong></div>
 <section class="card"><h2>開始課堂活動</h2><p>活動會固定使用此版本，更換講義版本不會改動既有活動。</p>
   <form data-activity-form>

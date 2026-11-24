@@ -177,6 +177,8 @@ Cookie HttpOnly、SameSite=Lax，本機 HTTP 不強制 Secure cookie；Jinja 保
 
 ## Complexity Tracking
 
+2026-11-24 D12 顯示名稱採兩張 notes_ 附屬表，避免改寫 immutable catalog 或雙組題目契約；預覽保存選擇、確認原子複製至該版本。升級僅新增表及缺漏的 source-mode 記錄，既有資料不需清空。多分頁維持一次一張的既有來源模型，測試選單與各分頁獨立匯入。
+
 保留單體程式與標準庫 SQLite；source lease、不可變快照及逐項狀態對應 FR-005、FR-011、FR-015，不新增框架。
 
 ## 2026-11-23 開發交接補充

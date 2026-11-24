@@ -1,4 +1,16 @@
 "use strict";
+for (const group of document.querySelectorAll("[data-name-options]")) {
+  const input = group.querySelector("input[name='custom_title']");
+  const wrapper = group.querySelector("[data-custom-name]");
+  const update = () => {
+    const custom = group.querySelector("input[name='name_mode']:checked").value === "custom";
+    input.disabled = !custom;
+    input.required = custom;
+    wrapper.hidden = !custom;
+  };
+  group.addEventListener("change", update);
+  update();
+}
 for (const form of document.querySelectorAll("form[data-activity-form]")) {
   form.addEventListener("submit", async (event) => {
     event.preventDefault();

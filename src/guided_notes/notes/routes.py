@@ -10,7 +10,7 @@ from ..db import connection
 from ..http import ApiError, payload
 from . import import_service as service, repository as repo
 from .google_authorization import AuthError, authorize
-from .models import ContractError
+from .models import ContractError, normalize_lecture_name
 from .recognition import RecognitionError
 from .sheets_gateway import GatewayError, SheetsGateway, build_google_service, parse_sheets_url
 
@@ -65,6 +65,7 @@ def error_response(code, status, context=None):
         "GOOGLE_PROFILE_NOT_CONFIGURED": "尚未設定這台電腦的講義授權帳號。",
         "GOOGLE_REAUTH_REQUIRED": "Google 授權已失效，請在本機重新執行授權指令。",
         "CSRF_INVALID": "頁面驗證已失效，請重新整理再操作。"}
+    messages["INVALID_LECTURE_NAME"] = "請選擇名稱方式；自訂講義名稱須為 1–100 個字元，且不能包含換行或控制字元。"
     data = {"code": code, "message": messages.get(code, "操作未完成，請確認來源與設定後重試。"),
             "retryable": code in {"SOURCE_READ_UNAVAILABLE", "GOOGLE_RATE_LIMITED"}, "context": context or {}}
     if (request.is_json or request.accept_mimetypes.best == "application/json"
@@ -96,7 +97,9 @@ def format_error(error):
 
 def preview_data(row):
     recognized = repo.unpack_recognition(row["recognized"])
-    return {"preview_id": row["preview_id"], "status": row["status"], "title": row["display_title"],
+    title = row["custom_title"] if row["name_mode"] == "custom" else row["display_title"]
+    return {"preview_id": row["preview_id"], "status": row["status"], "title": title,
+        "source_title": row["display_title"], "name_mode": row["name_mode"],
         "sheet_id": row["sheet_id"], "question_count": recognized.question_count,
         "answer_item_count": recognized.answer_item_count, "recognized": recognized}
 
@@ -104,9 +107,12 @@ def preview_data(row):
 @notes.get("")
 def index():
     teacher = require_teacher()
-    catalogs = connection().execute("""SELECT c.import_id,c.version,c.confirmed_at,s.display_title
+    catalogs = connection().execute("""SELECT c.import_id,c.version,c.confirmed_at,
+        s.display_title AS source_title,
+        CASE WHEN n.name_mode='custom' THEN n.custom_title ELSE s.display_title END AS display_title
         FROM notes_catalogs c JOIN notes_imports i USING(import_id)
-        JOIN notes_sources s USING(source_id) WHERE s.teacher_id=? ORDER BY c.confirmed_at DESC""",
+        JOIN notes_sources s USING(source_id) LEFT JOIN notes_catalog_names n ON n.import_id=c.import_id AND n.version=c.version
+        WHERE s.teacher_id=? ORDER BY c.confirmed_at DESC""",
         (teacher.teacher_id,)).fetchall()
     configured = (current_app.config.get("NOTES_GATEWAY") is not None or (
         current_app.config.get("NOTES_GOOGLE_TEACHER_ID") == teacher.teacher_id
@@ -139,7 +145,8 @@ def create_preview():
             raise ApiError(400, "INVALID_REQUEST") from None
     if type(sheet_id) is not int or not 0 <= sheet_id <= 2**63 - 1:
         raise ApiError(400, "INVALID_REQUEST")
-    pid = service.create_preview(teacher, gateway(teacher), spreadsheet_id, sheet_id)
+    name_mode, custom_title = normalize_lecture_name(data.get("name_mode", "source"), data.get("custom_title"))
+    pid = service.create_preview(teacher, gateway(teacher), spreadsheet_id, sheet_id, name_mode, custom_title)
     if api_request():
         row = repo.owned_preview(connection(), teacher.teacher_id, pid)
         data = preview_data(row)
@@ -153,8 +160,13 @@ def create_preview():
 def view_preview(preview_id):
     teacher = require_teacher()
     row = repo.owned_preview(connection(), teacher.teacher_id, preview_id)
-    imports = connection().execute("""SELECT i.import_id,max(c.version) AS version FROM notes_imports i
-        JOIN notes_catalogs c USING(import_id) WHERE i.source_id=? GROUP BY i.import_id""", (row["source_id"],)).fetchall()
+    imports = connection().execute("""SELECT i.import_id,c.version,
+        CASE WHEN n.name_mode='custom' THEN n.custom_title ELSE s.display_title END AS display_title
+        FROM notes_imports i JOIN notes_sources s USING(source_id)
+        JOIN notes_catalogs c ON c.import_id=i.import_id
+        LEFT JOIN notes_catalog_names n ON n.import_id=c.import_id AND n.version=c.version
+        WHERE i.source_id=? AND c.version=(SELECT max(version) FROM notes_catalogs WHERE import_id=i.import_id)
+        ORDER BY c.confirmed_at DESC""", (row["source_id"],)).fetchall()
     return render_template("notes/import_preview.html", preview=preview_data(row), imports=imports,
         confirmed_import_id=row["confirmed_import_id"], confirmed_version=row["confirmed_version"])
 
@@ -163,6 +175,8 @@ def view_preview(preview_id):
 def confirm_preview(preview_id):
     teacher = require_teacher()
     data = payload()
+    if "name_mode" in data or "custom_title" in data:
+        raise ApiError(400, "INVALID_REQUEST")
     if (request.is_json and data.get("confirm") is not True) or (
             not request.is_json and data.get("confirm") != "true"):
         raise ApiError(400, "INVALID_REQUEST")
@@ -186,5 +200,8 @@ def view_catalog(import_id, version):
         return jsonify(catalog)
     row = repo.catalog_row(connection(), teacher.teacher_id, import_id, version)
     source = repo.owned_import(connection(), teacher.teacher_id, import_id)
-    return render_template("notes/catalog.html", catalog=catalog, title=source["display_title"],
+    title = row["custom_title"] if row["name_mode"] == "custom" else source["display_title"]
+    return render_template("notes/catalog.html", catalog=catalog, title=title,
+                           source_title=source["display_title"],
+                           source_url=f"https://docs.google.com/spreadsheets/d/{source['spreadsheet_id']}/edit#gid={source['sheet_id']}",
                            recognized=repo.unpack_recognition(row["recognized"]))

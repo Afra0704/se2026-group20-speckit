@@ -221,3 +221,44 @@ Class 新增 ImportPreview、來源擁有者與發布關係；Sequence 補 serve
 
 新增完成 T006–T013、T016、T019–T024，累計 **26／59**。T001 本輪互審、T004 後續回填測試 provider、T025 完整人工驗收及 US2／US3 production 作業保留未完成。完整 analyze／converge 及最終 PR 交付檢查仍待收尾階段，不宣稱整個 001 完成。
 使用者可依 quickstart 的 CMD 指令建立自己的教師、綁 Google profile，再由 /teacher 登入並點講義匯入；不需再等待 002 骨架。
+
+## 2026-11-24：使用者回報的人工匯入驗收
+
+執行者：本對話使用者，具名姓名／GitHub 帳號尚未提供。測試版本依本對話操作順序為 e924ac0 的匯入增量，未另外取得使用者當時 HEAD；以下為使用者回報，非 AI 觀察畫面。
+
+| 操作 | 預期 | 使用者回報 |
+| --- | --- | --- |
+| 教師登入、讀取副本、預覽、確認匯入、建立活動 | 保存講義版本並顯示活動碼 | 已操作到活動碼出現 |
+| 重新整理並回到講義匯入頁 | 剛才保存的版本仍存在 | 測試成功 |
+| 建立預覽後修改雲端副本，再按確認 | 舊預覽不可直接確認，要求檢查新預覽 | 測試成功 |
+
+尚未回報本次使用的是單題／題組哪份副本、是否兩份皆測、題數與逐格對應核對、第二位組員操作或瀏覽器截圖。因此不將 T025／T054 或 SC-005 全部勾選；M06 的匯入確認前來源改動子情境有回報證據，回填前變動與回填恢復仍未驗收。
+
+## 2026-11-24：講義顯示名稱與多分頁匯入行為
+
+使用者明確同意「沿用分頁名稱／自訂系統講義名稱」及「一次一個分頁，各自匯入」方案。沿用原分支及 e924ac0 基準，保留前段使用者人工回報。共同需求 D12 記錄 SpecKit 使用者已確認、OpenSpec 組同步仍待確認，未更動既有共同決策。
+
+### 實作與資料安全
+
+- 選表頁預設 source 模式，可切 custom 並輸入 1–100 個字元；前後空白移除、空白／超長／控制字元拒絕，驗證在 Google gateway 建構／讀取前完成。沒有 JavaScript 仍可提交選擇，由後端驗證。
+- notes_preview_names／notes_catalog_names 只保存教師顯示 metadata，來源表仍保留原 Google 分頁名稱，CatalogDTO／UUID／來源 sheetId／答案位置／語意指紋不改。每個版本保留自訂名稱，新版本可另取名稱；沿用模式使用最近讀取的來源名稱快取。
+- 命名選擇保存在 server preview，確認請求不可改名；來源變動的新 preview 保留原選擇。清單、預覽與保存頁顯示有效講義名稱及原始來源分頁，保存頁來源連結仍指向原分頁。HTML 全程 escaping。
+- DB 初始化只新增附屬表及缺漏的 source-mode 記錄（ON CONFLICT DO NOTHING），不清空或改寫既有 immutable catalog。重啟不覆蓋已保存 custom 名稱。
+- 多分頁顯示於選單，每次只對所選 numeric sheetId 讀取／確認。同名講義不會合併來源，也不能將不同分頁／試算表寫成既有 import 的新版本。沒有新增多選批次功能，沒有任何 Google 重命名或寫入呼叫。
+
+### 驗證
+
+執行者 Codex，正式 .venv（Python 3.13.1）。先建立新整合測試，因既有 preview 沒有 source_title 而出現預期 KeyError；實作後通過。
+
+| 指令 | 結果 |
+| --- | --- |
+| `.venv/Scripts/python.exe -m pytest tests/unit tests/contract tests/integration -q` | **118 passed、98 subtests passed，29.41 秒，退出碼 0** |
+| `node tests/notes-ui.test.cjs` | 名稱選項切換／required／disabled，以及既有活動交接與失敗恢復通過 |
+| `node tests/activity-sync.test.cjs` | 通過 |
+| `git diff --check` | 通過，僅既有換行格式提示 |
+
+新增九個整合測試涵蓋 source 預設、custom trim／保存、來源變動／刷新、不同版本名稱、確認時不可改名、非法名稱、XSS、兩分頁獨立來源／題數／讀取次數、舊 DB 升級、重啟保留、跨來源更新拒絕，以及無 JS 的 HTML 表單。
+遷移測試只操作 pytest 暫存 DB：移除新名稱表模擬舊版本，再重啟 app，確認原 DTO 完全相同、舊 ready preview 可繼續確認。未修改使用者的正式 DB 或雲端副本；正式 DB 會在使用者重啟服務時執行同一保留資料初始化。
+
+Class 補 LectureDisplayName metadata；Component／Sequence 補一次一分頁與命名選擇保存。PlantUML CLI 重渲染三張 PNG，退出碼 0；新的命名畫面與圖意待組員人工審查。本輪未重試先前無法連線的瀏覽器工具，不宣稱已完成人工外觀驗收。
+新增 T060–T062 三項已完成，總計 29／62（原核心 26／59）。完整勝組回填、操作恢復、跨模組與人工驗收待辦維持原狀態。
