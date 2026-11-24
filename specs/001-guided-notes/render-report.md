@@ -47,3 +47,6 @@ Plan 階段於 2026-11-23 補上 Operation Repository／Source Lease、idempoten
 ```
 
 ImportBundle／Fingerprints 對應 import_service.py，ExportPreview／PreviewItem 與純恢復對應 export_service.py，Source Access 的憑證核心對應 google_authorization.py／cli.py。Store／WriteOperation／授權與 DB 整合仍未實作，不將整張圖或功能標記完成。
+
+2026-11-24 US1 接線：Class 補 ImportPreview 與 SourceDocument 擁有者，Sequence 補 ready preview 的持久化、確認重讀、短交易發布、失效與重送分支；相同 CLI 命令渲染三張圖，退出碼 0。Component 的 Import／Catalog／Store 已分別對應 import_service、models／repository／notes schema；教師授權沿用 auth，視圖由 notes/routes 及 templates 提供。
+Source Lease／WriteOperation／完整回填執行仍為後續設計，新匯入畫面與本輪圖意待同學互審。

@@ -6,6 +6,7 @@
 <main data-role="teacher" data-csrf="{{ csrf }}">
   <h1>教師活動管理</h1>
   <a href="{{ url_for('index') }}">學生加入</a>
+  <a href="/teacher/notes">匯入 Google Sheets 講義</a>
   <form id="login">
     <label>教師帳號 <input name="username" autocomplete="username" required></label>
     <label>密碼 <input name="password" type="password" autocomplete="current-password" required></label>

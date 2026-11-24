@@ -172,3 +172,52 @@ Class 新增 ImportBundle／Fingerprints，Component 標示 CLI-only consent，S
 新增完成 T002，累計 11／59。其餘任務未因合併或讀取成功而自動勾選。
 001 將以 notes_ 表名前綴接入同一 DB，避免與 002 questions 表衝突；沿用共用登入與 CSRF，實作持久化預覽／確認發布／get_catalog，再接教師頁面。需要的共用骨架已可用，不再將它列為阻塞；production 回填仍待 source lease／idempotency／可信結算 provider 與人工驗收。
 目前三圖的 Source Access 責任已涵蓋此唯讀診斷，沒有變更作答或寫入流程，不需為 CLI 額外新增圖；完整程式／圖意核對仍依 T056 執行。
+
+## 2026-11-24：US1 匯入網頁、持久化與活動接線
+
+### 範圍與前置
+
+使用者要求繼續實作。沿用 codex/001-guided-notes-implementation，基準 d4011ad，依 speckit-implement 推進 Foundation 與 US1。check-prerequisites 指向 001，requirements.md 16／16，未修改該檢查表。前後沒有 extensions.yml，無 hooks。
+本輪完成可操作的匯入增量；production 回填、來源鎖、作業／重啟恢復與人工完整驗收不在完成宣告中。
+
+### 實作
+
+- 共用 app 註冊 notes Blueprint，沿用 002 教師登入／session／CSRF。設定採 GUIDED_NOTES_SECRET_KEY／GUIDED_NOTES_DATABASE；新增 NOTES_GOOGLE_TEACHER_ID，單一 Google profile 僅允許指定教師使用，其他教師在載入憑證／連 Google 前即拒絕。
+- 同一 SQLite 連線使用 autocommit=True、顯式 BEGIN IMMEDIATE／SQL COMMIT／ROLLBACK、foreign_keys=ON 與有限 busy_timeout。init-db 只 CREATE IF NOT EXISTS，重跑及重啟不清空既有教師／活動／catalog。Google 網路期間無 DB 寫交易，測試 gateway 對此斷言。
+- notes/schema.sql／repository.py：notes_sources、notes_imports、notes_catalogs、notes_questions、notes_answer_items、notes_blanks、notes_source_bindings、notes_import_previews。來源歸屬有 teacher FK，版本有複合主鍵，小題／blank／位置有唯一與 FK 約束；confirmed catalog 禁止 UPDATE／DELETE。
+- import_service：保存 server-owned preview，確認時重新讀取與核對三種 hash，再進短交易重查授權／狀態、分配版本、保存 catalog／bindings 並標 confirmed。同一預覽重送與競爭回同一版本；兩個新預覽更新同一 import 會各自取得下一版。來源改動時使舊預覽失效，回新預覽連結，需重新確認。來源改名保留 numeric sheetId 並更新顯示名稱。
+- 真實 get_catalog 已接入 002；固定版本 DTO 排除來源位置與題目原文。他人／未知版本 404，舊活動仍讀原 catalog。
+- 教師 HTML／JSON 匯入路由、來源錯誤定位、A1 答案範圍、來源與保存版本清單、catalog 建立活動入口。HTML 使用 Jinja escaping／隱藏 CSRF，動態回應用 textContent；日期存 UTC，UI 台北時間。
+- authorize-sheets 已註冊到共用 Flask CLI；init-teacher 顯示新教師 ID，供綁定 profile，不輸出密碼。notes assets 是公開程式碼，所有來源／清單操作須教師授權。
+
+### 自動驗證
+
+執行者 Codex，正式 Python 3.13.1 .venv。新測試先出現預期 404；接線期間修正 CLI 例外區塊位置造成的 SyntaxError，並將 unit/test_google_authorization.py 更名為 test_google_authorization_core.py，避免與 integration 同名測試的 pytest collection 衝突。修正後完整重驗：
+
+| 指令／情境 | 實際 |
+| --- | --- |
+| `.venv/Scripts/python.exe -m pytest tests/unit tests/contract tests/integration -q` | **109 passed、98 subtests passed，27.71 秒，退出碼 0** |
+| `node tests/notes-ui.test.cjs` | activity handoff 與失敗後恢復按鈕通過 |
+| `node tests/activity-sync.test.cjs` | 舊 phase 回應不覆蓋新狀態通過 |
+| `git diff --check` | 通過，僅既有換行格式提示 |
+
+另以暫存 DB、隨機 session secret 執行 Flask CLI help／init-db，成功列出 authorize-sheets／init-db／init-teacher 並初始化，無清空既有資料。未設定 secret 時 app 明確拒絕啟動，符合 fail-closed 設定。瀏覽器未登入直接進匯入頁時回 401 HTML 與教師登入導覽；API 則保留 nested JSON error。
+
+涵蓋未登入／學生／其他教師拒絕、缺 CSRF、profile 不符、來源權限不足、無效 URL／gid、缺表頭、XSS escaping、HTML 表單與 redirects、原值／位置變動、改名、重送、並行確認只發布一次、並行新增版本、確認期間授權失效、舊活動固定版本、重啟保存與 immutable catalog。Google token／路徑不進 session 或錯誤回應。
+
+### 真實雲端副本經 HTTP 路由驗證
+
+以暫存本機 DB 與暫存教師，使用既有私人 token 經真實 gateway 執行列工作表 → 建預覽 → GET 預覽 HTML → 確認 → 重送確認 → get_catalog → 建立活動。沒有對雲端工作表寫入；本機測試資料放忽略的 tmp，沒有建立使用者的正式教師帳號或設定其密碼。
+
+| 副本 | 題數／格數 | 預覽 HTML | 保存／重送 | 活動 |
+| --- | --- | --- | --- | --- |
+| 題組副本 | 4／6 | 200 | 第 1 版，重送同版本 | 201，state 題數一致 |
+| 單題副本 | 6／6 | 200 | 第 1 版，重送同版本 | 201，state 題數一致 |
+
+### 圖表、限制與任務
+
+Class 新增 ImportPreview、來源擁有者與發布關係；Sequence 補 server-owned ready preview、確認重讀、短交易發布及重送回原版本。PlantUML CLI 渲染三圖退出碼 0，同目錄 PNG 已同步。Source Access、Import／Catalog／Store 與實作位置對照見 plan／render-report。
+瀏覽器預覽工具開啟 127.0.0.1:5011 的暫存測試站時連線逾時，未完成瀏覽器外觀操作檢查；HTML 表單流程由 Flask test client 驗證。已停止暫存站，新畫面／圖意與完整人工驗收仍待組員。
+
+新增完成 T006–T013、T016、T019–T024，累計 **26／59**。T001 本輪互審、T004 後續回填測試 provider、T025 完整人工驗收及 US2／US3 production 作業保留未完成。完整 analyze／converge 及最終 PR 交付檢查仍待收尾階段，不宣稱整個 001 完成。
+使用者可依 quickstart 的 CMD 指令建立自己的教師、綁 Google profile，再由 /teacher 登入並點講義匯入；不需再等待 002 骨架。

@@ -55,7 +55,7 @@ CatalogDTO 不包含來源範圍、原值、憑證或題目敘述。題組前端
 
 ## Teacher HTTP / UI contracts
 
-以下路由為實作目標，尚未建立。所有 `/teacher/notes` route 必須登入教師，並檢查對象 ownership；
+2026-11-24 匯入、預覽、確認與 catalog 查詢路由已建立；export／operation 路由仍為待實作目標。所有 `/teacher/notes` route 必須登入教師，並檢查對象 ownership；
 所有 POST 使用共用 app 的 CSRF 驗證。JSON POST 使用 `X-CSRFToken`，既有 002 也可使用 `X-CSRF-Token`。HTML 表單用 `name="csrf_token"` 的隱藏欄位，值由共用 Jinja 的 `csrf_token()` 取得。
 
 | Route | 輸入 | 成功結果 |
@@ -169,4 +169,15 @@ context 僅限已授權教師可見的定位欄位。驗證先查權限再提供
 PR #4 已合併並整合至本機 001 分支。app factory／TeacherContext／require_teacher／DB／CSRF 入口已可沿用。正式依賴已包含 Google SDK。共用設定沿用 GUIDED_NOTES_SECRET_KEY／GUIDED_NOTES_DATABASE，Google 憑證保留 NOTES_GOOGLE_CLIENT_SECRETS／NOTES_GOOGLE_TOKEN。
 001 後續資料表必須使用 notes_ 前綴（例如 notes_questions），避免與 002 的 questions 表衝突；來源／清單／預覽歸屬由 001 依 teacher_id 驗證，不直接跨寫 002 的題目表。
 唯讀本機診斷已提供 `python -m guided_notes.notes.cli inspect-sheet --url ...`，不等同 HTTP 授權入口或已確認 catalog。
+
+### 2026-11-24 匯入端已接線
+
+- 預設 app 註冊 `notes` Blueprint，沿用共享 auth／CSRF／db；新增 `NOTES_GOOGLE_TEACHER_ID` 將單一 Google profile 綁到本機教師 ID。正常服務未設定或教師不符即拒絕；NOTES_GATEWAY 是 server config 的受控注入點，不由 HTTP body 設定。
+- `GET /teacher/notes/import-previews/{id}` 為教師 HTML 預覽，列出題目／小題與 A1 範圍，confirmed／invalidated 不再顯示確認按鈕。
+- JSON 確認須 `confirm=true`；HTML 表單須隱藏欄位 `confirm=true`。首次確認可選 existing_import_id，確認後重送須相同 target，回同一 CatalogDTO 且不重讀 Google。並行確認只發布一次；不同預覽更新同一 import 則原子取得下一版本。
+- 確認前語意／結構／原值 hash 改變，舊預覽 invalidated，409 SOURCE_CHANGED 的 context 回 new_preview_id／preview_url，需再次確認。權限在讀取後再次驗證；不在 Google 網路期間持 SQLite 交易。
+- `get_catalog(teacher_context, import_id, import_version)` 現已提供真實 provider；002 未注入 demo／替代 provider 時直接使用。未知或他人清單 404，不默認最新版本。
+- JSON catalog 僅公開 DTO；教師 HTML 額外顯示已保存來源對應。HTML／JSON 的匯入均不寫 Google；只有本機 notes_ tables 發生變更。
+- catalog 頁面呼叫既有 `/activities` 建立活動，再沿用 002 的 `guided-notes:teacher` localStorage 恢復活動畫面；提交資料仍僅 import_id／import_version，權限與清單驗證在後端完成。
+- notes routes 的錯誤採原定 nested envelope，將共用 auth／CSRF 的代碼映射為 TEACHER_LOGIN_REQUIRED／TEACHER_REQUIRED／CSRF_INVALID；不改動 002 原有 flat error 回應。
 目前沒有 production 的執行 driver，測試中的 InMemorySheets 僅是替代來源；不能拿它代替正式 provider／儲存。

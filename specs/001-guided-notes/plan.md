@@ -22,6 +22,8 @@ D03、D04 自填組別、D06 與 D09 活動重連採共同需求已回報確認�
 
 **Storage**: Python 標準庫 sqlite3，單一本機資料庫 `instance/app.sqlite3`；Google 憑證與 token 放 repo 外，路徑由環境變數指定。
 
+2026-11-24 正式整合採共用 GUIDED_NOTES_DATABASE；建議本機路徑 `instance/guided-notes.sqlite3`。001 表皆 notes_ 前綴，來源歸屬參照共用 teachers。connection 已統一為 Python 3.13 autocommit=True，write_transaction 以顯式 BEGIN IMMEDIATE／SQL COMMIT／ROLLBACK 保持 002 的短交易語意。
+
 **Testing**: pytest、Flask test client、可注入的 Sheets gateway 與相鄰模組介面。真實 Sheets 副本由組員人工驗收。
 
 **Target Platform**: Windows 本機，伺服器綁定 `127.0.0.1`，教師及至少兩組學生以獨立瀏覽器工作階段模擬。

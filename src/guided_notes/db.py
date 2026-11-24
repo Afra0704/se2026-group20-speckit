@@ -2,6 +2,7 @@ from contextlib import contextmanager
 from pathlib import Path
 import sqlite3
 import time
+import click
 
 from flask import current_app, g
 
@@ -12,7 +13,7 @@ class DatabaseBusy(Exception):
 
 def connection():
     if "db" not in g:
-        g.db = sqlite3.connect(current_app.config["DATABASE"], isolation_level=None, timeout=0.25)
+        g.db = sqlite3.connect(current_app.config["DATABASE"], autocommit=True, timeout=0.25)
         g.db.row_factory = sqlite3.Row
         g.db.execute("PRAGMA foreign_keys = ON")
     return g.db
@@ -33,9 +34,10 @@ def write_transaction():
                     raise DatabaseBusy from error
                 time.sleep(0.025 * (attempt + 1))
         yield db
-        db.commit()
+        db.execute("COMMIT")
     except BaseException as error:
-        db.rollback()
+        if db.in_transaction:
+            db.execute("ROLLBACK")
         if isinstance(error, sqlite3.OperationalError) and error.sqlite_errorcode & 255 == sqlite3.SQLITE_BUSY:
             raise DatabaseBusy from error
         raise
@@ -54,3 +56,10 @@ def init_app(app):
         connection().executescript(
             (Path(__file__).parent / "activities" / "schema.sql").read_text(encoding="utf-8")
         )
+
+    @app.cli.command("init-db")
+    def init_db():
+        from .notes.repository import init_schema
+        connection().executescript((Path(__file__).parent / "activities" / "schema.sql").read_text(encoding="utf-8"))
+        init_schema()
+        click.echo("Database schema is ready; existing records were preserved.")

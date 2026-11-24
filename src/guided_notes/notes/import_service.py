@@ -78,3 +78,98 @@ def match_source(bundle, current):
         for catalog_item, item in zip(catalog_question["items"], question.items, strict=True):
             mapping[catalog_item["blank_id"]] = item
     return mapping
+
+
+def get_catalog(teacher_context, import_id, import_version):
+    """Published version provider for 002; never substitutes the latest version."""
+    from ..auth import require_teacher
+    from ..db import connection
+    from ..http import ApiError
+    from .repository import catalog_row
+    if teacher_context != require_teacher():
+        raise ApiError(403, "TEACHER_REQUIRED")
+    if type(import_version) is not int or import_version <= 0:
+        raise ApiError(400, "INVALID_REQUEST")
+    return validate_catalog(json.loads(catalog_row(connection(), teacher_context.teacher_id,
+                                                   import_id, import_version)["dto"]))
+
+
+def create_preview(teacher_context, gateway, spreadsheet_id, sheet_id):
+    from ..auth import require_teacher
+    from ..db import write_transaction
+    from .recognition import recognize
+    from . import repository as repo
+    sheet = gateway.read_sheet(spreadsheet_id, sheet_id)
+    recognized = recognize(sheet)
+    hashes = fingerprints(recognized)
+    with write_transaction() as db:
+        current_teacher = require_teacher(db)
+        if current_teacher != teacher_context:
+            from ..http import ApiError
+            raise ApiError(403, "TEACHER_REQUIRED")
+        source_id = repo.source(db, teacher_context.teacher_id, spreadsheet_id, sheet_id,
+                                sheet["properties"].get("title", str(sheet_id)))
+        return repo.insert_preview(db, source_id, recognized, hashes)
+
+
+def confirm_preview(teacher_context, preview_id, gateway_factory, existing_import_id=None):
+    from ..auth import require_teacher
+    from ..db import connection, write_transaction
+    from ..http import ApiError
+    from .recognition import recognize
+    from . import repository as repo
+
+    def existing_result(row, db):
+        if row["status"] == "confirmed":
+            if row["requested_import_id"] != existing_import_id:
+                raise ApiError(409, "PREVIEW_STALE")
+            return validate_catalog(json.loads(repo.catalog_row(db, teacher_context.teacher_id,
+                row["confirmed_import_id"], row["confirmed_version"])["dto"]))
+        if row["status"] != "ready":
+            raise ApiError(409, "PREVIEW_STALE")
+        return None
+
+    db = connection()
+    row = repo.owned_preview(db, teacher_context.teacher_id, preview_id)
+    result = existing_result(row, db)
+    if result is not None:
+        return result, None
+    if existing_import_id is not None:
+        target = repo.owned_import(db, teacher_context.teacher_id, existing_import_id)
+        if target["source_id"] != row["source_id"]:
+            raise ApiError(409, "SOURCE_CHANGED")
+    # All network activity ends before BEGIN IMMEDIATE.
+    current_sheet = gateway_factory().read_sheet(row["spreadsheet_id"], row["sheet_id"])
+    current = recognize(current_sheet)
+    title = current_sheet["properties"].get("title", row["display_title"])
+    hashes = fingerprints(current)
+    with write_transaction() as db:
+        if require_teacher(db) != teacher_context:
+            raise ApiError(403, "TEACHER_REQUIRED")
+        row = repo.owned_preview(db, teacher_context.teacher_id, preview_id)
+        result = existing_result(row, db)
+        if result is not None:
+            return result, None
+        db.execute("UPDATE notes_sources SET display_title=? WHERE source_id=?", (title, row["source_id"]))
+        if (row["semantic_hash"], row["structure_hash"], row["value_hash"]) != (
+                hashes.semantic_hash, hashes.structure_hash, hashes.value_hash):
+            db.execute("UPDATE notes_import_previews SET status='invalidated' WHERE preview_id=?", (preview_id,))
+            next_id = repo.insert_preview(db, row["source_id"], current, hashes)
+            return None, next_id
+        if existing_import_id is None:
+            import_id = str(uuid4())
+            version = 1
+            db.execute("INSERT INTO notes_imports VALUES(?,?)", (import_id, row["source_id"]))
+        else:
+            target = repo.owned_import(db, teacher_context.teacher_id, existing_import_id)
+            if target["source_id"] != row["source_id"]:
+                raise ApiError(409, "SOURCE_CHANGED")
+            import_id = existing_import_id
+            version = db.execute("SELECT coalesce(max(version),0)+1 FROM notes_catalogs WHERE import_id=?",
+                                 (import_id,)).fetchone()[0]
+        bundle = build_import_bundle(row["spreadsheet_id"], current, import_id=import_id, import_version=version)
+        repo.save_catalog(db, bundle, hashes)
+        db.execute("""UPDATE notes_import_previews SET status='confirmed',requested_import_id=?,
+            confirmed_import_id=?,confirmed_version=? WHERE preview_id=?""",
+            (existing_import_id, import_id, version, preview_id))
+        return bundle.catalog, None

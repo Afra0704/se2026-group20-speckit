@@ -1,3 +1,4 @@
+"""Credential-core tests; Flask command registration is tested in integration."""
 import json
 from pathlib import Path
 from tempfile import TemporaryDirectory

@@ -5,7 +5,7 @@
 
 ## 目前進度
 
-截至 2026-11-23，憲章 v1.0.0 已通過組員審查（使用者回報），001 匯入與回填及 002 身分與活動階段的設計已整合至 integration/001-002-design，兩功能均有規格、三類圖、計畫與任務。Q2 題組與 Q3 回填恢復已與 OpenSpec 組確認（使用者回報）。應用程式與測試尚待 tasks／implement，尚無可啟動系統。
+截至 2026-11-24，002 共用骨架已透過 PR #4 合併。001 已可由教師網頁直接讀取雲端 Google Sheets、選表、預覽單題／題組、確認保存不可變版本，並交給活動模組建立活動。兩份真實雲端副本已完成 API 匯入／版本保存驗證，未寫回來源；完整勝組回填、production 恢復與人工驗收仍待完成。憲章 v1.0.0 已通過組員審查，Q2／Q3 共同決策維持已確認狀態。
 
 | 項目 | 狀態 |
 | --- | --- |
@@ -13,7 +13,8 @@
 | 憲章 | [憲章 v1.0.0](.specify/memory/constitution.md) 已通過組員審查（使用者回報） |
 | 共同需求 | [共同需求與待確認決策](docs/shared-requirements.md)，待 OpenSpec 組確認建議項目 |
 | 功能規格與圖表 | [001 規格](specs/001-guided-notes/spec.md)、[計畫](specs/001-guided-notes/plan.md)、三類圖及 PNG 已產出，待設計互審 |
-| 技術棧與分工 | 下列內容為建議，待組員確認 |
+| 可操作流程 | 教師登入 → 講義匯入 → 工作表 → 預覽 → 確認版本 → 建立活動 |
+| 尚未交付 | 勝組回填作業／恢復、完整 003 結算接線及兩位組員人工驗收 |
 
 ## 兩小組協調
 
@@ -35,7 +36,7 @@ SpecKit 小組兩人共用本 repo。OpenSpec 小組另建 repo，兩小組依�
 
 ## 環境與取得專案
 
-準備 Git、Python 3.11 以上、uv，以及 Codex 代理環境。圖表流程另需 Java、PlantUML JAR，以及所選圖表渲染方式需要的 Graphviz。Java 與圖表工具的可用版本待實際渲染後記錄。
+準備 Git、Python 3.13、uv，以及 Codex 代理環境。圖表使用 Java 與 PlantUML CLI（本機驗證為 Java 24、PlantUML 1.2026.10），Component／Class 採 Smetana。
 
 新組員在自己的工作目錄執行以下 PowerShell 指令。
 
@@ -51,7 +52,7 @@ Get-ChildItem .agents/skills -Directory | Select-Object Name
 
 安裝完成後若找不到 `specify`，執行 `uv tool update-shell` 並重新開啟 PowerShell。已安裝其他版本的組員先對齊團隊版本。clone 會取得已提交的 SpecKit 技能、範本與腳本。
 
-001 計畫採 Python 3.13、Flask、Jinja、少量原生 JavaScript、SQLite 與官方 Google 用戶端，兩位組員需對齊共用 shell 與介面。依賴解析已完成，安裝及應用整合尚待實作。目標啟動與驗收步驟見 [驗收指南](specs/001-guided-notes/quickstart.md)，其中實作後命令尚不可在目前 repo 執行。
+001 採 Python 3.13、Flask、Jinja、少量原生 JavaScript、SQLite 與官方 Google 用戶端。共用環境已整合；可執行的 CMD 啟動步驟見 [驗收指南](specs/001-guided-notes/quickstart.md#目前可執行的-cmd-啟動流程)。先建立教師帳號，再把本機 Google profile 綁定該教師 ID；憑證維持在 repo 外。
 
 ## SpecKit 開發流程
 

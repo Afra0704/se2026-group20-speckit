@@ -60,5 +60,21 @@ def inspect_sheet(args):
         return 1
 
 
+def register_flask_cli(app):
+    """Expose the same OAuth helper through the one shared Flask application."""
+    import click
+    from flask import current_app
+
+    @app.cli.command("authorize-sheets")
+    def authorize_sheets():
+        try:
+            authorize(current_app.config.get("NOTES_GOOGLE_CLIENT_SECRETS"),
+                current_app.config.get("NOTES_GOOGLE_TOKEN"),
+                repo_root=Path(__file__).resolve().parents[3], interactive=True)
+        except AuthError as error:
+            raise click.ClickException(error.code) from None
+        click.echo("Google authorization is ready; worksheet access still requires verification.")
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

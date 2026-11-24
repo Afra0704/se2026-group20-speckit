@@ -3,7 +3,7 @@
 **Input**: `specs/001-guided-notes/` 中的 spec、plan、research、data-model、contracts 及 quickstart。
 **Prerequisites**: [plan.md](plan.md)、[spec.md](spec.md)、[data-model.md](data-model.md)、[介面契約](contracts/interfaces.md)、[格式契約](contracts/format.md)、[research.md](research.md)。
 **Tests**: 依憲章 V、spec 的 Independent Test／SC-001–SC-006，以及 quickstart 的自動與人工驗證要求安排測試任務。測試先定義預期並觀察未實作行為的失敗，再完成對應實作；已有邏輯時重用既有有效測試。
-**Organization**: 依 US1、US2（P1）、US3、US4（P2）分期。2026-11-23 已完成離線辨識切片，證據見 [validation.md](validation.md)；網頁、資料庫接線及人工驗收未完成。
+**Organization**: 依 US1、US2（P1）、US3、US4（P2）分期。2026-11-24 已接入教師匯入網頁、預覽、DB 版本發布與活動查詢；回填作業／恢復接線及完整人工驗收未完成。證據見 [validation.md](validation.md)。
 
 **離線工作順序調整**：共用骨架由 002 負責，尚未實作。T003／T015／T017 僅依賴標準庫，可先獨立完成並驗證；其餘任務維持既有前置條件。T002 與 Phase 2 不因這三項完成而視為通過。
 
@@ -40,14 +40,14 @@
 
 **Purpose**: 完成全部故事共用的設定、資料庫、授權邊界與資料結構。完成本期再進入故事實作。
 
-- [ ] T006 在 `tests/integration/test_notes_foundation.py` 定義 app factory、必要設定、CSRF、teacher／student／未登入／其他擁有者及 init-db 重跑不清空資料的驗證；檢查 Google token 不進 cookie 或錯誤輸出，依賴 Phase 1。
-- [ ] T007 建立或重用 `src/guided_notes/__init__.py` 的 create_app(test_config=None)，整合 NOTES_SECRET_KEY、NOTES_DB_PATH、NOTES_GOOGLE_CLIENT_SECRETS、NOTES_GOOGLE_TOKEN，註冊 001 Blueprint／CSRF／providers，設定 HttpOnly、SameSite=Lax 與本機 HTTP cookie；缺少 provider 時 fail closed，依賴 T001、T006。
-- [ ] T008 在 `src/guided_notes/db.py` 實作每 request 連線、foreign_keys=ON、有限 busy_timeout 與 `autocommit=True`／顯式 BEGIN IMMEDIATE／SQL COMMIT／ROLLBACK；提供 init-db，既有資料不可清空，網路期間不持有交易，依賴 T007。
-- [ ] T009 與 002 共用 `src/guided_notes/auth.py` 的 require_teacher()／TeacherContext，接好來源及活動 ownership；沿用其登入入口，001 不另造教師登入，測試注入身份僅限 testing 設定，依賴 T007。
-- [ ] T010 在 `src/guided_notes/notes/models.py` 定義共用 SourceDocument、ImportedCatalog、MainQuestion、AnswerItem、Blank、SourceBinding 及驗證入口；遵守「日期採 UTC ISO 8601，UI 以 Asia/Taipei 顯示」；落實「sheet_id 為 numeric id；title 可變」、「主鍵為 import_id+version，確認後不可變；舊活動引用舊版本」、「kind 為 single 或 question_set；每題是唯一提交單位」、「單題一項且 subitem_label=null；題組至少兩項且標號唯一」、「每個作答項目唯一答案，不和標號格混用」、「範圍為 sheetId+零起算左閉右開 GridRange；label 可空；answer_range 支援跨欄合併」，依賴 T007。
-- [ ] T011 在 `src/guided_notes/notes/repository.py` 建立 sources／catalogs／questions／answer_items／blanks／source_bindings 的儲存與唯一／外鍵約束，保存 teacher_id、prompt_text、原 userEnteredValue 與範圍；schema 初始化及升級保留已有資料，依賴 T008、T010。
-- [ ] T012 在 `src/guided_notes/notes/routes.py` 建立 Blueprint、契約 error envelope 及權限先行檢查；400／401／403／404／409／422／503 依 interfaces 區分，未授權不得洩漏來源定位，POST 統一 CSRF，日誌「不記 token、完整 Sheet 回應或學生答案」，依賴 T009、T010。
-- [ ] T013 執行 `tests/integration/test_notes_foundation.py`，補齊上述共用邊界並將指令、結果及與 002 的實際接線狀態記錄至 `specs/001-guided-notes/validation.md`，依賴 T008–T012。
+- [X] T006 在 `tests/integration/test_notes_foundation.py` 定義 app factory、必要設定、CSRF、teacher／student／未登入／其他擁有者及 init-db 重跑不清空資料的驗證；檢查 Google token 不進 cookie 或錯誤輸出，依賴 Phase 1。
+- [X] T007 沿用共用 create_app、GUIDED_NOTES_SECRET_KEY／GUIDED_NOTES_DATABASE，加入 NOTES_GOOGLE_CLIENT_SECRETS／NOTES_GOOGLE_TOKEN／NOTES_GOOGLE_TEACHER_ID，註冊 001 Blueprint／共享 CSRF 與真實 get_catalog；沿用安全 cookie。Google profile 未配置／教師不符時 fail closed，依賴 T006；共用介面依已合併 PR #4，新增 UI／圖意仍待本輪互審。
+- [X] T008 在 `src/guided_notes/db.py` 實作每 request 連線、foreign_keys=ON、有限 busy_timeout 與 `autocommit=True`／顯式 BEGIN IMMEDIATE／SQL COMMIT／ROLLBACK；提供 init-db，既有資料不可清空，網路期間不持有交易，依賴 T007。
+- [X] T009 與 002 共用 `src/guided_notes/auth.py` 的 require_teacher()／TeacherContext，接好來源及活動 ownership；沿用其登入入口，001 不另造教師登入，測試注入身份僅限 testing 設定，依賴 T007。
+- [X] T010 概念模型由 models.py 的 DTO 驗證、recognition.py 的候選類別與 schema.sql／repository.py 的 SourceDocument／ImportedCatalog／MainQuestion／AnswerItem／Blank／SourceBinding 儲存映射落實；不另建重複 ORM。保存 UTC ISO 8601、UI 台北時間、numeric sheetId、immutable import+version、精確單題／題組成員及唯一答案錨點；依賴 T007，證據見 foundation／import／contract 測試。
+- [X] T011 在 `src/guided_notes/notes/repository.py` 建立 sources／catalogs／questions／answer_items／blanks／source_bindings 的儲存與唯一／外鍵約束，保存 teacher_id、prompt_text、原 userEnteredValue 與範圍；schema 初始化及升級保留已有資料，依賴 T008、T010。
+- [X] T012 在 `src/guided_notes/notes/routes.py` 建立 Blueprint、契約 error envelope 及權限先行檢查；400／401／403／404／409／422／503 依 interfaces 區分，未授權不得洩漏來源定位，POST 統一 CSRF，日誌「不記 token、完整 Sheet 回應或學生答案」，依賴 T009、T010。
+- [X] T013 執行 `tests/integration/test_notes_foundation.py`，補齊上述共用邊界並將指令、結果及與 002 的實際接線狀態記錄至 `specs/001-guided-notes/validation.md`，依賴 T008–T012。
 
 **Checkpoint**: 基礎測試通過，DTO 與持久化可用，權限為 server-side，測試可以在沒有 Google 憑證時執行。
 
@@ -60,18 +60,18 @@
 
 - [X] T014 [P] [US1] 在 `tests/contract/test_catalog_contract.py` 依 `specs/001-guided-notes/contracts/examples.json` 驗證 CatalogDTO 計數、UUID、版本、single／question_set、item／blank 唯一性、teacher／student 資料邊界；依本輪離線順序調整先完成純 DTO 測試，HTTP 權限仍由 T006／T013 驗證。
 - [X] T015 [P] [US1] 在 `tests/unit/test_recognition.py` 使用 T003 fixtures 定義表頭去空白、merge anchor、(1)／（2）標號、題號正規化、位移、空白尾格、分隔列與歧義錯誤案例；至少一個題組第二格須被找到。依本次離線順序調整獨立驗證。
-- [ ] T016 [P] [US1] 在 `tests/integration/test_import_routes.py` 定義教師選表、無效 URL／gid、讀取權限、確認前來源改變、重複確認與舊版不可變的 HTTP 行為；以 substitute 觀察預覽不寫來源，依賴 Phase 2。
+- [X] T016 [P] [US1] 在 `tests/integration/test_import_routes.py` 定義教師選表、無效 URL／gid、讀取權限、確認前來源改變、重複確認與舊版不可變的 HTTP 行為；以 substitute 觀察預覽不寫來源，依賴 Phase 2。
 
 ### Implementation for User Story 1
 
 - [X] T017 [US1] 在 `src/guided_notes/notes/recognition.py` 實作 format 契約的純解析，動態找表頭欄區、主題號跨列範圍、小題標號及右側唯一答案區；保存合併答案左上角錨點，空白格不得遺漏，定位缺表頭／重號／答案交疊，依賴 T015。
 - [X] T018 [US1] 在 `src/guided_notes/notes/sheets_gateway.py` 實作標準 Sheets URL 識別、numeric sheetId 選表及官方 client 讀取；fields 明列 GridData 起始索引、userEnteredValue、formattedValue、格式與 merges，保留錯誤分類，不抓任意外部 URL。依本輪調整先由 `tests/unit/test_sheets_gateway.py` mock 驗證，T016 HTTP／真實 SDK smoke 仍待前置環境。
-- [ ] T019 [US1] 在 `src/guided_notes/notes/cli.py` 實作 authorize-sheets Desktop loopback CLI，使用 spreadsheets scope，client／token 位於指定 repo 外路徑，處理 invalid_grant 重新授權；將命令註冊至 `src/guided_notes/__init__.py`，並在 `tests/integration/test_google_authorization.py` 用 mocks 驗證路徑及錯誤輸出不含憑證，依賴 T018。
-- [ ] T020 [US1] 在 `src/guided_notes/notes/models.py`／`src/guided_notes/notes/repository.py` 落實「import_id 採 UUID4」、「import_version 為同一匯入的正整數版本」、「unit_id 是 question_id 的別名，不另設獨立主鍵」，question／item／blank 身份不得由座標產生；計數遵守「question_count 等於主題號數與提交單位數，answer_item_count 為全部作答項目數」，依賴 T014、T017、T011。
-- [ ] T021 [US1] 在 `src/guided_notes/notes/import_service.py` 實作讀表→辨識→預覽→確認重讀→發布版本；建立 semantic_hash／structure_hash／value_hash，語意含主題號、種類、小題序號、題目與順序且排除座標及答案，結構含座標／merge，值含 userEnteredValue 型別與公式；「換行統一為 LF，其餘題目內容不任意忽略」，辨識錯誤不發布，來源變更重建預覽，新版不改舊活動引用，依賴 T017–T020。
-- [ ] T022 [US1] 在 `src/guided_notes/notes/routes.py` 實作 GET /teacher/notes、POST worksheets、POST import-previews、POST import-previews/{id}/confirm、GET catalogs/{import_id}/versions/{version}；輸入與錯誤遵守 interfaces 契約，依賴 T021。
-- [ ] T023 [US1] 在 `src/guided_notes/notes/templates/notes/import.html`、`src/guided_notes/notes/templates/notes/import_preview.html` 與 `src/guided_notes/notes/static/notes.js` 完成選表、主題號數／作答格數、標號及目標預覽、確認與定位錯誤；保留 escaping／CSRF，依賴 T022。
-- [ ] T024 [US1] 執行 T014–T016 與 T019 測試，驗證兩份不同布局、表頭及欄列位移、跨欄答案格、舊版本與 ownership，將結果及涵蓋 FR-001–FR-005、FR-012–FR-014、SC-001 的證據記於 `specs/001-guided-notes/validation.md`，依賴 T023。
+- [X] T019 [US1] 在 `src/guided_notes/notes/cli.py` 實作 authorize-sheets Desktop loopback CLI，使用 spreadsheets scope，client／token 位於指定 repo 外路徑，處理 invalid_grant 重新授權；將命令註冊至 `src/guided_notes/__init__.py`，並在 `tests/integration/test_google_authorization.py` 用 mocks 驗證路徑及錯誤輸出不含憑證，依賴 T018。
+- [X] T020 [US1] 在 `src/guided_notes/notes/models.py`／`src/guided_notes/notes/repository.py` 落實「import_id 採 UUID4」、「import_version 為同一匯入的正整數版本」、「unit_id 是 question_id 的別名，不另設獨立主鍵」，question／item／blank 身份不得由座標產生；計數遵守「question_count 等於主題號數與提交單位數，answer_item_count 為全部作答項目數」，依賴 T014、T017、T011。
+- [X] T021 [US1] 在 `src/guided_notes/notes/import_service.py` 實作讀表→辨識→預覽→確認重讀→發布版本；建立 semantic_hash／structure_hash／value_hash，語意含主題號、種類、小題序號、題目與順序且排除座標及答案，結構含座標／merge，值含 userEnteredValue 型別與公式；「換行統一為 LF，其餘題目內容不任意忽略」，辨識錯誤不發布，來源變更重建預覽，新版不改舊活動引用，依賴 T017–T020。
+- [X] T022 [US1] 在 `src/guided_notes/notes/routes.py` 實作 GET /teacher/notes、POST worksheets、POST import-previews、POST import-previews/{id}/confirm、GET catalogs/{import_id}/versions/{version}；輸入與錯誤遵守 interfaces 契約，依賴 T021。
+- [X] T023 [US1] 在 `src/guided_notes/notes/templates/notes/import.html`、`src/guided_notes/notes/templates/notes/import_preview.html` 與 `src/guided_notes/notes/static/notes.js` 完成選表、主題號數／作答格數、標號及目標預覽、確認與定位錯誤；保留 escaping／CSRF，依賴 T022。
+- [X] T024 [US1] 執行 T014–T016 與 T019 測試，驗證兩份不同布局、表頭及欄列位移、跨欄答案格、舊版本與 ownership，將結果及涵蓋 FR-001–FR-005、FR-012–FR-014、SC-001 的證據記於 `specs/001-guided-notes/validation.md`，依賴 T023。
 - [ ] T025 [US1] 與組員依 quickstart M01／M02 在真實單題與題組副本讀取及預覽，核對全部主題號、小題、實際 merges、答案錨點與操作說明；於 `specs/001-guided-notes/validation.md` 記錄副本、版本與結果，若尚無憑證或未人工操作則如實保持未完成，依賴 T019、T024。
 
 **Checkpoint**: 匯入可獨立展示，題組無需手動重分。離線 MVP 是 T024 通過；真實來源驗收須 T025 完成才可宣稱通過。
@@ -266,6 +266,8 @@ B 可協助 [P] 測試及 T001／T025／T046／T052 人工互驗。
 同日續作：使用者明確授權純資料／gateway／授權文件切片，新增完成 T005／T014／T018／T032，累計 7／59；40 項離線測試通過。其他部分完成的任務維持未勾選，實際 SDK／HTTP／DB／provider／人工驗收待前置依賴。
 
 ## Notes
+
+2026-11-24 匯入網頁增量：T006–T013、T016、T019–T024 已完成適用實作與自動驗證，累計 26／59。T001 的本輪組員互審、T004 後續回填測試 provider 與 T025 完整人工驗收仍未完成；本次依使用者明確要求繼續實作及已確認介面推進，不代勾人工作業。US2／US3 production 回填作業與圖文收尾未完成。
 
 2026-11-24 最新進度：PR #4 共用骨架已合入本機 001 分支，新增完成 T002，累計 11／59。正式環境 89 項測試及 98 子案例通過；兩份真實雲端副本唯讀辨識成功。T025／T054 等完整人工操作仍未完成，不以唯讀 CLI 取代網頁匯入、發布與回填驗收。以下 10／59 等為歷史階段紀錄。
 

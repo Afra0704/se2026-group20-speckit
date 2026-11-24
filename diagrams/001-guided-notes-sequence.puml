@@ -27,10 +27,27 @@ else authorized
   alt duplicate / missing / ambiguous
    Notes --> Teacher : located errors; confirmation unavailable
   else valid
+   Notes -> Store : persist teacher-owned ready import preview
    Notes --> Teacher : main question count, answer count, subitem labels and targets
    Teacher -> Notes : review detected main questions and all subitems; confirm import
-   Notes -> Notes : establish versioned catalog and bindings
-   Notes --> Activity : versioned main questions as units, with ordered answer items
+   Notes -> Store : check owner and preview status
+   alt preview already confirmed with same request
+    Store --> Notes : same published catalog (no new version)
+    Notes --> Activity : get_catalog: fixed version and ordered items
+   else ready preview
+    Notes -> Sheets : re-read selected worksheet outside DB transaction
+    Sheets --> Notes : current source structure and values
+    Notes -> Auth : recheck teacher authorization
+    Auth --> Notes : permission or denial
+    alt source changed or authorization lost
+     Notes -> Store : invalidate changed preview; create replacement if valid
+     Notes --> Teacher : confirm new preview, or access denied
+    else still valid
+     Notes -> Store : short transaction: recheck status, allocate version, persist catalog and bindings
+     Store --> Notes : one confirmed immutable catalog
+     Notes --> Activity : get_catalog: fixed version and ordered items
+    end
+   end
   end
  end
 end

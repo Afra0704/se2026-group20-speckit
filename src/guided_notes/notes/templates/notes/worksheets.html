@@ -1,0 +1,12 @@
+{% extends "notes/base.html" %}
+{% block content %}
+<h1>選擇工作表</h1>
+<section class="card">
+{% if worksheets %}<form method="post" action="{{ url_for('notes.create_preview') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="spreadsheet_url" value="{{ spreadsheet_url }}">
+  <label>工作表<select name="sheet_id" required>{% for sheet in worksheets %}<option value="{{ sheet.sheet_id }}" {% if sheet.sheet_id == gid %}selected{% endif %}>{{ sheet.title }}</option>{% endfor %}</select></label>
+  <button>辨識題目並預覽</button>
+</form>{% else %}<p>這份試算表沒有可選擇的工作表。</p>{% endif %}
+</section>
+{% endblock %}

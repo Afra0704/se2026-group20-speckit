@@ -18,4 +18,9 @@ def defaults(instance_path):
         "DEMO_CATALOG": os.environ.get("GUIDED_NOTES_DEMO_CATALOG") == "1",
         "AUTH_SECONDS": 8 * 60 * 60,
         "RECOVERY_SECONDS": 7 * 24 * 60 * 60,
+        "NOTES_GOOGLE_CLIENT_SECRETS": os.environ.get("NOTES_GOOGLE_CLIENT_SECRETS"),
+        "NOTES_GOOGLE_TOKEN": os.environ.get("NOTES_GOOGLE_TOKEN"),
+        "NOTES_GOOGLE_TEACHER_ID": (
+            int(os.environ["NOTES_GOOGLE_TEACHER_ID"])
+            if os.environ.get("NOTES_GOOGLE_TEACHER_ID", "").isdigit() else None),
     }

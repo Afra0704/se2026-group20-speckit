@@ -1,8 +1,32 @@
 # Quickstart Validation Guide
 
 此指南對應 [plan.md](plan.md)、[format.md](contracts/format.md) 及 [interfaces.md](contracts/interfaces.md)。
-目前已有辨識、DTO 契約、Sheets gateway、來源指紋與重綁、純回填／恢復核心及獨立 OAuth CLI。離線測試方式見 README，CMD 的授權方式見 docs/google-sheets-setup.md。Flask 應用程式／CLI 註冊、共用 pyproject.toml／uv.lock 及 DB 接線尚未建立。
-下列「實作後」命令是 implement 階段必須提供並驗證的入口，不能將本指南當成已執行成功的紀錄。
+2026-11-24 已完成教師匯入頁面、工作表選擇、預覽確認、同一 DB 的版本保存與 get_catalog 接線。Flask init-db／authorize-sheets 已註冊。API／HTML 表單測試與真實雲端匯入驗證已完成；瀏覽器畫面與兩位組員完整人工驗收尚待執行。production 回填／恢復仍未完成。
+
+## 目前可執行的 CMD 啟動流程
+
+第一次取得鎖定檔後先執行 `uv sync --locked --python 3.13`。本機 `.venv` 已建立，可直接執行下列指令。以下是 **CMD** 寫法，`for` 的 `%S` 用於互動式命令提示字元。
+
+```bat
+cd /d D:\os_final
+for /f %S in ('.venv\Scripts\python.exe -c "import secrets; print(secrets.token_hex(32))"') do @set "GUIDED_NOTES_SECRET_KEY=%S"
+set "GUIDED_NOTES_DATABASE=D:\os_final\instance\guided-notes.sqlite3"
+set "NOTES_GOOGLE_CLIENT_SECRETS=C:\Users\user\guided-notes-private\client.json"
+set "NOTES_GOOGLE_TOKEN=C:\Users\user\guided-notes-private\token.json"
+.venv\Scripts\python.exe -m flask --app guided_notes:create_app init-db
+.venv\Scripts\python.exe -m flask --app guided_notes:create_app init-teacher teacher
+```
+
+`init-teacher` 會要求你自行輸入至少八個字元的密碼，並顯示教師 ID。若帳號已建立，沿用既有帳號即可，不需重建。將下面的 `1` 換成實際教師 ID，再啟動：
+
+```bat
+set "NOTES_GOOGLE_TEACHER_ID=1"
+.venv\Scripts\python.exe -m flask --app guided_notes:create_app run --host 127.0.0.1 --port 5000
+```
+
+打開 `http://127.0.0.1:5000/teacher`，以剛建立的帳號登入，點「匯入 Google Sheets 講義」。貼副本連結 → 選工作表 → 核對題數／小題／A1 答案範圍 → 確認匯入 → 使用這份講義建立活動。
+Google profile 僅允許設定的教師使用；其他教師不能借用這台電腦的 token。重新開啟 CMD 後需重新設定環境變數；更換 session secret 會使原瀏覽器登入失效。
+`init-db` 重跑不清空既有資料，已確認清單與活動可在重啟後恢復。匯入與保存只寫本機 DB，不回填雲端。來源若在確認前改變，需開啟更新後的預覽再確認。
 
 ## 現在可執行的文件檢查
 
@@ -45,8 +69,9 @@ uv run --locked python -c "import flask, googleapiclient.discovery, google.auth,
 ```powershell
 $env:NOTES_GOOGLE_CLIENT_SECRETS = 'C:/your-private-folder/credentials.json'
 $env:NOTES_GOOGLE_TOKEN = 'C:/your-private-folder/token.json'
-$env:NOTES_SECRET_KEY = (uv run --locked python -c "import secrets; print(secrets.token_hex(32))")
-$env:NOTES_DB_PATH = 'D:/os_final/instance/app.sqlite3'
+$env:GUIDED_NOTES_SECRET_KEY = (uv run --locked python -c "import secrets; print(secrets.token_hex(32))")
+$env:GUIDED_NOTES_DATABASE = 'D:/os_final/instance/guided-notes.sqlite3'
+$env:NOTES_GOOGLE_TEACHER_ID = '1'
 uv run --locked flask --app guided_notes:create_app init-db
 uv run --locked flask --app guided_notes:create_app authorize-sheets
 uv run --locked flask --app guided_notes:create_app run --host 127.0.0.1 --port 5000
@@ -55,7 +80,7 @@ uv run --locked flask --app guided_notes:create_app run --host 127.0.0.1 --port 
 init-db 只在新資料庫首次建立時執行，既有資料不可因此被清空，後續 schema 變動須保留已確認版本與作業資料。
 authorize-sheets 啟動獨立 loopback 授權，請求 spreadsheets 讀寫 scope，token 寫指定本機路徑。
 應用啟動後以 002 的入口登入教師，再開 /teacher/notes。
-以上為目標命令，001 的 cli.py 只實作 Google 授權；登入介面由 002 提供。
+上述命令已提供；尚未完成的回填與人工驗收不能據此視為通過。登入介面沿用 002。
 
 ## 實作後自動驗證
 

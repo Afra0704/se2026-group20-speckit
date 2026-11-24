@@ -5,6 +5,7 @@ skinparam defaultFontName SansSerif
 hide empty methods
 title 001 Guided Notes - Main Questions, Subitems and Merged Ranges
 class SourceDocument {
+ ownerTeacherIdentity
  spreadsheetIdentity
  worksheetIdentity
  displayName
@@ -15,6 +16,14 @@ class ImportedCatalog {
  questionCount
  answerItemCount
  confirmed
+}
+class ImportPreview {
+ previewIdentity
+ sourceIdentity
+ fingerprints
+ state: ready / confirmed / invalidated
+ confirmedImportIdentity [optional]
+ confirmedVersion [optional]
 }
 class MainQuestion {
  candidateOrPublishedIdentity
@@ -110,6 +119,9 @@ class WriteItem {
  locatedError
 }
 SourceDocument "1" -- "0..*" ImportedCatalog
+SourceDocument "1" -- "0..*" ImportPreview
+ImportPreview --> ImportBundle : recognized candidate
+ImportPreview --> ImportedCatalog : atomic publish once
 ImportBundle --> ImportedCatalog : candidate IDs; repository publishes later
 ImportBundle --> Fingerprints : current observations
 ExportPreview --> Fingerprints : freshness guard
