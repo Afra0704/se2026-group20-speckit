@@ -21,6 +21,8 @@ let activeId = null;
 let polling = false;
 let selection = 0;
 let courseSelection = 0;
+let historyRequest = 0;
+let historyNeedsRefresh = true;
 
 function url(id) {
   return encodeURIComponent(id);
@@ -158,13 +160,18 @@ function setRoom(id) {
   store.set(id);
   version = -1;
   activeId = null;
+  historyRequest++;
+  historyNeedsRefresh = true;
   for (const field of ["questions", "activities", "results", "state"]) byId(field)?.replaceChildren();
   if (byId("close-room")) byId("close-room").disabled = true;
 }
 
 async function activityList(id) {
+  const request = ++historyRequest;
+  const context = selection;
+  historyNeedsRefresh = true;
   const data = await api(`/teacher/classrooms/${url(id)}/activities`);
-  if (room !== id) return;
+  if (room !== id || context !== selection || request !== historyRequest) return;
   const list = byId("activities");
   list.replaceChildren();
   for (const activity of data.activities) {
@@ -188,6 +195,7 @@ async function activityList(id) {
     if (activity.phase === "CLOSED" || activity.phase === "LIVE") addResultButton(line, activity);
     list.append(line);
   }
+  historyNeedsRefresh = false;
 }
 
 function addResultButton(list, activity) {
@@ -280,7 +288,8 @@ async function refresh() {
     showQuestions(data.activity, open);
     if (role === "teacher") {
       byId("close-room").disabled = !open;
-      if (changed) await activityList(id);
+      if (changed) historyNeedsRefresh = true;
+      if (historyNeedsRefresh) await activityList(id);
     } else {
       byId("recover").hidden = true;
       if (!open) {
@@ -293,6 +302,7 @@ async function refresh() {
     }
   } catch (error) {
     if (context !== selection) return;
+    if (role === "teacher") historyNeedsRefresh = true;
     for (const button of main.querySelectorAll("#questions button, #activities button")) button.disabled = true;
     if (byId("close-room")) byId("close-room").disabled = true;
     if (byId("recover")) byId("recover").hidden = error.message !== "AUTH_REQUIRED";

@@ -31,8 +31,17 @@ def create_app(test_config=None):
     for blueprint in blueprints:
         app.register_blueprint(blueprint)
     notes = app.config.get("NOTES_BLUEPRINT")
-    if notes is not None:
-        app.register_blueprint(notes)
+    from .notes.repository import init_schema
+    from .notes.cli import register_flask_cli
+    from .notes.routes import a1_range, taipei_time
+    if notes is None:
+        from .notes.routes import notes
+    with app.app_context():
+        init_schema()
+    app.register_blueprint(notes)
+    register_flask_cli(app)
+    app.jinja_env.filters["notes_a1"] = a1_range
+    app.jinja_env.filters["notes_time"] = taipei_time
     app.jinja_env.globals["csrf_token"] = csrf_token
 
     @app.get("/")

@@ -67,6 +67,7 @@ def valid_identifier(value):
     return isinstance(value, str) and bool(value.strip())
 
 
+
 def store_activity(db, teacher, import_id, version, questions):
     activity_id = secrets.token_urlsafe(18)
     code = secrets.token_hex(5).upper()

@@ -5,9 +5,21 @@ skinparam defaultFontName SansSerif
 hide empty methods
 title 001 Guided Notes - Main Questions, Subitems and Merged Ranges
 class SourceDocument {
+ ownerTeacherIdentity
  spreadsheetIdentity
  worksheetIdentity
  displayName
+}
+class CourseReference {
+ courseIdentity: opaque string
+ ownerTeacherIdentity
+ title
+ verifiedBy002
+}
+class ImportCourseAssignment {
+ importIdentity: unique
+ courseIdentity
+ assignedAt
 }
 class ImportedCatalog {
  importIdentity
@@ -16,11 +28,34 @@ class ImportedCatalog {
  answerItemCount
  confirmed
 }
+class ImportPreview {
+ previewIdentity
+ sourceIdentity
+ fingerprints
+ state: ready / confirmed / invalidated
+ confirmedImportIdentity [optional]
+ confirmedVersion [optional]
+}
+class LectureDisplayName {
+ nameMode: source / custom
+ customTitle [optional]
+}
 class MainQuestion {
+ candidateOrPublishedIdentity
  questionIdentity = unitIdentity
  displayNumber
  kind: single or question-set
  sourceNumberRange
+}
+class ImportBundle {
+ candidateCatalog
+ recognizedSource
+ spreadsheetIdentity
+}
+class Fingerprints {
+ semanticHash
+ structureHash
+ valueHash
 }
 class AnswerItem {
  itemIdentity
@@ -64,6 +99,8 @@ class ExportPreview {
  sourceObservations
  valid
  teacherConfirmed
+ savedObservedRecognition
+ state: ready / consumed / invalidated
 }
 class PreviewItem {
  targetRange
@@ -78,6 +115,9 @@ class WriteOperation {
  teacherIdentity
  resultVersion
  state
+ originOperationIdentity [optional]
+ rootOperationIdentity [optional]
+ blocksSource
 }
 class SourceLease {
  spreadsheetIdentity
@@ -97,8 +137,21 @@ class WriteItem {
  blankIdentity
  outcome
  locatedError
+ verifiedAt [optional]
 }
 SourceDocument "1" -- "0..*" ImportedCatalog
+CourseReference "1" -- "0..*" ImportCourseAssignment
+ImportCourseAssignment --> ImportedCatalog : all versions of one import
+ImportPreview --> CourseReference : optional server-owned context
+SourceDocument "1" -- "0..*" ImportPreview
+ImportPreview --> ImportBundle : recognized candidate
+ImportPreview --> ImportedCatalog : atomic publish once
+ImportPreview "1" *-- "1" LectureDisplayName : saved choice
+ImportedCatalog "1" *-- "1" LectureDisplayName : per-version display metadata
+LectureDisplayName --> SourceDocument : source mode uses worksheet title
+ImportBundle --> ImportedCatalog : candidate IDs; repository publishes later
+ImportBundle --> Fingerprints : current observations
+ExportPreview --> Fingerprints : freshness guard
 ImportedCatalog "1" *-- "1..*" MainQuestion
 MainQuestion "1" *-- "1..*" AnswerItem
 AnswerItem "1" *-- "1" Blank
@@ -114,6 +167,7 @@ ExportPreview --> ResultSnapshot
 ExportPreview "1" *-- "0..*" PreviewItem
 WriteOperation --> ExportPreview
 SourceLease --> WriteOperation : one active writer per source
+WriteOperation --> WriteOperation : recovery attempt retains root / origin
 WriteReport --> WriteOperation
 WriteReport --> ExportPreview
 WriteReport "1" *-- "0..*" WriteItem
@@ -126,6 +180,15 @@ note right of SourceBinding
 Use headers and merged ranges.
 Preserve (1), (2) labels and formatting.
 Write only the answer range top-left anchor.
+end note
+note left of ImportBundle
+Offline core builds candidates, never publishes.
+Current source is reidentified before recovery.
+Authorization, persistence and leases stay external.
+end note
+note left of LectureDisplayName
+Teacher display only; CatalogDTO is unchanged.
+Source sheetId and answer bindings never depend on names.
 end note
 note right of WriteItem
 Verified / failed / not processed / unknown / skipped.

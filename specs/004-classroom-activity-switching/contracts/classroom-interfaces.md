@@ -1,6 +1,6 @@
 # Phase 1 接線契約
 
-以下是 002 課堂改版的介面。001 在分支提交 `418365f` 提供的函式見 [交接文件](https://github.com/Afra0704/se2026-group20-speckit/blob/418365f/docs/001-course-handoff.md)。真實接線仍待兩邊合流驗證。
+以下是 002 課堂改版的介面。001 在提交 `418365f` 提供的函式已於 PR #6 合流與真實 002 course provider 接上，本機整合測試已覆蓋課程範圍及固定版本。Sheets／正式 003 仍為替代來源，真人與真實副本驗收未完成，見 [合流驗證](../../../docs/pr6-integration-validation.md)。
 
 | 邊界 | 輸入與輸出 |
 | --- | --- |

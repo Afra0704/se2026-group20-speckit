@@ -39,3 +39,22 @@ Plan 階段於 2026-11-23 補上 Operation Repository／Source Lease、idempoten
 
 2026-11-23 設計整合：與 002 統一主題號／items、import_id／import_version 及結算後回填，
 六張 001／002 圖以本機 PlantUML 1.2026.10 重渲染。002 原始作者版本與審查記錄保留在其文件，這次整合後的新增圖意仍待共同複核。
+
+2026-11-23 離線核心續作：Class 補 ImportBundle／Fingerprints 與候選不等於發布的界線；Component 補 CLI-only consent；Sequence 恢復流程改為先讀目前結構並重辨識錨點。以下命令實際完成，退出碼 0，三張同目錄 PNG 更新；AI 已檢視圖面，新增圖意待同學審查。
+
+```powershell
+& 'C:/Program Files/Java/jdk-24/bin/java.exe' '-Djava.awt.headless=true' -jar D:/os_final/tmp/tools/plantuml-1.2026.10.jar -charset UTF-8 -tpng 'D:/os_final/diagrams/001-guided-notes-*.puml'
+```
+
+ImportBundle／Fingerprints 對應 import_service.py，ExportPreview／PreviewItem 與純恢復對應 export_service.py，Source Access 的憑證核心對應 google_authorization.py／cli.py。Store／WriteOperation／授權與 DB 整合仍未實作，不將整張圖或功能標記完成。
+
+2026-11-24 US1 接線：Class 補 ImportPreview 與 SourceDocument 擁有者，Sequence 補 ready preview 的持久化、確認重讀、短交易發布、失效與重送分支；相同 CLI 命令渲染三張圖，退出碼 0。Component 的 Import／Catalog／Store 已分別對應 import_service、models／repository／notes schema；教師授權沿用 auth，視圖由 notes/routes 及 templates 提供。
+Source Lease／WriteOperation／完整回填執行仍為後續設計，新匯入畫面與本輪圖意待同學互審。
+
+2026-11-24 D17 命名擴充：Class 補 LectureDisplayName 與 preview／catalog 的每版本 metadata 關係；Component 標示一分頁及本機命名；Sequence 顯示命名選擇隨 preview／catalog 保存。再次使用上述 CLI 渲染三張 PNG，退出碼 0。來源識別及 CatalogDTO 未變，新的圖意與 OpenSpec 同步待人工確認。
+
+2026-11-24 唯讀回填預覽：實作前更新 Class（保存目前辨識與 preview 狀態）、Component（可信 snapshot 與觀察持久化、GET 無外部讀寫）、Sequence（讀取後重檢授權與完整結果，短交易保存）。使用同一 CLI 重新渲染三張 PNG，退出碼 0。已對照 activities.teacher.get_activity_reference、export_service.create_saved_preview／get_saved_preview、notes_export_previews 與新 HTML／JSON routes。圖中的確認、WriteOperation、SourceLease 及恢復仍屬後續設計，沒有宣稱已完成；新增圖意待組員互審。
+
+2026-11-24 課程講義：在實作前新增 CourseReference／ImportCourseAssignment 及 optional preview context、002 Course Ownership Provider 組件與匯入前／發布前的 ownership 查核；使用上述相同 CLI 重渲染三張 PNG，退出碼 0。對應 notes/course_catalogs.py、notes_import_courses／notes_preview_courses、import_service 的課程重檢與替代 preview 複製，以及教師課程講義頁。只有 001 邊界與 substitute 通過測試，002 正式課程 provider、課堂狀態／切換未實作；新增圖意互審與正式接線列 T069。
+
+2026-11-25 既有回填接線完成：WriteOperation 增 origin/root lineage 與 blocksSource，WriteItem 增 verifiedAt；Component 對應 writeback.py、物理來源 mutex＋DB lease；Sequence 增 send 前先保存 unknown、逐題組重檢、執行期限與 lease 遺失停止分支。已使用上述相同 CLI 重新產生三張 PNG，退出碼 0。圖中的回填／回讀／恢復分別對應 writeback.confirm／get_report／recovery_preview，儲存對應 notes_write_operations／notes_write_items／notes_source_leases／notes_export_context。實作與自動驗證完成不代表真實 Google 副本、正式結果 provider 或新增圖意互審已完成。

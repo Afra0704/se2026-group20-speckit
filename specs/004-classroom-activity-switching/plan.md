@@ -43,6 +43,8 @@
 
 ## Phase 0／1 交付
 
+2026-11-25 PR #6 合流修補：共用 SQLite 採 001 的 autocommit=True、SQL COMMIT／ROLLBACK，保留 004 新資料庫檢查及 classroom schema；狀態讀取顯式 SQL ROLLBACK，避免在保留 app context 下留下交易。教師輪詢以 historyNeedsRefresh 保留失敗後重試，historyRequest＋selection 拒絕舊清單回應；成功渲染後才清除需求。001 Blueprint、schema、CLI 與 filters 在兩模式均註冊。對應 docs/pr6-integration-validation.md；正式 003／真人完整驗收仍待完成。
+
 [技術研究](research.md) · [資料模型](data-model.md) · [介面契約](contracts/classroom-interfaces.md) · [驗證指南](quickstart.md)
 
 Phase 1 再檢查：設計仍在已確認的課堂行為範圍內。001／002 的介面驗收及真實資料測試仍待接線。現有 002 的未完成驗收繼續留在原任務。

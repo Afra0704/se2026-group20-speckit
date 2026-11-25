@@ -1,5 +1,7 @@
 # Phase 1 驗證指南
 
+2026-11-25 PR #6 合流更新：001 真實課程與講義介面已接上，正常匯入使用 GUIDED_NOTES_DEMO_CATALOG=0；下方 DEMO_CATALOG=1 仍僅供示範。210 項 Python 測試、98 子測試及四項 JavaScript 測試通過，正式 003／真實 Google 副本／兩組真人驗收仍待完成。合流啟動與分析／收斂紀錄見 [pr6-integration-validation](../../docs/pr6-integration-validation.md)。
+
 在專案根目錄開新的 PowerShell 視窗，使用獨立的空白資料庫。本機示範提供一份兩版本的清單，兩份講義的驗收由契約測試替代資料提供。
 
 ```powershell

@@ -1,0 +1,19 @@
+{% extends "notes/base.html" %}
+{% block title %}活動回填預覽{% endblock %}
+{% block content %}
+<h1>活動回填預覽</h1>
+<p class="muted">從已結束且完成結算的活動，查看勝組答案與原講義的差異。</p>
+<section class="card">
+  <form method="post" action="{{ url_for('notes.create_export_preview') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>活動識別<input name="activity_id" data-current-activity maxlength="256" required autocomplete="off"></label>
+    <p class="muted">會自動帶入此瀏覽器最近使用的教師活動。這是活動識別，不是學生加入碼。</p>
+    <button>讀取來源並建立預覽</button>
+  </form>
+  <p class="notice">先預覽，再明確確認回填。若顯示「結果尚未結算」，需等待結果模組接入正式結算。</p>
+</section>
+<section class="card"><h2>已保存的預覽</h2>
+{% if previews %}<ul>{% for p in previews %}<li><a href="{{ url_for('notes.view_export_preview', preview_id=p.preview_id) }}">活動 {{ p.activity_id }}</a> · {{ p.created_at|notes_time }}（台北時間）</li>{% endfor %}</ul>
+{% else %}<p>尚無回填預覽。</p>{% endif %}
+</section>
+{% endblock %}

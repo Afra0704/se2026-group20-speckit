@@ -222,7 +222,7 @@ def state(classroom_id):
             "activity": state_view(db, activity, group) if activity is not None else None,
         }
     finally:
-        db.rollback()
+        db.execute("ROLLBACK")
 
 
 @rooms.post("/classrooms/<classroom_id>/result-access")

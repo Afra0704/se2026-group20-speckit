@@ -1,0 +1,24 @@
+{% extends "notes/base.html" %}
+{% block title %}確認講義對應{% endblock %}
+{% block content %}
+<h1>確認講義對應</h1><p class="muted">{{ preview.title }}</p>
+{% if course %}<p>加入課程：{{ course.title }} · <a href="{{ url_for('notes.course_page', course_id=course.course_id) }}">返回課程講義</a></p>{% endif %}
+<p class="muted">來源分頁：{{ preview.source_title }} · {{ '自訂講義名稱' if preview.name_mode == 'custom' else '沿用工作表名稱' }}</p>
+<div class="metrics"><strong>{{ preview.question_count }} 題</strong><strong>{{ preview.answer_item_count }} 個作答格</strong></div>
+<p class="notice">每個主題號是一題。題組的全部小題一起提交，並共用同一勝組；請逐項核對下方對應。</p>
+<section class="card scroll"><table>
+  <thead><tr><th>題號</th><th>小題</th><th>題目敘述</th><th>答案格範圍</th></tr></thead>
+  <tbody>{% for q in preview.recognized.questions %}{% for item in q.items %}<tr>
+    <td>{{ q.display_number }}</td><td>{{ item.subitem_label or '單題' }}</td><td>{{ item.prompt_text }}</td>
+    <td>{{ item.answer_range|notes_a1 }}</td>
+  </tr>{% endfor %}{% endfor %}</tbody>
+</table></section>
+{% if preview.status == 'ready' %}<section class="card"><form method="post" action="{{ url_for('notes.confirm_preview', preview_id=preview.preview_id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="confirm" value="true">
+  <label>保存方式<select name="existing_import_id"><option value="">建立新的講義清單</option>{% for entry in imports %}<option value="{{ entry.import_id }}">更新「{{ entry.display_title }}」（目前第 {{ entry.version }} 版）</option>{% endfor %}</select></label>
+  <p class="muted">確認時會再次讀取來源。若內容或位置改變，會要求你檢查新的預覽；既有活動仍使用原版本。</p>
+  <button>對應正確，確認匯入</button>
+</form></section>
+{% elif preview.status == 'confirmed' %}<p>此預覽已確認。<a href="{{ url_for('notes.view_catalog', import_id=confirmed_import_id, version=confirmed_version) }}">查看已保存版本</a></p>
+{% else %}<p role="alert">此預覽已失效，請重新匯入講義。</p>{% endif %}
+{% endblock %}

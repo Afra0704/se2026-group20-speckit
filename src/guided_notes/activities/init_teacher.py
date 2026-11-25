@@ -20,4 +20,4 @@ def init_teacher(username, password):
         )
         if not cursor.rowcount:
             raise click.ClickException("Teacher already exists.")
-    click.echo("Teacher created.")
+    click.echo(f"Teacher created. ID: {cursor.lastrowid}")

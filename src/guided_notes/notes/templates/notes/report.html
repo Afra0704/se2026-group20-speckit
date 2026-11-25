@@ -1,0 +1,20 @@
+{% extends "notes/base.html" %}
+{% block title %}回填報告{% endblock %}
+{% block content %}
+<h1>{{ preview.title }} · 回填報告</h1>
+<p>作業識別：<code>{{ report.operation_id }}</code></p>
+<p>結果版本：{{ report.result_version }} · 更新時間 {{ report.updated_at|notes_time }}（台北時間）</p>
+<p class="notice">{{ {'completed':'全部適用答案已回讀一致，無勝組項目已略過。','needs_attention':'尚未全部完成，請檢查逐格狀態後建立恢復預覽。','recovering':'作業曾中斷，須先回讀並建立恢復預覽，不能直接重送。','writing':'回填執行中，請稍後重新查看報告。','queued':'作業等待執行。'}[report.status] }}</p>
+{% if report.error_code %}<p role="alert">處理代碼：{{ report.error_code }}</p>{% endif %}
+<p>已驗證 {{ report.counts.verified }} · 略過 {{ report.counts.skipped }} · 未處理 {{ report.counts.not_processed }} · 失敗 {{ report.counts.failed }} · 未知 {{ report.counts.unknown }} · 衝突 {{ report.counts.conflict }}</p>
+<section class="card scroll"><table><thead><tr><th>題號／小題</th><th>勝組識別</th><th>狀態</th><th>處理代碼</th><th>回讀時間</th></tr></thead><tbody>
+{% for unit in report.units %}{% for item in unit['items'] %}
+{% set label = labels[item.item_id] %}
+<tr><td>{{ label.display_number }} {{ label.subitem_label or '' }}</td><td>{{ unit.winner_group_id or '無勝組' }}</td>
+<td>{{ {'not_processed':'尚未處理','verified':'回讀一致','failed':'明確失敗','unknown':'結果未知','skipped':'無勝組略過','conflict':'內容衝突'}[item.status] }}</td><td>{{ item.error_code or '—' }}</td><td>{{ item.verified_at|notes_time if item.verified_at else '—' }}</td></tr>
+{% endfor %}{% endfor %}
+</tbody></table></section>
+{% if report.status in ['needs_attention','recovering'] %}<form method="post" action="{{ url_for('notes.recover_export', operation_id=report.operation_id) }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button>先回讀並建立恢復預覽</button></form>{% endif %}
+<p><a href="{{ url_for('notes.operation_report', operation_id=report.operation_id) }}">重新查看報告</a> · <a href="{{ url_for('notes.export_form') }}">返回活動回填</a></p>
+{% endblock %}

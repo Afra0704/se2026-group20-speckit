@@ -95,3 +95,12 @@ def classroom_setup(classroom_teacher):
     path = f"/teacher/courses/{course['course_id']}/classrooms"
     room = post(classroom_teacher, path, title="上午班").json
     return course, room
+
+
+@pytest.fixture
+def writable(app):
+    """Recorded Sheets failure substitute; settled results are injected per test."""
+    from writeback_support import WritableSheets
+    gateway = WritableSheets()
+    app.config.update(NOTES_GATEWAY=gateway, GET_CATALOG=None)
+    return gateway

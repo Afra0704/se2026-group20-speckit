@@ -12,4 +12,8 @@ def test_same_teacher_cannot_cross_catalogs(classroom_app, classroom_teacher, cl
     assert post(classroom_teacher, path, import_id=course["course_id"], import_version=2).status_code == 201
     assert classroom_teacher.get(path).json["activities"][0]["import_version"] == 2
     classroom_app.config["GET_COURSE_CATALOG"] = None
+    # 001 now exists: clearing the test override uses the real scoped provider.
+    assert post(classroom_teacher, path, import_id=course["course_id"], import_version=1).status_code == 404
+    # An explicitly unavailable provider must still fail closed.
+    classroom_app.config["GET_COURSE_CATALOG"] = False
     assert post(classroom_teacher, path, import_id=course["course_id"], import_version=1).status_code == 503
