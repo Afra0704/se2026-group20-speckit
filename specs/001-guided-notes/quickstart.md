@@ -1,8 +1,35 @@
 # Quickstart Validation Guide
 
 此指南對應 [plan.md](plan.md)、[format.md](contracts/format.md) 及 [interfaces.md](contracts/interfaces.md)。
-目前只有規格與設計文件，應用程式、CLI、pyproject.toml、uv.lock 及測試尚未建立。
-下列「實作後」命令是 implement 階段必須提供並驗證的入口，不能將本指南當成已執行成功的紀錄。
+2026-11-25 已完成教師匯入、版本保存、課程講義邊界、回填確認／報告／恢復的 HTTP 與 DB 接線；Flask init-db／authorize-sheets 已註冊。自動回填驗證使用替代來源及可信結算 substitute，正式結算 provider、課程 provider 與兩位組員完整人工驗收仍待執行，不代表已對真實副本寫入。
+
+## 目前可執行的 CMD 啟動流程
+
+第一次取得鎖定檔後先執行 `uv sync --locked --python 3.13`。本機 `.venv` 已建立，可直接執行下列指令。以下是 **CMD** 寫法，`for` 的 `%S` 用於互動式命令提示字元。
+
+```bat
+cd /d D:\os_final
+for /f %S in ('.venv\Scripts\python.exe -c "import secrets; print(secrets.token_hex(32))"') do @set "GUIDED_NOTES_SECRET_KEY=%S"
+set "GUIDED_NOTES_DATABASE=D:\os_final\instance\guided-notes.sqlite3"
+set "NOTES_GOOGLE_CLIENT_SECRETS=C:\Users\user\guided-notes-private\client.json"
+set "NOTES_GOOGLE_TOKEN=C:\Users\user\guided-notes-private\token.json"
+.venv\Scripts\python.exe -m flask --app guided_notes:create_app init-db
+.venv\Scripts\python.exe -m flask --app guided_notes:create_app init-teacher teacher
+```
+
+`init-teacher` 會要求你自行輸入至少八個字元的密碼，並顯示教師 ID。若帳號已建立，沿用既有帳號即可，不需重建。將下面的 `1` 換成實際教師 ID，再啟動：
+
+```bat
+set "NOTES_GOOGLE_TEACHER_ID=1"
+.venv\Scripts\python.exe -m flask --app guided_notes:create_app run --host 127.0.0.1 --port 5000
+```
+
+打開 `http://127.0.0.1:5000/teacher`，以剛建立的帳號登入，點「匯入 Google Sheets 講義」。貼副本連結 → 選工作表 → 核對題數／小題／A1 答案範圍 → 確認匯入 → 使用這份講義建立活動。
+
+選工作表時，預設沿用該分頁名稱；也可改選「自訂講義名稱」並輸入 1–100 個字元。這個名稱只在本系統顯示，來源分頁名稱會另外列出，不影響回填。多分頁需各自選擇、預覽及確認；重複名稱不會合併來源。
+更新程式後，在原 CMD 按 Ctrl+C 停止再重跑 run 指令，重開匯入頁即可看到新選項。啟動時會自動新增名稱 metadata 與舊資料預設值，不要刪除原 DB 或重建講義。
+Google profile 僅允許設定的教師使用；其他教師不能借用這台電腦的 token。重新開啟 CMD 後需重新設定環境變數；更換 session secret 會使原瀏覽器登入失效。
+`init-db` 重跑不清空既有資料，已確認清單與活動可在重啟後恢復。匯入與保存只寫本機 DB，不回填雲端。來源若在確認前改變，需開啟更新後的預覽再確認。
 
 ## 現在可執行的文件檢查
 
@@ -36,7 +63,7 @@ Google 授權不等同應用的教師登入。External／Testing token 到期時
 ```powershell
 uv python install 3.13
 uv sync --locked --python 3.13
-uv run --locked python -c "import flask, flask_wtf, googleapiclient.discovery, google.auth, google_auth_oauthlib, sqlite3; print('imports ok')"
+uv run --locked python -c "import flask, googleapiclient.discovery, google.auth, google_auth_oauthlib, sqlite3; print('imports ok')"
 ```
 
 環境變數的名稱及 app 設定對應列在以下範例；實作必須啟動時驗證路徑與必要設定。
@@ -45,8 +72,9 @@ uv run --locked python -c "import flask, flask_wtf, googleapiclient.discovery, g
 ```powershell
 $env:NOTES_GOOGLE_CLIENT_SECRETS = 'C:/your-private-folder/credentials.json'
 $env:NOTES_GOOGLE_TOKEN = 'C:/your-private-folder/token.json'
-$env:NOTES_SECRET_KEY = (uv run --locked python -c "import secrets; print(secrets.token_hex(32))")
-$env:NOTES_DB_PATH = 'D:/os_final/instance/app.sqlite3'
+$env:GUIDED_NOTES_SECRET_KEY = (uv run --locked python -c "import secrets; print(secrets.token_hex(32))")
+$env:GUIDED_NOTES_DATABASE = 'D:/os_final/instance/guided-notes.sqlite3'
+$env:NOTES_GOOGLE_TEACHER_ID = '1'
 uv run --locked flask --app guided_notes:create_app init-db
 uv run --locked flask --app guided_notes:create_app authorize-sheets
 uv run --locked flask --app guided_notes:create_app run --host 127.0.0.1 --port 5000
@@ -55,7 +83,7 @@ uv run --locked flask --app guided_notes:create_app run --host 127.0.0.1 --port 
 init-db 只在新資料庫首次建立時執行，既有資料不可因此被清空，後續 schema 變動須保留已確認版本與作業資料。
 authorize-sheets 啟動獨立 loopback 授權，請求 spreadsheets 讀寫 scope，token 寫指定本機路徑。
 應用啟動後以 002 的入口登入教師，再開 /teacher/notes。
-以上為目標命令，001 的 cli.py 只實作 Google 授權；登入介面由 002 提供。
+上述命令已提供；尚未完成的回填與人工驗收不能據此視為通過。登入介面沿用 002。
 
 ## 實作後自動驗證
 
@@ -82,6 +110,30 @@ uv run --locked pytest tests/unit tests/contract tests/integration
 | = 開頭、前導零、中文換行 | gateway integration | RAW 字串保存，非 formula；精確回讀，FR-010 |
 
 ## 真實 Sheets 人工驗收
+
+### 課程內講義（001 已實作，002 待接線）
+
+002 提供 course_service.get_owned_course 後，從其課程頁連到 `/teacher/notes/courses/<course_id>`。001 提供從這門課匯入、查看所有明確版本及把未分配舊講義加入課程；既有未分配講義的匯入與活動流程保留。課程內講義須從 002 的課堂入口建立活動，001 不另造課堂或加入碼。
+
+PR #6 合流已有正式 002 course provider，啟用 GUIDED_NOTES_CLASSROOM_MODE=1 並使用新的課堂 DB 後，可從教師課程管理開啟此頁；未啟用課堂模式時仍會回 503 COURSE_UNAVAILABLE。不要將測試假課程 provider 放進正常設定。完整啟動步驟見 [合流驗證](../../docs/pr6-integration-validation.md)。
+
+交給同學的函式、路由、欄位及錯誤範例見 [接線文件](../../docs/001-course-handoff.md)。OpenSpec 同步、正式課程／課堂／活動切換與兩人完整人工驗收待完成。
+
+### 已接線的回填與恢復入口（2026-11-25）
+
+重新啟動既有服務後，在教師頁點「活動回填預覽」。同一瀏覽器會自動帶入最近教師活動的 activity_id；也可手動輸入活動識別，不能用學生加入碼代替。按「讀取來源並建立預覽」會讀取該活動綁定的講義及可信已結算結果，列出原值／答案／勝組識別／範圍與預定動作。
+
+活動未結束會提示先結束；已結束但結果模組尚未完成正式結算時顯示「結果尚未結算」，這是目前正確的阻擋。請同學接妥 GET_SETTLED_RESULTS 與不可變 snapshot 後，再進行真實勝組預覽；不要將測試假結果放進正式啟動設定。
+
+預覽本身不寫來源，保存後可重啟查看，但不是即時資料。確認頁提供「確認回填並回讀核對」，原格已有不同內容時必須勾選該項覆寫確認；送出後轉到逐格報告。來源或結果改變時拒絕舊預覽；題意／成員改變需重新匯入並核對活動版本。
+
+報告區分回讀一致、無勝組略過、明確失敗、未知、衝突及未處理；只有全部適用項目 verified 才算整組完成。未知／部分完成時按「先回讀並建立恢復預覽」，檢查新位置與衝突，再次確認。恢復保持原結果版本與勝組，已為相同文字的格不重寫。
+
+確認重送使用同一 Idempotency-Key 回原作業，不重新寫入。HTML 表單自動帶 key；JSON 呼叫需自行提供 header，body 為 `{"confirm":true,"overwrite_item_ids":[]}`。恢復必須使用新 preview 與新 key。GET 報告不連 Google、不觸發寫入。
+
+單程序／共用 DB 以物理試算表＋工作表 mutex 與 300 秒 lease 互斥；未完成來源先恢復，不能靠過期 lease 直接新建另一作業。程式中斷後，若舊 lease 尚有效，需待到期再建立恢復預覽；報告查詢會將已失去有效 lease 的 writing 作業標 recovering。預設 120 秒執行預算在題組邊界停止，不會中斷已送出的請求或啟動背景 worker。外部編輯與 Google 逾時請求無跨系統鎖定／取消保證，回讀時間只代表觀察當下。
+
+M04–M10 仍需真實副本人工驗收，不因自動測試通過而視為完成。
 
 由 A、B 交叉執行，在自己的可編輯副本操作。以下全部尚未執行。
 

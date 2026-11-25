@@ -82,6 +82,13 @@ uv pip compile D:/os_final/tmp/plan-research/requirements.in --python-version 3.
 
 ## 待實測事項的處理
 
+### 2026-11-23 gateway 實作補充
+
+列工作表仍採 spreadsheets.get 的 properties fields；實際讀取改採官方 `spreadsheets.getByDataFilter`，以 `gridRange.sheetId` 選來源，並顯式指定 GridData／merges fields。這避免先查名稱再用 A1 讀取期間，工作表改名造成定位失效；不改辨識契約。
+讀取最多三次，只對 429／500／502／503／504 退避；寫入 execute(num_retries=0)。client factory 採 httplib2 30 秒 timeout，AuthorizedHttp 關閉自動 refresh 重播；憑證刷新須在作業開始前明確完成。
+官方 API 與 Python 呼叫參數已查核，現階段僅通過替代 service／依賴測試，實際 SDK import smoke 與網路行為待共享鎖定環境驗證。
+來源：[getByDataFilter](https://developers.google.com/workspace/sheets/api/reference/rest/v4/spreadsheets/getByDataFilter)、[HttpRequest.execute](https://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.http.HttpRequest-class.html)、[AuthorizedHttp](https://googleapis.dev/python/google-auth-httplib2/latest/google_auth_httplib2.html)。
+
 上述技術選擇已定義，沒有懸而未決的技術方案。實作前段需讀取真正 Sheet 副本、建立 Python 3.13 環境與授權；
 若完整 merge 結構超出 format.md 的明確支援範圍，回報實際反例、更新規格與圖表，再依已確認行為修正設計。
 另一位組員須審查共用 Flask shell、teacher context、catalog／snapshot 格式，屬介面交接及驗證工作。

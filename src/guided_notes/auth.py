@@ -88,3 +88,33 @@ def limit_attempts(action):
             "INSERT INTO attempts VALUES (?, 1, ?) ON CONFLICT(scope) DO UPDATE SET count = count + 1",
             (scope, now + 60),
         )
+
+
+def check_teacher_login_limit():
+    if current_app.testing:
+        return
+    now = int(time.time())
+    row = connection().execute(
+        "SELECT count, expires FROM attempts WHERE scope = ? AND expires > ?",
+        (teacher_login_scope(), now),
+    ).fetchone()
+    if row and row["count"] >= 20:
+        raise ApiError(429, "TOO_MANY_ATTEMPTS", retry_after=row["expires"] - now)
+
+
+def record_teacher_login_failure():
+    if current_app.testing:
+        return
+    now = int(time.time())
+    with write_transaction() as db:
+        db.execute(
+            """INSERT INTO attempts VALUES (?, 1, ?)
+               ON CONFLICT(scope) DO UPDATE SET
+               count = CASE WHEN expires <= ? THEN 1 ELSE count + 1 END,
+               expires = CASE WHEN expires <= ? THEN excluded.expires ELSE expires END""",
+            (teacher_login_scope(), now + 60, now, now),
+        )
+
+
+def teacher_login_scope():
+    return f"teacher-login-failures:{request.remote_addr}"

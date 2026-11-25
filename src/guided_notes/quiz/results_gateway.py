@@ -1,6 +1,8 @@
-from flask import current_app
+from flask import current_app, request
 
 from ..activities.membership import activity_scope
+from ..activities.classroom_access import owned_classroom, requested_activity
+from ..activities.classroom_membership import group_for
 from ..auth import require_teacher
 from ..db import connection
 from ..http import ApiError
@@ -8,7 +10,15 @@ from ..http import ApiError
 
 def results_for(activity_id):
     db = connection()
-    activity, group = activity_scope(db, activity_id)
+    if current_app.config["CLASSROOM_MODE"]:
+        activity = requested_activity(db, activity_id)
+        if request.headers.get("X-Activity-Role") == "teacher":
+            owned_classroom(db, require_teacher(db), activity["classroom_id"])
+            group = None
+        else:
+            group = group_for(db, activity["classroom_id"])
+    else:
+        activity, group = activity_scope(db, activity_id)
     if activity["phase"] != "CLOSED":
         progress = current_app.config.get("GET_PROGRESS")
         rows = progress(db, activity_id) if group is None and activity["phase"] == "LIVE" and progress else []
@@ -42,10 +52,16 @@ def project(row, group):
 
 def get_ended_snapshot(teacher_context, activity_id):
     db = connection()
-    activity = db.execute("SELECT * FROM activities WHERE id = ?", (activity_id,)).fetchone()
-    if (teacher_context != require_teacher(db) or activity is None
-            or activity["teacher_id"] != teacher_context.teacher_id):
-        raise ApiError(403, "FORBIDDEN")
+    if current_app.config["CLASSROOM_MODE"]:
+        if teacher_context != require_teacher(db):
+            raise ApiError(403, "FORBIDDEN")
+        activity = requested_activity(db, activity_id)
+        owned_classroom(db, teacher_context, activity["classroom_id"])
+    else:
+        activity = db.execute("SELECT * FROM activities WHERE id = ?", (activity_id,)).fetchone()
+        if (teacher_context != require_teacher(db) or activity is None
+                or activity["teacher_id"] != teacher_context.teacher_id):
+            raise ApiError(403, "FORBIDDEN")
     if activity["phase"] != "CLOSED":
         raise ApiError(409, "ACTIVITY_NOT_ENDED")
     data = snapshot(db, activity_id)

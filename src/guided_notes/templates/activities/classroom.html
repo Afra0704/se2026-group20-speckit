@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ "教師課程管理" if role == "teacher" else "加入課堂" }} · Guided Notes</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='classroom.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <nav aria-label="主要導覽">
+      <a class="brand" href="{{ url_for('index') }}">Guided Notes</a>
+      <div class="nav-links">
+        <a href="{{ url_for('teacher.page') }}"{% if role == "teacher" %} aria-current="page"{% endif %}>教師管理</a>
+        <a href="{{ url_for('index') }}"{% if role != "teacher" %} aria-current="page"{% endif %}>學生加入</a>
+      </div>
+    </nav>
+  </header>
+  <main data-role="{{ role }}" data-csrf="{{ csrf }}">
+    <header class="page-heading">
+      <h1>{{ "教師課程管理" if role == "teacher" else "加入課堂" }}</h1>
+      <p class="muted">{{ "選擇課程與課堂，在同一課堂依序開啟講義活動。" if role == "teacher" else "輸入教師提供的課堂碼與你的組別。加入一次即可跟上活動切換。" }}</p>
+    </header>
+
+    {% for category, message in get_flashed_messages(with_categories=true) %}
+    <p class="notice{% if category == 'error' %} error{% endif %}" data-feedback="{{ category }}" role="status">{{ message }}</p>
+    {% endfor %}
+    {% if role == "teacher" %}
+    <section class="card login-card" aria-labelledby="login-heading">
+      <div class="section-heading">
+        <h2 id="login-heading">教師登入</h2>
+        <p id="login-status" class="login-status" data-active="{{ 'true' if teacher_logged_in else 'false' }}" role="status">
+          {{ "已登入" if teacher_logged_in else "尚未登入" }}
+        </p>
+      </div>
+      <form id="login" class="inline-form" method="post" action="{{ url_for('teacher.login') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf }}">
+        <label>帳號 <input name="username" autocomplete="username" required></label>
+        <label>密碼 <input name="password" type="password" autocomplete="current-password" required></label>
+        <button>登入</button>
+      </form>
+    </section>
+
+    <div class="workspace">
+      <div class="column">
+        <section class="card" aria-labelledby="courses-heading">
+          <h2 id="courses-heading">課程</h2>
+          <label>目前課程 <select id="courses"><option value="">請選擇課程</option>
+            {% for course in initial_courses %}<option value="{{ course.course_id }}">{{ course.title }}</option>{% endfor %}
+          </select></label>
+          <a id="notes" class="text-link" hidden>在目前課程匯入講義</a>
+          <form id="create-course" class="inline-form divided" method="post" action="{{ url_for('classrooms.create_course') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf }}">
+            <label>新課程名稱 <input name="title" maxlength="128" placeholder="例如：計算機概論" required></label>
+            <button class="secondary">建立課程</button>
+          </form>
+        </section>
+        <section class="card" aria-labelledby="classrooms-heading">
+          <h2 id="classrooms-heading">課堂</h2>
+          <label>目前課堂 <select id="classrooms"><option value="">請選擇課堂</option></select></label>
+          <p id="code" class="classroom-code"></p>
+          <form id="create-classroom" class="inline-form divided">
+            <label>新課堂名稱 <input name="title" maxlength="128" placeholder="例如：上午班" required></label>
+            <button class="secondary">建立課堂</button>
+          </form>
+        </section>
+      </div>
+      <section class="card" aria-labelledby="activities-heading">
+        <div class="section-heading">
+          <h2 id="activities-heading">講義活動</h2>
+          <button id="close-room" class="danger" type="button" disabled>結束課堂</button>
+        </div>
+        <form id="create-activity">
+          <label>講義版本 <select id="catalogs" required><option value="">請先選課程</option></select></label>
+          <label>活動名稱 <input name="title" maxlength="128" placeholder="留空則使用講義名稱"></label>
+          <button>建立活動</button>
+        </form>
+        <ul id="activities" class="activity-list"></ul>
+      </section>
+    </div>
+    {% else %}
+    <section class="card" aria-labelledby="join-heading">
+      <h2 id="join-heading">課堂資訊</h2>
+      <form id="join">
+        <label>課堂碼 <input name="code" class="code-input" maxlength="32" placeholder="例如：AB123"
+          autocomplete="off" autocapitalize="characters" spellcheck="false" required></label>
+        <label>組別 <input name="group_name" maxlength="80" placeholder="例如：甲組" required></label>
+        <button>加入課堂</button>
+      </form>
+      <button id="recover" class="secondary" type="button" hidden>恢復結果存取</button>
+    </section>
+    <ol id="questions" class="question-list"></ol>
+    {% endif %}
+
+    <div class="notices">
+      <p id="state" class="notice" role="status"></p>
+      <p id="message" class="notice message" role="status"></p>
+    </div>
+    <section id="results" class="results" aria-label="活動結果"></section>
+  </main>
+  <dialog id="feedback-dialog" aria-labelledby="feedback-title" aria-describedby="feedback-message">
+    <h2 id="feedback-title"></h2>
+    <p id="feedback-message"></p>
+    <form method="dialog"><button autofocus>確定</button></form>
+  </dialog>
+  <script type="module" src="{{ url_for('static', filename='classroom.js') }}"></script>
+</body>
+</html>

@@ -5,7 +5,13 @@
 
 ## 目前進度
 
-截至 2026-11-23，憲章 v1.0.0 已通過組員審查（使用者回報），001 匯入與回填及 002 身分與活動階段的設計已整合至 integration/001-002-design，兩功能均有規格、三類圖、計畫與任務。Q2 題組與 Q3 回填恢復已與 OpenSpec 組確認（使用者回報）。應用程式與測試尚待 tasks／implement，尚無可啟動系統。
+截至 2026-11-25，002 共用骨架已透過 PR #4 合併。001 可由教師網頁讀取雲端 Google Sheets、選表、預覽單題／題組、保存不可變版本並供活動使用；確認回填、回讀報告及恢復也已接線並通過替代來源測試。兩份真實雲端副本已完成匯入驗證，尚未實際寫回；正式結算 provider、完整跨模組與人工驗收仍待完成。憲章 v1.0.0 已通過組員審查，Q2／Q3 共同決策維持已確認狀態。
+
+選擇分頁時可「沿用工作表名稱」或「自訂講義名稱」（1–100 個字元），名稱顯示在講義清單、預覽與保存頁，並保留原始來源分頁資訊。多分頁一次選一張、各自匯入，不自動合併。自訂文字只存本系統，不更改 Google Sheets；此教師顯示擴充已由本對話使用者確認，OpenSpec 同步仍待確認。
+
+教師頁的「活動回填預覽」可比較已結算勝組答案與原值，逐項同意覆寫後確認。每題組一次 RAW 批次寫入，只有回讀一致才標成功；未知／部分失敗須從報告先回讀再建立恢復預覽，保留原勝組。結果模組未完成結算時仍會提示等待，不會產生假勝組。操作與限制見 [quickstart](specs/001-guided-notes/quickstart.md)。
+
+PR #6 合流已將 001 與 004 的真實課程授權、課程講義清單／版本、課堂加入及活動切換接上，並修正教師斷線後按鈕無法恢復的問題。004 規格記錄課堂 D12–D16 的雙組確認；講義顯示名稱另編 D17，保留原待同步狀態。004 使用新的課堂開發資料庫，舊 DB 不清空。正式 003 與真人／真實來源驗收仍待完成，啟動方式及限制見 [合流驗證](docs/pr6-integration-validation.md)。
 
 | 項目 | 狀態 |
 | --- | --- |
@@ -13,7 +19,8 @@
 | 憲章 | [憲章 v1.0.0](.specify/memory/constitution.md) 已通過組員審查（使用者回報） |
 | 共同需求 | [共同需求與待確認決策](docs/shared-requirements.md)，待 OpenSpec 組確認建議項目 |
 | 功能規格與圖表 | [001 規格](specs/001-guided-notes/spec.md)、[計畫](specs/001-guided-notes/plan.md)、三類圖及 PNG 已產出，待設計互審 |
-| 技術棧與分工 | 下列內容為建議，待組員確認 |
+| 可操作流程 | 教師登入 → 講義匯入 → 工作表 → 預覽 → 確認版本 → 建立活動 |
+| 尚未交付 | 勝組回填作業／恢復、完整 003 結算接線及兩位組員人工驗收 |
 
 ## 兩小組協調
 
@@ -35,7 +42,7 @@ SpecKit 小組兩人共用本 repo。OpenSpec 小組另建 repo，兩小組依�
 
 ## 環境與取得專案
 
-準備 Git、Python 3.11 以上、uv，以及 Codex 代理環境。圖表流程另需 Java、PlantUML JAR，以及所選圖表渲染方式需要的 Graphviz。Java 與圖表工具的可用版本待實際渲染後記錄。
+準備 Git、Python 3.13、uv，以及 Codex 代理環境。圖表使用 Java 與 PlantUML CLI（本機驗證為 Java 24、PlantUML 1.2026.10），Component／Class 採 Smetana。
 
 新組員在自己的工作目錄執行以下 PowerShell 指令。
 
@@ -51,7 +58,7 @@ Get-ChildItem .agents/skills -Directory | Select-Object Name
 
 安裝完成後若找不到 `specify`，執行 `uv tool update-shell` 並重新開啟 PowerShell。已安裝其他版本的組員先對齊團隊版本。clone 會取得已提交的 SpecKit 技能、範本與腳本。
 
-001 計畫採 Python 3.13、Flask、Jinja、少量原生 JavaScript、SQLite 與官方 Google 用戶端，兩位組員需對齊共用 shell 與介面。依賴解析已完成，安裝及應用整合尚待實作。目標啟動與驗收步驟見 [驗收指南](specs/001-guided-notes/quickstart.md)，其中實作後命令尚不可在目前 repo 執行。
+001 採 Python 3.13、Flask、Jinja、少量原生 JavaScript、SQLite 與官方 Google 用戶端。共用環境已整合；可執行的 CMD 啟動步驟見 [驗收指南](specs/001-guided-notes/quickstart.md#目前可執行的-cmd-啟動流程)。先建立教師帳號，再把本機 Google profile 綁定該教師 ID；憑證維持在 repo 外。
 
 ## SpecKit 開發流程
 
@@ -123,7 +130,37 @@ git push -u origin HEAD
 ## 目前的設計整合分支
 
 `integration/001-002-design` 合併 001 與 codex/002-identity-activity-phases，統一目錄及介面。
-[001 計畫](specs/001-guided-notes/plan.md) 與 [002 計畫](specs/002-identity-activity-phases/plan.md) 均為待實作設計。
+[001 計畫](specs/001-guided-notes/plan.md) 的離線核心已實作，完整應用接線仍待完成；[002 計畫](specs/002-identity-activity-phases/plan.md) 的共用骨架由同學負責。
 共同採 src/guided_notes、Python 3.13、import_id／import_version、主題號作提交單位，且結算完成才可回填。
-設計整合可先送一個 PR 至 master，兩人取得共同基準後回各自功能分支實作。
+設計整合已透過 PR #3 合入 master；001 實作分支為 `codex/001-guided-notes-implementation`。
 共用骨架由 002 先建立，001 接 notes Blueprint。先核對實際狀態與未提交變更，再更新分支。
+
+以下為歷史離線階段紀錄；目前可啟動的功能與最新實測狀態以上方進度及 [實作驗證紀錄](specs/001-guided-notes/validation.md) 為準。
+
+已新增純資料契約檢查與可注入官方 client 的 Sheets gateway；授權準備請見 [Google Sheets 設定](docs/google-sheets-setup.md)，同學的接線入口見 [介面交接](specs/001-guided-notes/contracts/interfaces.md#2026-11-23-離線實作交接尚未接線)。
+
+共用 Python 環境建立前，可先用本機 Python 執行無額外依賴的辨識測試：
+
+```powershell
+$env:PYTHONPATH = "$PWD\src"
+python -m unittest discover -s tests/unit -p test_recognition.py -v
+```
+
+本輪全部離線測試（標準庫 unittest，之後也可由 pytest 收集）：
+
+```powershell
+$env:PYTHONPATH = "$PWD\src"
+python -m unittest discover -s tests/unit -v
+python -m unittest discover -s tests/contract -v
+python -m unittest discover -s tests/integration -v
+```
+
+integration 目前僅有離線元件交接測試，尚無 HTTP／登入／DB 的整合驗證。
+
+2026-11-24 更新：已接入 PR #4 的共用骨架，正式 `pyproject.toml`／`uv.lock` 包含 Google 套件，`.venv` 已建立；目前合併後共 89 項測試與 98 子案例通過（含 002 的 HTTP／登入／DB 邊界）。001 的網頁匯入及持久化仍未接入。
+可用 `.venv\Scripts\python.exe -m pytest tests/unit tests/contract tests/integration -q` 執行合併後全部測試。
+新增獨立唯讀診斷 `notes.cli inspect-sheet`，正式環境用法見 docs/google-sheets-setup.md。
+
+2026-11-23 續作已完成可獨立測試的匯入候選 UUID／版本、來源指紋與重綁、回填預覽／覆寫確認、回讀與恢復判定，以及獨立 Google OAuth CLI。新命令與 CMD 寫法見 [授權說明](docs/google-sheets-setup.md)。完整網頁、持久化與活動結果接線仍待 002／003。
+
+第一個離線核心進度 commit：`05186ed`。本機 commit 不代表已推上 GitHub；新圖與後續核心仍需組員審查。

@@ -1,0 +1,18 @@
+{% extends "notes/base.html" %}
+{% block content %}
+<h1>匯入雲端講義</h1>
+<p class="muted">選擇工作表，確認題號、小題與答案格後，再保存供活動使用。</p>
+{% if not configured %}<p class="notice">這台電腦尚未設定你的 Google 授權。請先依專題操作說明完成本機設定。</p>{% endif %}
+<section class="card">
+  <form method="post" action="{{ url_for('notes.worksheets') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Google Sheets 連結<input name="spreadsheet_url" type="url" placeholder="https://docs.google.com/spreadsheets/d/…" required></label>
+    <button>讀取工作表清單</button>
+  </form>
+  <p class="muted">此步驟只讀取講義，不修改來源內容。</p>
+</section>
+<section class="card"><h2>已確認的講義版本</h2>
+  {% if catalogs %}<ul>{% for c in catalogs %}<li><a href="{{ url_for('notes.view_catalog', import_id=c.import_id, version=c.version) }}">{{ c.display_title }} · 第 {{ c.version }} 版</a> · 來源分頁：{{ c.source_title }} · {{ c.confirmed_at|notes_time }}（台北時間）</li>{% endfor %}</ul>
+  {% else %}<p>還沒有保存的講義，從上方貼上連結開始。</p>{% endif %}
+</section>
+{% endblock %}

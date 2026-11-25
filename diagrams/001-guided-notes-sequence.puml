@@ -8,15 +8,20 @@ participant "Teacher Authorization" as Auth
 participant "Guided Notes Feature" as Notes
 participant "Original Google Sheets" as Sheets
 participant "Activity Module" as Activity
+participant "002 Course Ownership" as Courses
 participant "Result Module" as Results
 participant "Operation Repository / Lease" as Store
-Teacher -> Notes : provide link and select worksheet
+Teacher -> Notes : provide link; select one worksheet and lecture naming mode
 Notes -> Auth : check teacher authorization
 alt unauthorized
  Auth --> Notes : denied
  Notes --> Teacher : access denied
 else authorized
  Auth --> Notes : permitted
+ opt course-scoped import
+  Notes -> Courses : validate teacher ownership; require available provider
+  Courses --> Notes : course identity / title or deny
+ end
  Notes -> Sheets : read selected worksheet
  alt inaccessible / read failure
   Sheets --> Notes : error
@@ -27,10 +32,32 @@ else authorized
   alt duplicate / missing / ambiguous
    Notes --> Teacher : located errors; confirmation unavailable
   else valid
+   Notes -> Store : persist teacher-owned ready preview and naming choice
+   note over Notes,Store : Optional course identity stays in server preview and replacement previews.
    Notes --> Teacher : main question count, answer count, subitem labels and targets
    Teacher -> Notes : review detected main questions and all subitems; confirm import
-   Notes -> Notes : establish versioned catalog and bindings
-   Notes --> Activity : versioned main questions as units, with ordered answer items
+   Notes -> Store : check owner and preview status
+   alt preview already confirmed with same request
+    Store --> Notes : same published catalog (no new version)
+    Notes --> Activity : get_catalog: fixed version and ordered items
+   else ready preview
+    Notes -> Sheets : re-read selected worksheet outside DB transaction
+    Sheets --> Notes : current source structure and values
+    Notes -> Auth : recheck teacher authorization
+    Auth --> Notes : permission or denial
+    alt source changed or authorization lost
+     Notes -> Store : invalidate changed preview; create replacement if valid
+     Notes --> Teacher : confirm new preview, or access denied
+    else still valid
+     opt course-scoped import
+      Notes -> Courses : recheck course ownership outside write transaction
+      Courses --> Notes : permitted or deny
+     end
+     Notes -> Store : short transaction: recheck status, allocate version, persist catalog, label metadata and bindings
+     Store --> Notes : one confirmed immutable catalog
+     Notes --> Activity : get_catalog: fixed version and ordered items
+    end
+   end
   end
  end
 end
@@ -58,7 +85,17 @@ else authorized
   alt source unavailable
    Notes --> Teacher : source error; no write
   else source accessible
+   Notes -> Auth : recheck teacher authorization after source read
+   Notes -> Results : recheck settled snapshot identity and contents
+   break authorization or snapshot changed
+    Notes --> Teacher : reject preview; no write
+   end
+   Notes -> Store : short transaction: save owner-bound snapshot, observations and fingerprints
    Notes --> Teacher : preview original / proposed values and differences
+   note over Notes,Store
+   GET of a saved preview only reads local storage.
+   Preview actions describe intended changes, not completed writes.
+   end note
    note over Teacher,Notes
    Skip units without a winner.
    Re-identify moved targets and confirm new preview.
@@ -82,6 +119,12 @@ else authorized
     Notes -> Store : invalidate preview; release source lease
     Notes --> Teacher : invalidate preview; re-identify and confirm differences
    else preview still valid
+    Notes -> Store : durably mark next unit unknown before sending; renew lease
+    note over Notes,Store
+    Recheck teacher / result and source before each unit.
+    Stop on deadline or lease loss; keep remaining not processed.
+    Unresolved physical sources cannot start unrelated attempts.
+    end note
     Notes -> Sheets : one RAW batch per main question; write answer anchors only
     alt permission denied / explicit failure
      Sheets --> Notes : failed outcome
@@ -111,8 +154,9 @@ alt authorized
  Activity --> Notes : current state
  Notes -> Results : recheck original result version
  Results --> Notes : current result version
- Notes -> Sheets : read targets before retry
- Sheets --> Notes : observed values or read error
+ Notes -> Sheets : re-read structure and current values
+ Sheets --> Notes : source structure, values or read error
+ Notes -> Notes : validate semantics; reidentify current anchors
  Notes -> Notes : same answer = verified; no winner = skipped
  alt source inaccessible / main-question / subitem membership or result changed
   Notes -> Store : persist conflict or unknown; release lease

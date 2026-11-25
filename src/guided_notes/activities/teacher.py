@@ -23,7 +23,10 @@ def fixed_questions(teacher, import_id, import_version):
         provider = getattr(service, "get_catalog", None)
     if not callable(provider):
         raise ApiError(503, "CATALOG_UNAVAILABLE")
-    catalog = provider(teacher, import_id, import_version)
+    return validate_catalog(provider(teacher, import_id, import_version), import_id, import_version)
+
+
+def validate_catalog(catalog, import_id, import_version):
     questions = catalog.get("questions") if isinstance(catalog, dict) else None
     if not questions or not isinstance(questions, list):
         raise ApiError(400, "INVALID_CATALOG")
@@ -64,6 +67,7 @@ def valid_identifier(value):
     return isinstance(value, str) and bool(value.strip())
 
 
+
 def store_activity(db, teacher, import_id, version, questions):
     activity_id = secrets.token_urlsafe(18)
     code = secrets.token_hex(5).upper()
@@ -87,3 +91,23 @@ def transition(db, activity_id, teacher, before, after):
     version = row["phase_version"] + 1
     db.execute("UPDATE activities SET phase = ?, phase_version = ? WHERE id = ?", (after, version, activity_id))
     return dict(activity_id=activity_id, phase=after, phase_version=version)
+
+
+def get_activity_reference(teacher_context, activity_id):
+    from ..auth import require_teacher
+    from ..db import connection
+    from .classroom_access import owned_classroom, requested_activity
+
+    db = connection()
+    if teacher_context != require_teacher(db):
+        raise ApiError(403, "FORBIDDEN")
+    if current_app.config["CLASSROOM_MODE"]:
+        row = requested_activity(db, activity_id)
+        owned_classroom(db, teacher_context, row["classroom_id"])
+    else:
+        row = db.execute("SELECT * FROM activities WHERE id = ? AND teacher_id = ?",
+                         (activity_id, teacher_context.teacher_id)).fetchone()
+        if row is None:
+            raise ApiError(404, "ACTIVITY_NOT_FOUND")
+    return {"activity_id": row["id"], "import_id": row["import_id"],
+            "import_version": row["import_version"], "ended": row["phase"] == "CLOSED"}
