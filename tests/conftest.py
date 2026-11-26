@@ -3,22 +3,26 @@ from werkzeug.security import generate_password_hash
 
 from guided_notes import create_app
 from guided_notes.db import connection
+from catalog_support import IMPORT_ID, course_import_id, catalog as test_catalog, display, seed_published
 
 
 @pytest.fixture
 def app(tmp_path):
     def catalog(teacher, import_id, import_version):
-        if teacher.teacher_id != 1 or import_id != "demo" or import_version not in (1, 2):
+        if teacher.teacher_id != 1 or import_id != IMPORT_ID or import_version not in (1, 2):
             return None
-        return {"questions": [
-            {"question_id": f"q{i}", "display_number": f"{import_version}.{i}", "kind": "question_set" if i == 2 else "single",
-             "items": [{"item_id": f"i{i}-{j}", "blank_id": f"b{i}-{j}", "subitem_label": str(j)}
-                       for j in range(1, 3 if i == 2 else 2)]}
-            for i in range(1, 4)
-        ]}
+        value = test_catalog(import_id, import_version, legacy=True)
+        seed_published(teacher.teacher_id, value)
+        return value
 
-    app = create_app({"TESTING": True, "SECRET_KEY": "test-only", "DATABASE": str(tmp_path / "test.sqlite3"),
-                      "GET_CATALOG": catalog})
+    def display_provider(teacher, import_id, version):
+        if import_id == IMPORT_ID:
+            return display(catalog(teacher, import_id, version))
+        from guided_notes.notes.display_service import get_display_content
+        return get_display_content(teacher, import_id, version)
+
+    app = create_app({"TESTING": True, "TEACHER_AUTH_MODE": "test_password", "SECRET_KEY": "test-only", "DATABASE": str(tmp_path / "test.sqlite3"),
+                      "GET_CATALOG": catalog, "GET_DISPLAY_CONTENT": display_provider})
     with app.app_context():
         connection().executemany(
             "INSERT INTO teachers(username, password_hash) VALUES (?, ?)",
@@ -41,7 +45,7 @@ def teacher(app):
 
 @pytest.fixture
 def activity(teacher):
-    response = post(teacher, "/activities", import_id="demo", import_version=1)
+    response = post(teacher, "/activities", import_id=IMPORT_ID, import_version=1)
     assert response.status_code == 201
     return response.json
 
@@ -56,24 +60,30 @@ def joined(app, activity):
 
 @pytest.fixture
 def classroom_app(tmp_path):
-    from guided_notes.activities.demo_catalog import get_demo_catalog
-
     def catalogs(teacher, course_id):
         return {"course_id": course_id, "lectures": [
-            {"import_id": course_id, "versions": [{"import_version": 1, "title": "第一週講義"},
+            {"import_id": course_import_id(course_id), "versions": [{"import_version": 1, "title": "第一週講義"},
                                                   {"import_version": 2, "title": "第二週講義"}]},
-            {"import_id": f"{course_id}-second", "versions": [{"import_version": 1, "title": "另一份講義"}]},
+            {"import_id": course_import_id(course_id, 'second'), "versions": [{"import_version": 1, "title": "另一份講義"}]},
         ]}
 
     def catalog(teacher, course_id, import_id, version):
-        if import_id not in (course_id, f"{course_id}-second"):
+        if import_id not in (course_import_id(course_id), course_import_id(course_id, 'second')):
             from guided_notes.http import ApiError
             raise ApiError(404, "CATALOG_NOT_FOUND")
-        return get_demo_catalog(teacher, "demo", version) | {"import_id": import_id}
+        value = test_catalog(import_id, version)
+        seed_published(teacher.teacher_id, value, course_id)
+        return value
 
-    app = create_app({"TESTING": True, "SECRET_KEY": "test-only", "CLASSROOM_MODE": True,
+    def display_provider(teacher, course_id, import_id, version):
+        if import_id in (course_import_id(course_id), course_import_id(course_id, 'second')):
+            return display(catalog(teacher, course_id, import_id, version))
+        from guided_notes.notes.course_catalogs import get_course_display_content
+        return get_course_display_content(teacher, course_id, import_id, version)
+
+    app = create_app({"TESTING": True, "TEACHER_AUTH_MODE": "test_password", "SECRET_KEY": "test-only", "CLASSROOM_MODE": True,
                       "DATABASE": str(tmp_path / "classroom.sqlite3"), "LIST_COURSE_CATALOGS": catalogs,
-                      "GET_COURSE_CATALOG": catalog})
+                      "GET_COURSE_CATALOG": catalog, "GET_COURSE_DISPLAY_CONTENT": display_provider})
     with app.app_context():
         connection().executemany(
             "INSERT INTO teachers(username, password_hash) VALUES (?, ?)",

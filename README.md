@@ -22,7 +22,37 @@ PR #6 合流已將 001 與 004 的真實課程授權、課程講義清單／版�
 | 可操作流程 | 教師登入 → 講義匯入 → 工作表 → 預覽 → 確認版本 → 建立活動 |
 | 尚未交付 | 勝組回填作業／恢復、完整 003 結算接線及兩位組員人工驗收 |
 
-## 兩小組協調
+## 005：建立活動後的學生預覽
+
+005 已完成自動測試範圍的實作，教師加兩組學生的人工驗收仍待完成。老師建立活動後，學生即可看到活動名稱、題號、小題與作答欄；準備中不可填答，按「開啟搶答」後才可輸入／提交。同堂一次只能有一個準備中或搶答中的活動，必須先結束再建立下一個。準備中也能直接結束，正常結束保留歷史。
+
+本次採專用空白開發 DB `instance/classroom-005.sqlite3`，不遷移舊測試資料。005 起步時建立空白 DB；首次需初始化教師並依輸出 ID 綁定 Google profile，再建立課程與匯入講義。若本機已完成這些設定請沿用，不要重建或清空。沒有刪除舊 DB、OAuth 憑證或來源 Sheets。啟動及驗收見 [005 quickstart](specs/005-preview-before-start/quickstart.md)，檢查結果見 [005 validation](specs/005-preview-before-start/validation.md)。正式 003 的受理／排名／結算限制依原交接，不因本次預覽修補視為已完成。
+
+## 006：學生閱讀完整題目
+
+已補齊從保存講義版本到活動快照、學生畫面的全文傳遞。每個小題顯示自己的文字、標號與作答欄，保留換行與長文字；題組仍整組提交。建立後可讀，開始後才可填答，準備中可直接結束，同堂單活動限制沿用 005。
+
+教師匯入預覽及保存頁可核對全文。既有講義版本若已保存完整文字，可直接建立新活動；舊活動沒有全文快照時會提示選完整版本建立新活動，真正缺字的講義才須重新匯入。來源改字或重新匯入不會改動已建立活動。
+
+內建示範清單、示範受理及其啟動設定已移除；正式服務不可用會明確回報錯誤。測試替代資料僅存在 tests/。課程 Demo 影片要求保留。003 尚未接入時仍會顯示 QUIZ_UNAVAILABLE／待結算，不能當作排名已完成。
+
+啟動與人工情境見 [006 quickstart](specs/006-student-question-text/quickstart.md)，自動證據及未完成項見 [006 validation](specs/006-student-question-text/validation.md)。啟動前須停止舊後端，再從目前工作樹啟動；只重整網頁不會載入新 Python 程式。新增快照表不清空既有 DB，也不替舊活動補字。教師與兩組學生的人工閱讀、5 秒同步及排版驗收仍待執行。
+
+## 007：身分首頁與 Google 教師登入
+
+已完成自動驗證範圍的實作。首頁選「我是老師／我是學生」；老師用 Google 登入，學生維持課堂碼與組別。教師課程依 Google 穩定身分隔離，取消或失敗不清掉原身分，登出撤銷此瀏覽器的教師資格並保留學生資格。
+
+講義需另外按「連接我的 Google Sheets」，且須與登入教師為同一 Google 帳號。授權密文綁定教師與新 DB，Web 不再使用原 Desktop token／全域教師 profile。Drive 選檔仍留下一輪。新版本請用 `instance/classroom-007.sqlite3`、新的 **Web application OAuth client** 及 repo 外的持久 Fernet key；不刪舊 DB、Desktop 憑證或雲端講義。
+
+目前啟動步驟以 [007 CMD 指南](specs/007-google-teacher-login/quickstart.md)為準；005/006 的帳密啟動方式屬歷史版本，正式入口已停用密碼登入。真人 Google、同學互審、OpenSpec D20 同步及教師加兩組學生驗收仍待完成；自動證據見 [007 validation](specs/007-google-teacher-login/validation.md)。正式 003 限制保持。
+
+## 008：教師課程工作區（計畫完成，未實作）
+
+依使用者新需求建立分層教師首頁／課程卡片／課程左側導覽。講義管理按「＋匯入講義」才選雲端 Google Sheets 或貼連結，實際操作才引導必要授權；已有有效授權不反覆登入。講義可從清單移除且保留既有活動／回填與雲端原檔；使用者已撤回刪課堂提案，課堂不可刪除。
+
+使用者已回報圖意核對完畢並允許plan；[008 計畫](specs/008-teacher-course-workspace/plan.md)、研究／資料模型／四份契約／[設定驗收指南](specs/008-teacher-course-workspace/quickstart.md)及新版三圖已產生，尚未改產品介面、實作雲端選檔或刪講義。計畫採專用窄Picker token及講義清單移除，原007資料保留。本次技術修圖／介面互審、具名分工及D21 OpenSpec同步仍待補；下一階段tasks、analyze再implement，原人工任務不代勾。
+
+## 兩小組協調（協作規則）
 
 SpecKit 小組兩人共用本 repo。OpenSpec 小組另建 repo，兩小組依共同需求實作一致的使用者功能。請 OpenSpec 組建立 repo、互邀協作者，並將連結提供給大組。確認後在共同需求文件補上 repo 連結、確認日期與確認者。
 
@@ -58,7 +88,7 @@ Get-ChildItem .agents/skills -Directory | Select-Object Name
 
 安裝完成後若找不到 `specify`，執行 `uv tool update-shell` 並重新開啟 PowerShell。已安裝其他版本的組員先對齊團隊版本。clone 會取得已提交的 SpecKit 技能、範本與腳本。
 
-001 採 Python 3.13、Flask、Jinja、少量原生 JavaScript、SQLite 與官方 Google 用戶端。共用環境已整合；可執行的 CMD 啟動步驟見 [驗收指南](specs/001-guided-notes/quickstart.md#目前可執行的-cmd-啟動流程)。先建立教師帳號，再把本機 Google profile 綁定該教師 ID；憑證維持在 repo 外。
+001 採 Python 3.13、Flask、Jinja、少量原生 JavaScript、SQLite 與官方 Google 用戶端。共用環境已整合；目前 CMD 啟動方式見 [007 指南](specs/007-google-teacher-login/quickstart.md)。Google 教師不執行 init-teacher；Web client 與加密 key 維持在 repo 外，Desktop CLI 仍可獨立使用。
 
 ## SpecKit 開發流程
 
@@ -164,3 +194,13 @@ integration 目前僅有離線元件交接測試，尚無 HTTP／登入／DB 的
 2026-11-23 續作已完成可獨立測試的匯入候選 UUID／版本、來源指紋與重綁、回填預覽／覆寫確認、回讀與恢復判定，以及獨立 Google OAuth CLI。新命令與 CMD 寫法見 [授權說明](docs/google-sheets-setup.md)。完整網頁、持久化與活動結果接線仍待 002／003。
 
 第一個離線核心進度 commit：`05186ed`。本機 commit 不代表已推上 GitHub；新圖與後續核心仍需組員審查。
+
+## 008 教師工作區（2026-11-26）
+
+沿用007 Google教師登入與資料庫。教師登入後由「進入我的課程」→課程卡片→課程工作區，左側分講義與課堂；進入指定課堂才看加入碼、已加入組別及活動控制。學生仍免Google，沿用原課堂加入。
+
+講義管理按「＋匯入講義」選貼連結或Google雲端；兩入口共用單分頁、命名、全文預覽與確認。讀取逾時可明確重試，修改分頁／名稱先失效舊預覽。刪除講義僅移除清單與新活動選項，既有活動／回填歷史與雲端原檔保留；課堂、課程沒有刪除功能。
+
+貼連結使用原Sheets授權；雲端選檔另需同project專用Picker Web client、受限制API key與project number。沒有Picker設定時可繼續管理課程及貼連結；不把原後端Sheets token交給瀏覽器。設定、CMD啟動與人工矩陣見 [008操作說明](specs/008-teacher-course-workspace/quickstart.md)，實際證據見 [008驗證紀錄](specs/008-teacher-course-workspace/validation.md)。真Google Picker、兩教師與兩組學生人工驗收、具名互審／D21仍待完成；受控測試不代表真雲端通過。
+
+啟動前先在私人位置備份原DB與key；保持原007環境設定，不清空DB或重建key。關掉舊服務後，CMD於repo執行 `.venv\Scripts\python.exe -m flask --app guided_notes:create_app run --host 127.0.0.1 --port 5000`，開啟 `http://127.0.0.1:5000/teacher`。啟動會以可重跑附加schema保留原資料；新增測試只用暫存DB。

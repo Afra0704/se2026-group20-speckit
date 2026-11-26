@@ -173,3 +173,15 @@ CREATE TABLE IF NOT EXISTS notes_export_context (
     origin_operation_id TEXT REFERENCES notes_write_operations(operation_id),
     actions TEXT NOT NULL
 );
+
+-- 008 visibility is additive and independent of Google identity tables.
+CREATE TABLE IF NOT EXISTS notes_lecture_removals (
+ import_id TEXT PRIMARY KEY REFERENCES notes_imports(import_id),
+ removed_by INTEGER NOT NULL REFERENCES teachers(id), removed_at TEXT NOT NULL
+);
+CREATE TRIGGER IF NOT EXISTS notes_removed_no_catalog
+BEFORE INSERT ON notes_catalogs WHEN EXISTS(SELECT 1 FROM notes_lecture_removals WHERE import_id=NEW.import_id)
+BEGIN SELECT RAISE(ABORT,'lecture_removed'); END;
+CREATE TRIGGER IF NOT EXISTS notes_removed_no_activity
+BEFORE INSERT ON activities WHEN EXISTS(SELECT 1 FROM notes_lecture_removals WHERE import_id=NEW.import_id)
+BEGIN SELECT RAISE(ABORT,'lecture_removed'); END;

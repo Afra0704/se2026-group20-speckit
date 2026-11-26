@@ -1,0 +1,97 @@
+@startuml
+!pragma layout smetana
+title 008 課程 / 講義 / 課堂 — Plan 資料關係
+class "教師（既有）" as Teacher {
+  已驗 Google 身分
+  本人資料權限
+}
+class "課程（既有）" as Course {
+  識別 / 名稱 / 教師歸屬
+}
+class "講義 notes_imports（既有）" as Lecture {
+  識別 / 課程 / 名稱
+  一般可見 / 已移除
+}
+class "講義版本（既有）" as Version {
+  固定題目 / 小題 / 全文
+  來源 / 分頁 / 原填空對應
+}
+class "一次性課堂（既有）" as Classroom {
+  加入碼 / 開放或已結束
+  不可刪除
+}
+class "活動（既有）" as Activity {
+  固定講義版本與全文
+  準備 / 搶答 / 結束
+}
+class "結果與回填紀錄（既有）" as Record {
+  同勝組完整答案
+  報告 / 回讀 / 恢復
+}
+class "workspace_import_flows" as Import {
+  發起教師 / 原課程
+  雲端選擇或貼連結
+  來源 / 返回位置 / 流程有效性
+  revision / claim / expiry
+  choice_revision / retry_action
+  白名單輸入快照 / 指紋 / 成功結果識別
+}
+class "notes_lecture_removals" as Removal {
+  import_id PK / removed_by / removed_at
+  無列為 active
+}
+class "google_oauth_attempt_context" as OAuthContext {
+  attempt_id PK / ON DELETE CASCADE
+  flow_id / ON DELETE CASCADE
+  kind = picker / sheets
+}
+class "google_picker_credentials" as PickerCache {
+  teacher PK / instance / sub / client
+  encrypted access / scopes / expiry
+  generation / revision，無 refresh
+}
+class "workspace_picker_tickets" as Ticket {
+  flow / generation / revision
+  expires_at / used_at
+}
+class "notes_import_previews（既有）" as Preview
+class "workspace_preview_flows" as PreviewFlow
+class "講義存取授權（既有＋選檔需求）" as Authorization {
+  本人 Google 身分
+  必要權限 / 有效性
+}
+Teacher "1" -- "0..*" Course
+Course "1" -- "0..*" Lecture
+Lecture "1" -- "1..*" Version
+Course "1" -- "0..*" Classroom
+Classroom "1" -- "0..*" Activity
+Activity --> Version : 保留引用與固定快照
+Activity "1" -- "0..*" Record
+Teacher "1" -- "0..*" Import
+Import --> Course : 固定發起上下文
+Import --> Authorization : 用時核對
+Authorization --> Teacher : 同 Google 身分
+Lecture "1" -- "0..1" Removal
+Import "1" -- "0..*" OAuthContext
+Import "1" -- "0..*" Ticket
+Ticket --> PickerCache : 只接受本 generation
+Teacher "1" -- "0..1" PickerCache
+Import "1" -- "0..*" PreviewFlow
+PreviewFlow --> Preview : preview_id PK
+Import ..> Lecture : 確認後建立
+note bottom of Lecture
+移除一整份講義及一般可選版本
+不刪已建活動所需版本或回填對應
+新活動不可再引用
+重新匯入須明確建立新可見講義
+end note
+note bottom of Import
+取消不產生半份資料
+晚到結果不得誤存他課或他人
+附加表，不重建 007 表或重寫舊密文
+oauth_attempt_id ON DELETE SET NULL
+取消 / 過期後 ready preview 失效
+120秒到期明確retry，舊claim晚回拒絕
+revise遞增choice_revision，舊preview失效
+end note
+@enduml

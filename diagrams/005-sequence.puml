@@ -1,0 +1,44 @@
+@startuml
+title 005 建立後預覽 — 互動流程（草案）
+actor 教師
+participant 課堂管理 as Room
+participant 學生畫面 as Student
+participant 提交檢查 as Guard
+教師 -> Room : 建立指定講義版本活動
+alt 無未結束活動且建立成功
+  Room -> Room : 活動為準備；設定目前預覽
+  Student -> Room : 同步本課堂狀態
+  Room --> Student : 活動名稱、題號、小題、作答欄；未開放
+  Student -> Student : 顯示預覽、停用作答及提交
+  Student -> Guard : 若繞過畫面提前提交
+  Guard --> Student : 拒絕；不建立答案或順位
+  alt 教師直接結束準備活動
+    教師 -> Room : 結束目前 PREPARING
+    Room -> Room : CLOSED；不產生答案／順位
+  else 教師開啟搶答
+    教師 -> Room : 明確開啟搶答
+    Room -> Room : 同一活動轉為搶答中
+    Student -> Room : 同步最新狀態
+    Room --> Student : 同一活動、可作答
+    Student -> Student : 啟用作答及提交
+    教師 -> Room : 結束活動／課堂
+    Room -> Room : CLOSED；保留歷史
+  end
+  Student -> Room : 同步最新狀態
+  Room --> Student : 停止接受提交
+  Student -> Student : 停用作答及提交
+  note over Room, Student
+  課堂仍 OPEN 時，教師才可建立下一活動
+  current 指標與版本在建立交易中一併更新
+  end note
+else 建立失敗
+  Room --> 教師 : 顯示錯誤，保留原活動
+else 已有準備或搶答中活動
+  Room --> 教師 : 拒絕建立；請先結束目前活動
+  note over Room, Student
+  保留目前預覽或搶答，不建立下一活動
+  結束後才可建立；歷史資料保留
+  同時建立也須維持至多一個未結束活動
+  end note
+end
+@enduml

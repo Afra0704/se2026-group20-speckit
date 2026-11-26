@@ -1,0 +1,8 @@
+<section class="card" data-identity>
+<p>目前教師：<strong>{{ google_session.teacher.display_name or 'Google 教師' }}</strong>{% if google_session.teacher.email %} · {{ google_session.teacher.email }}{% endif %}</p>
+<p id="login-status" data-active="true" role="status">已登入</p>
+<form method="post" action="{{ url_for('google_login.start') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="switch" value="true"><button class="secondary">切換 Google 帳號</button></form>
+<form method="post" action="{{ url_for('google_login.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="secondary">教師登出</button></form>
+<p role="status">{{ {'connected':'已連接本人 Google Sheets','not_connected':'尚未連接 Google Sheets','reauth_required':'Google Sheets 需要重新授權','unavailable':'無法讀取講義授權，請檢查伺服器設定'}.get(google_session.sheets.status) }}</p>
+{% if request.args.get('error') %}<p role="alert">{{ google_error_message(request.args.get('error')) }}</p>{% endif %}
+</section>

@@ -1,0 +1,14 @@
+const test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const vm=require('node:vm');
+function setup(){
+ const listeners={},nodes={};
+ function node(id){return nodes[id]={dataset:{},hidden:false,disabled:false,events:{},addEventListener(e,f){this.events[e]=f;},setAttribute(k,v){this[k]=v;},focus(){this.focused=true;},contains(n){return n===this;},querySelector(){return nodes.input;}};}
+ for(const id of ['main','import-toggle','import-menu','link-import','input','cloud','link','remove'])node(id);
+ nodes.main.dataset={courseId:'course-A'};nodes['import-menu'].hidden=true;nodes.remove.dataset={remove:'lecture-A',title:'範本'};
+ const calls=[],locations=[],reports=[];let confirmed=false;let failure=false;
+ const context={document:{querySelector:s=>s==='main'?nodes.main:s==='[data-cloud]'?nodes.cloud:s==='[data-link]'?nodes.link:null,getElementById:id=>nodes[id]||null,querySelectorAll:s=>s==='[data-remove]'?[nodes.remove]:[],addEventListener:(e,f)=>listeners[e]=f},window:{confirm:()=>confirmed},location:{assign:p=>locations.push(p),reload:()=>locations.push('reload')},api:async(p,b)=>{calls.push([p,b]);if(failure)throw new Error('offline');return {flow_url:'/teacher/workspace/imports/flow-A'};},report:e=>reports.push(e.message),FormData:class{get(){return 'https://docs.google.com/spreadsheets/d/test/edit';}},setInterval(){},sessionStorage:{getItem:()=>null}};
+ vm.runInNewContext(fs.readFileSync('src/guided_notes/static/import-flow.js','utf8').replace(/^import [^\r\n]*[\r\n]+/,''),context);
+ return {nodes,calls,locations,reports,listeners,confirm:()=>confirmed=true,fail:()=>failure=true};
+}
+test('menu opens locally, Escape closes and restores focus without OAuth',()=>{const s=setup();s.nodes['import-toggle'].events.click();assert.equal(s.nodes['import-menu'].hidden,false);assert.equal(s.calls.length,0);s.listeners.keydown({key:'Escape'});assert.equal(s.nodes['import-menu'].hidden,true);assert.equal(s.nodes['import-toggle'].focused,true);});
+test('link is not read until explicit submit and stays in original course',async()=>{const s=setup();s.nodes.link.events.click();assert.equal(s.calls.length,0);assert.equal(s.nodes.input.focused,true);s.nodes['link-import'].events.submit({preventDefault(){},target:s.nodes['link-import']});await new Promise(setImmediate);assert.equal(s.calls[0][0],'/teacher/workspace/courses/course-A/imports');assert.equal(s.calls[0][1].source_kind,'link');assert.equal(s.locations[0],'/teacher/workspace/imports/flow-A');});
+test('remove cancellation is inert; failure restores button',async()=>{const s=setup();await s.nodes.remove.events.click();assert.equal(s.calls.length,0);s.confirm();s.fail();await s.nodes.remove.events.click();assert.equal(s.nodes.remove.disabled,false);assert.deepEqual(s.reports,['offline']);assert.equal(s.calls[0][0],'/teacher/notes/courses/course-A/lectures/lecture-A/remove');});

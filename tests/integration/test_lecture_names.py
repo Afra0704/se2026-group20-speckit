@@ -116,7 +116,7 @@ def test_existing_versions_and_ready_previews_upgrade_without_data_loss(app, tea
         # Simulate a database from before naming tables existed.
         db.execute("DROP TABLE notes_catalog_names")
         db.execute("DROP TABLE notes_preview_names")
-    upgraded = create_app({"TESTING":True,"SECRET_KEY":app.secret_key,"DATABASE":app.config["DATABASE"],"NOTES_GATEWAY":sheets})
+    upgraded = create_app({"TESTING":True,"TEACHER_AUTH_MODE":"test_password","SECRET_KEY":app.secret_key,"DATABASE":app.config["DATABASE"],"NOTES_GATEWAY":sheets})
     client = upgraded.test_client()
     assert post(client,"/teacher/session",username="teacher",password="test-password").status_code == 204
     assert client.get(f"/teacher/notes/catalogs/{catalog['import_id']}/versions/1", headers={"Accept":"application/json"}).json == catalog
@@ -128,7 +128,7 @@ def test_restart_preserves_custom_names_and_new_version_cannot_target_another_sh
     from guided_notes import create_app
     named = named_preview(teacher,name_mode="custom",custom_title="重啟後的講義")
     catalog = confirm(teacher,named["preview_id"]).json
-    restarted = create_app({"TESTING":True,"SECRET_KEY":app.secret_key,"DATABASE":app.config["DATABASE"],"NOTES_GATEWAY":sheets})
+    restarted = create_app({"TESTING":True,"TEACHER_AUTH_MODE":"test_password","SECRET_KEY":app.secret_key,"DATABASE":app.config["DATABASE"],"NOTES_GATEWAY":sheets})
     client = restarted.test_client()
     assert post(client,"/teacher/session",username="teacher",password="test-password").status_code == 204
     assert "重啟後的講義" in client.get(f"/teacher/notes/catalogs/{catalog['import_id']}/versions/1").get_data(as_text=True)

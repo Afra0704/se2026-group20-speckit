@@ -1,0 +1,8 @@
+<!doctype html><html lang="zh-Hant"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>教師 Google 登入</title><link rel="stylesheet" href="{{ url_for('static',filename='classroom.css') }}">
+<main><h1>教師登入</h1><section class="card">
+<p>請使用自己的 Google 帳號。講義讀寫會在登入後另外取得你的同意。</p>
+{% if error %}<p role="alert">{{ google_error_message(error) }}</p>{% endif %}
+<form method="post" action="{{ url_for('google_login.start') }}"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button>使用 Google 登入</button></form>
+<p><a href="{{ url_for('student_entry') }}">學生不需要 Google 登入，前往加入課堂</a></p><a href="/">回首頁</a>
+</section></main></html>

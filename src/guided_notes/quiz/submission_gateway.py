@@ -3,7 +3,6 @@ from flask import current_app
 from ..activities.submission_context import submission_context
 from ..db import write_transaction
 from ..http import ApiError
-from .demo_submissions import accept_demo_submission
 
 
 def submit(activity_id, question_id, items):
@@ -25,9 +24,7 @@ def submit(activity_id, question_id, items):
         if answers.keys() != expected:
             raise ApiError(400, "INVALID_ITEMS")
         accept = current_app.config.get("ACCEPT_SUBMISSION")
-        if accept is None and current_app.config["DEMO_CATALOG"] and context["import_id"] == "demo":
-            accept = accept_demo_submission
-        if accept is None:
+        if not callable(accept):
             raise ApiError(503, "QUIZ_UNAVAILABLE")
         accept(db, context, answers)
     return {"status": "accepted"}

@@ -1,0 +1,110 @@
+@startuml
+title 007 Web Google 登入與本人 Sheets 連接 — 實作時序
+actor 使用者 as User
+participant 首頁與路由 as Web
+participant "身分 / attempt service" as Identity
+database "SQLite + encrypted BLOB" as DB
+participant "Google Provider" as Provider
+participant Google
+participant "Sheets credential service" as Sheets
+participant "不可刷新快照" as Snapshot
+participant "既有 Sheets SDK" as Transport
+participant "Google Sheets API" as SheetAPI
+note over Identity, DB
+啟動與init-db共用初始化；同一短交易建立
+基礎／課堂schema + Google schema + auth_instance
+中途失敗全部回滾；重跑保留既有UUID與資料
+notes／workspace附加段各自冪等，不宣稱全factory原子
+end note
+User -> Web : 選擇身分
+alt 學生
+  Web --> User : /student 課堂碼與組別，沿用加入
+else 老師 login 或已登入後明確 sheets connect
+  User -> Web : CSRF POST 開始相應 purpose
+  Web -> Identity : 固定 client / URI / browser
+  group 短交易 A
+    Identity -> DB : epoch++ / supersede 舊流程\n存 state hash、加密 nonce + verifier
+  end
+  Web -> Provider : 產生 Web 授權 URL，PKCE S256
+  Provider --> User : 導向 Google\nlogin: identity only / online\nsheets: incremental / offline
+  User -> Google : 選帳號與同意或取消
+  Google --> Web : callback code + state 或 error
+  group 短交易 B：外網前
+    Web -> Identity : 驗 state / browser / TTL
+    Identity -> DB : pending -> processing，唯一 claim
+  end
+  alt 無效 / 過期 / 已使用 / 取消
+    Web --> User : 安全提示與重試，保留原有效教師
+  else claim 成功
+    Web -> Provider : 還原 verifier，交換 code
+    Provider -> Google : HTTPS token exchange，有 timeout
+    Google --> Provider : ID token / credentials
+    Provider -> Provider : 簽章 / iss / aud / exp / nonce / sub
+    Provider --> Identity : 已驗結果，不信前端身分
+    alt login
+      group 短交易 C
+        Identity -> DB : 重查 claim / epoch / expected grant / active
+        Identity -> DB : 唯一 issuer+sub 建帳或取原教師\nissue 原 grants / 換 server pointer / 撤舊 grant
+      end
+      Web --> User : 303 乾淨教師頁，僅自己的課程
+    else sheets
+      Identity -> Sheets : 驗目前 grant 與同 sub / 實際 scope
+      group 短交易 C
+        Sheets -> DB : 重查 epoch / grant / owner\n保存同 instance/client 加密憑證
+      end
+      Web --> User : 303 乾淨講義頁，沿用貼連結
+    end
+  end
+end
+note over Identity, DB
+任一 finalize 重檢失敗均拒絕；無半帳號／錯教師資格
+同 browser 最後開始流程有效，不影響其他 browser
+end note
+opt 仍已登入的教師使用講義
+  User -> Web : 貼連結 / 原講義操作
+  Web -> Sheets : 取得本人傳輸快照
+  Sheets -> DB : 重檢 grant / owner / instance / client
+  opt access token 需要刷新
+    Sheets -> DB : 短交易 claim lease 30 秒
+    Sheets -> Sheets : monotonic 接受 deadline 20 秒
+    Sheets -> Google : 最多 1 次 token POST\n按剩餘預算縮短 timeout，不自動重試
+    Google --> Sheets : response 或 timeout / 晚回
+    opt 仍有剩餘預算且新 ID token 需要憑證
+      Sheets -> Google : 最多 1 次憑證 GET，同一時間預算
+      Google --> Sheets : 驗證資料
+    end
+    alt deadline / lease / owner 已失效或網路逾時
+      Sheets -> DB : 僅 CAS 釋放自己的 lease\n晚回丟棄，不改憑證狀態 / revision / 密文
+      Sheets --> Web : 可重試錯誤，不借其他 token
+    else 期限內的有效結果
+      Sheets -> DB : owner / generation / revision / lease CAS\n成功更新或明確 invalid_grant 標失效
+    end
+  end
+  opt 已取得可用快照
+    Sheets -> Snapshot : 只帶 access token / 真實 expiry / scope
+    Web -> Transport : 沿用 Gateway 請求，無自動 replay
+    Transport -> Snapshot : before_request；禁止 refresh
+    alt 送出前快照失效
+      Snapshot --> Transport : 專用本地例外，尚未發 HTTP
+      Transport --> Web : GOOGLE_CREDENTIALS_REFRESH_REQUIRED / 寫入未送出
+    else 快照仍可用
+      Snapshot --> Transport : 僅套用 Bearer header
+      Transport -> SheetAPI : 送出原請求
+      SheetAPI --> Transport : 成功或 401 / 原錯誤
+      Transport --> Web : 不刷新 / 不重送，沿用回讀恢復
+    end
+  end
+end
+User -> Web : 登出
+Web -> DB : epoch++ / 清 current grant / 撤教師 grant
+Web --> User : 回首頁；學生資格保留
+note over Web, DB
+晚到 callback / Set-Cookie 無法通過 server current grant
+一般 logout 不撤 Google project grant
+end note
+note over Sheets, SheetAPI
+舊 refresh 不覆蓋新 connect；無 Desktop fallback
+20 秒是結果接受期限，不承諾硬中斷所有 I/O
+已送出的外部寫入不能用登出撤回
+end note
+@enduml

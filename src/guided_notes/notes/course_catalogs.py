@@ -64,7 +64,7 @@ def list_course_catalogs(teacher_context, course_id):
         FROM notes_import_courses a JOIN notes_imports i USING(import_id)
         JOIN notes_sources s USING(source_id) JOIN notes_catalogs c USING(import_id)
         LEFT JOIN notes_catalog_names n ON n.import_id=c.import_id AND n.version=c.version
-        WHERE a.course_id=? AND s.teacher_id=? ORDER BY c.confirmed_at DESC,c.version DESC""",
+        WHERE a.course_id=? AND s.teacher_id=? AND NOT EXISTS(SELECT 1 FROM notes_lecture_removals r WHERE r.import_id=i.import_id) ORDER BY c.confirmed_at DESC,c.version DESC""",
         (course_id, teacher_context.teacher_id)).fetchall()
     lectures = {}
     for row in rows:
@@ -93,9 +93,22 @@ def assign_lecture(teacher_context, course_id, import_id):
         if require_teacher(db) != teacher_context:
             raise ApiError(403, "TEACHER_REQUIRED")
         repo.owned_import(db, teacher_context.teacher_id, import_id)
+        from .lecture_lifecycle import require_active_import
+        require_active_import(db, teacher_context.teacher_id, import_id)
         assigned = import_course_id(db, import_id)
         if assigned is not None and assigned != course_id:
             raise ApiError(409, "COURSE_MISMATCH")
         db.execute("INSERT INTO notes_import_courses VALUES(?,?,?) ON CONFLICT(import_id) DO NOTHING",
                    (import_id, course_id, repo.now()))
     return {"import_id": import_id, "course_id": course_id}
+
+
+def get_course_display_content(teacher_context, course_id, import_id, import_version):
+    from .display_service import get_display_content
+    get_owned_course(teacher_context, course_id)
+    repo.owned_import(connection(), teacher_context.teacher_id, import_id)
+    if import_course_id(connection(), import_id) != course_id:
+        raise ApiError(404, 'CATALOG_NOT_FOUND')
+    from .lecture_lifecycle import require_active_import
+    require_active_import(connection(), teacher_context.teacher_id, import_id, course_id)
+    return get_display_content(teacher_context, import_id, import_version)

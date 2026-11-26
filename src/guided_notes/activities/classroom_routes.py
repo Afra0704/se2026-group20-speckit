@@ -7,8 +7,11 @@ from ..auth import limit_attempts, require_teacher
 from ..db import connection, write_transaction
 from ..http import ApiError, payload, string
 from ..quiz.results_gateway import snapshot
-from .classroom_access import classroom, owned_classroom, requested_activity
-from .classroom_catalog import get_catalog, list_catalogs
+from .classroom_access import (
+    activity_transaction, classroom, owned_classroom, requested_activity, require_no_unfinished,
+)
+from .classroom_catalog import get_catalog, list_catalogs, get_display_content
+from .display_service import save_display
 from .classroom_membership import group_for, join, recover
 from .course_service import get_owned_course
 from .state_routes import state_view
@@ -121,6 +124,9 @@ def create_activity(classroom_id):
     require_open(room)
     course = get_owned_course(teacher, room["course_id"])
     questions = validate_catalog(get_catalog(teacher, course["course_id"], import_id, version), import_id, version)
+    display = get_display_content(teacher, course['course_id'], import_id, version, questions)
+    from ..notes.lecture_lifecycle import require_active_import
+    require_active_import(connection(), teacher.teacher_id, import_id, course['course_id'])
     title = data.get("title", "")
     if not isinstance(title, str) or len(title) > 128:
         raise ApiError(400, "INVALID_REQUEST")
@@ -131,37 +137,40 @@ def create_activity(classroom_id):
                       for v in i["versions"] if v["import_version"] == version), None)
         if title is None:
             raise ApiError(404, "CATALOG_NOT_FOUND")
-    with write_transaction() as db:
+    with activity_transaction() as db:
         current_teacher = require_teacher(db)
         require_open(owned_classroom(db, current_teacher, classroom_id))
+        require_no_unfinished(db, classroom_id)
+        from ..notes.lecture_lifecycle import require_available_for_activity
+        require_available_for_activity(current_teacher, course["course_id"], import_id, version, db)
         result = store_activity(db, current_teacher, import_id, version, questions)
+        save_display(db, result['activity_id'], display)
         db.execute("INSERT INTO classroom_activities(activity_id, classroom_id, title) VALUES (?, ?, ?)",
                    (result["activity_id"], classroom_id, title))
+        db.execute("UPDATE classrooms SET current_activity_id=?, state_version=state_version+1 WHERE id=?",
+                   (result["activity_id"], classroom_id))
     return {"activity_id": result["activity_id"], "title": title, "phase": result["phase"]}, 201
 
 
 @rooms.post("/teacher/classrooms/<classroom_id>/activities/<activity_id>/<any(start, finish):action>")
 def change_activity(classroom_id, activity_id, action):
-    with write_transaction() as db:
+    with activity_transaction() as db:
         teacher = require_teacher(db)
         room = owned_classroom(db, teacher, classroom_id)
         require_open(room)
         activity = requested_activity(db, activity_id)
         if activity["classroom_id"] != classroom_id:
             raise ApiError(403, "FORBIDDEN")
+        if room["current_activity_id"] != activity_id:
+            raise ApiError(409, "INVALID_PHASE")
         if action == "start":
-            live = db.execute(
-                """SELECT 1 FROM classroom_activities c JOIN activities a ON a.id = c.activity_id
-                   WHERE c.classroom_id = ? AND a.phase = 'LIVE'""", (classroom_id,)
-            ).fetchone()
-            if live:
-                raise ApiError(409, "ACTIVITY_IN_PROGRESS")
+            require_no_unfinished(db, classroom_id, excluding=activity_id)
             result = transition(db, activity_id, teacher, "PREPARING", "LIVE")
             db.execute("UPDATE classroom_activities SET started_at = CURRENT_TIMESTAMP WHERE activity_id = ?", (activity_id,))
         else:
-            if room["current_activity_id"] != activity_id:
+            if activity["phase"] not in ("PREPARING", "LIVE"):
                 raise ApiError(409, "INVALID_PHASE")
-            result = transition(db, activity_id, teacher, "LIVE", "CLOSED")
+            result = transition(db, activity_id, teacher, activity["phase"], "CLOSED")
             db.execute("UPDATE classroom_activities SET closed_at = CURRENT_TIMESTAMP WHERE activity_id = ?", (activity_id,))
         db.execute("UPDATE classrooms SET current_activity_id = ?, state_version = state_version + 1 WHERE id = ?",
                    (activity_id, classroom_id))
@@ -172,16 +181,18 @@ def change_activity(classroom_id, activity_id, action):
 def close(classroom_id):
     if payload().get("confirm") is not True:
         raise ApiError(400, "CONFIRM_REQUIRED")
-    with write_transaction() as db:
+    with activity_transaction() as db:
         teacher = require_teacher(db)
         room = owned_classroom(db, teacher, classroom_id)
         require_open(room)
-        if room["current_activity_id"]:
-            activity = requested_activity(db, room["current_activity_id"])
-            if activity["phase"] == "LIVE":
-                transition(db, activity["id"], teacher, "LIVE", "CLOSED")
-                db.execute("UPDATE classroom_activities SET closed_at = CURRENT_TIMESTAMP WHERE activity_id = ?",
-                           (activity["id"],))
+        unfinished = db.execute(
+            """SELECT a.id, a.phase FROM classroom_activities c JOIN activities a ON a.id=c.activity_id
+               WHERE c.classroom_id=? AND a.phase IN ('PREPARING','LIVE')""", (classroom_id,)
+        ).fetchall()
+        for activity in unfinished:
+            transition(db, activity["id"], teacher, activity["phase"], "CLOSED")
+            db.execute("UPDATE classroom_activities SET closed_at = CURRENT_TIMESTAMP WHERE activity_id = ?",
+                       (activity["id"],))
         db.execute("""UPDATE classrooms SET state = 'CLOSED', closed_at = CURRENT_TIMESTAMP,
                       state_version = state_version + 1 WHERE id = ?""", (classroom_id,))
     return {"classroom_state": "CLOSED"}
@@ -216,10 +227,13 @@ def state(classroom_id):
             room = classroom(db, classroom_id)
         activity_id = room["current_activity_id"]
         activity = requested_activity(db, activity_id) if activity_id else None
+        view = state_view(db, activity, group) if activity is not None else None
+        if view is not None:
+            view["title"] = activity["title"]
         return {
             "classroom_id": room["id"], "classroom_state": room["state"], "state_version": room["state_version"],
             "current_activity_id": activity_id, "group_name": group["name"] if group else None,
-            "activity": state_view(db, activity, group) if activity is not None else None,
+            "activity": view,
         }
     finally:
         db.execute("ROLLBACK")

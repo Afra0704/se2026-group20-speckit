@@ -71,6 +71,13 @@ def require_teacher(db=None):
     teacher = db.execute("SELECT id FROM teachers WHERE id = ? AND active = 1", (identity["teacher_id"],)).fetchone()
     if teacher is None:
         raise ApiError(403, "FORBIDDEN")
+    if current_app.config.get('TEACHER_AUTH_MODE') == 'google':
+        raw = session.get('auth_browser')
+        pointer = db.execute('SELECT teacher_grant_hash,expires_at FROM auth_browsers WHERE binding_hash=?', (digest(raw),)).fetchone() if raw else None
+        if not pointer or pointer['expires_at'] <= time.time() or pointer['teacher_grant_hash'] != identity['token']:
+            raise ApiError(401,'AUTH_REQUIRED')
+        if not db.execute('SELECT 1 FROM google_identities WHERE teacher_id=?', (teacher['id'],)).fetchone():
+            raise ApiError(403,'FORBIDDEN')
     return TeacherContext(teacher["id"])
 
 

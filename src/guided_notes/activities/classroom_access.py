@@ -1,5 +1,35 @@
+from contextlib import contextmanager
+import sqlite3
+
+from ..db import write_transaction
 from ..http import ApiError
 from .course_service import get_owned_course
+
+
+def require_no_unfinished(db, classroom_id, *, excluding=None):
+    row = db.execute(
+        """SELECT 1 FROM classroom_activities c JOIN activities a ON a.id=c.activity_id
+           WHERE c.classroom_id=? AND a.phase IN ('PREPARING','LIVE')
+           AND (? IS NULL OR a.id<>?) LIMIT 1""",
+        (classroom_id, excluding, excluding),
+    ).fetchone()
+    if row:
+        raise ApiError(409, "ACTIVITY_IN_PROGRESS")
+
+
+@contextmanager
+def activity_transaction():
+    try:
+        with write_transaction() as db:
+            yield db
+    except sqlite3.IntegrityError as error:
+        if str(error) == "lecture_removed":
+            raise ApiError(410, "LECTURE_REMOVED") from None
+        if str(error) == "classroom_unfinished":
+            raise ApiError(409, "ACTIVITY_IN_PROGRESS") from error
+        if str(error) == "classroom_closed_activity":
+            raise ApiError(409, "INVALID_PHASE") from error
+        raise
 
 
 def classroom(db, classroom_id):

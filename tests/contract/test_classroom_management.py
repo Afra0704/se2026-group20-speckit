@@ -1,3 +1,4 @@
+from catalog_support import course_import_id
 import re
 import time
 
@@ -13,12 +14,14 @@ def test_classroom_teacher_ownership_and_reuse(classroom_app, classroom_teacher,
     assert re.fullmatch(r"[A-Z]{2}[0-9]{3}", room["code"])
     assert len(classroom_teacher.get(f"/teacher/courses/{cid}/catalogs").json["lectures"]) == 2
     path = f"/teacher/classrooms/{rid}/activities"
-    first = post(classroom_teacher, path, import_id=cid, import_version=1).json
-    second = post(classroom_teacher, path, import_id=cid, import_version=1).json
+    first = post(classroom_teacher, path, import_id=course_import_id(cid), import_version=1).json
+    assert post(classroom_teacher, path, import_id=course_import_id(cid), import_version=1).status_code == 409
+    assert post(classroom_teacher, f"{path}/{first['activity_id']}/finish").status_code == 200
+    second = post(classroom_teacher, path, import_id=course_import_id(cid), import_version=1).json
     assert first["activity_id"] != second["activity_id"]
     assert first["title"] == second["title"] == "第一週講義"
     assert post(classroom_teacher, f"/teacher/classrooms/{afternoon['classroom_id']}/activities",
-                import_id=cid, import_version=1).status_code == 201
+                import_id=course_import_id(cid), import_version=1).status_code == 201
     other = classroom_app.test_client()
     post(other, "/teacher/session", username="other", password="test-password")
     assert other.get(f"/teacher/courses/{cid}/catalogs").status_code == 404

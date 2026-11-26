@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ "教師課程管理" if role == "teacher" else "加入課堂" }} · Guided Notes</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='classroom.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='question-text.css') }}">
 </head>
 <body>
   <header class="topbar">
@@ -12,7 +13,7 @@
       <a class="brand" href="{{ url_for('index') }}">Guided Notes</a>
       <div class="nav-links">
         <a href="{{ url_for('teacher.page') }}"{% if role == "teacher" %} aria-current="page"{% endif %}>教師管理</a>
-        <a href="{{ url_for('index') }}"{% if role != "teacher" %} aria-current="page"{% endif %}>學生加入</a>
+        <a href="{{ url_for('student_entry') }}"{% if role != "teacher" %} aria-current="page"{% endif %}>學生加入</a>
       </div>
     </nav>
   </header>
@@ -26,6 +27,7 @@
     <p class="notice{% if category == 'error' %} error{% endif %}" data-feedback="{{ category }}" role="status">{{ message }}</p>
     {% endfor %}
     {% if role == "teacher" %}
+    {% if config.TEACHER_AUTH_MODE == 'google' %}{% include 'identity/teacher.html' %}{% else %}
     <section class="card login-card" aria-labelledby="login-heading">
       <div class="section-heading">
         <h2 id="login-heading">教師登入</h2>
@@ -41,6 +43,7 @@
       </form>
     </section>
 
+    {% endif %}
     <div class="workspace">
       <div class="column">
         <section class="card" aria-labelledby="courses-heading">
@@ -73,8 +76,9 @@
         <form id="create-activity">
           <label>講義版本 <select id="catalogs" required><option value="">請先選課程</option></select></label>
           <label>活動名稱 <input name="title" maxlength="128" placeholder="留空則使用講義名稱"></label>
-          <button>建立活動</button>
+          <button disabled>建立活動</button>
         </form>
+        <p class="muted">同堂一次只能有一個準備中或搶答中的活動，請先結束目前活動再建立下一個。</p>
         <ul id="activities" class="activity-list"></ul>
       </section>
     </div>

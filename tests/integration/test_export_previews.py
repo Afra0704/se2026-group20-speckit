@@ -185,7 +185,7 @@ def test_preview_survives_restart_and_html_form_redirects(app, teacher, sheets):
     response = teacher.post("/teacher/notes/export-previews", data={"csrf_token": token, "activity_id": aid})
     assert response.status_code == 303
     reads = len(sheets.calls)
-    restarted = create_app({"TESTING": True, "SECRET_KEY": app.secret_key, "DATABASE": app.config["DATABASE"]})
+    restarted = create_app({"TESTING": True, "TEACHER_AUTH_MODE": "test_password", "SECRET_KEY": app.secret_key, "DATABASE": app.config["DATABASE"]})
     client = restarted.test_client()
     assert post(client, "/teacher/session", username="teacher", password="test-password").status_code == 204
     data = client.get(response.location, headers={"Accept": "application/json"})

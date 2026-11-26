@@ -1,0 +1,25 @@
+@startuml
+!pragma layout smetana
+title 005 建立後預覽 — 組件責任（草案）
+actor 教師
+actor 學生
+component 教師操作介面 as Teacher
+component 課堂與活動管理 as Classroom
+component 講義版本清單 as Catalog
+component 學生同步與顯示 as Student
+component 階段與權限檢查 as Guard
+component 搶答受理 as Quiz
+教師 --> Teacher : 建立／開始／結束
+Teacher --> Classroom
+Classroom --> Catalog : 固定所選版本
+學生 --> Student
+Student --> Classroom : 取得本課堂活動與階段
+Student --> Guard : 提交指定活動
+Guard --> Classroom : 核對身分、活動及搶答階段
+Guard --> Quiz : 僅搶答中可受理
+note bottom of Classroom
+無未結束活動時：建立成功即發布預覽
+可顯示與可提交為不同責任
+準備或搶答中：禁止建立下一活動
+end note
+@enduml

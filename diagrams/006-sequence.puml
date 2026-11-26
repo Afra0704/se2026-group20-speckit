@@ -1,0 +1,50 @@
+@startuml
+title 006 學生題目全文 — 時序（實作對應）
+actor 教師
+participant "匯入與辨識" as Import
+participant "Google Sheets" as Sheet
+participant "講義版本" as Version
+participant "安全文字投影" as Display
+participant "活動" as Activity
+database "活動文字快照" as Snapshot
+participant "學生畫面" as UI
+教師 -> Import : 匯入講義
+Import -> Sheet : 讀題目與來源結構
+Sheet --> Import : 題目欄與格位資料
+alt 文字完整且對應唯一
+  Import --> 教師 : 題號、小題、全文與作答對應預覽
+  教師 -> Import : 確認
+  Import -> Version : 保存文字與識別
+  教師 -> Activity : 選定版本建立活動
+  Activity -> Display : 教師／課程授權與指定版本
+  Display -> Version : 讀不可變 recognized 與 catalog
+  Version --> Display : 固定文字與核心識別
+  Display -> Display : 核對版、題號、小題與順序
+  Display --> Activity : 僅安全 DisplayContentDTO v1
+  group 同一寫交易
+    Activity -> Activity : 重檢權限、OPEN 與單活動限制
+    Activity -> Activity : 保存活動與核心題目
+    Activity -> Snapshot : 保存不可變全文副本
+    Activity -> Activity : 更新目前活動／版本
+  end
+  UI -> Activity : 驗證同堂身分，取得目前活動
+  Activity -> Snapshot : 只讀本活動快照
+  Activity --> UI : 安全題目全文與 PREPARING
+  UI -> UI : 文字可閱讀，作答停用
+  教師 -> Activity : 開啟搶答
+  UI -> Activity : 同步
+  Activity --> UI : 相同文字與 LIVE
+  UI -> UI : 啟用作答，題組整組提交
+  note over Version, UI
+  修改 Sheets 不改本活動文字
+  刷新或重連維持同一版本
+  end note
+else 缺字或對應歧義
+  Import --> 教師 : 標示題號／小題問題，拒絕確認
+end
+note over Activity, UI
+舊活動缺快照時明示缺全文，不自動補寫
+老師選完整版本重建；真的缺字才重匯入
+不猜題、不以來源答案補文字
+end note
+@enduml

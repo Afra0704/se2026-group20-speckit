@@ -48,6 +48,37 @@ CREATE TABLE IF NOT EXISTS classroom_groups (
     UNIQUE (classroom_id, id)
 );
 
+CREATE TRIGGER IF NOT EXISTS classroom_single_unfinished_insert
+BEFORE INSERT ON classroom_activities
+WHEN (SELECT phase FROM activities WHERE id=NEW.activity_id) IN ('PREPARING','LIVE')
+AND EXISTS (
+    SELECT 1 FROM classroom_activities c JOIN activities a ON a.id=c.activity_id
+    WHERE c.classroom_id=NEW.classroom_id AND a.phase IN ('PREPARING','LIVE')
+)
+BEGIN
+    SELECT RAISE(ABORT, 'classroom_unfinished');
+END;
+
+CREATE TRIGGER IF NOT EXISTS classroom_single_unfinished_phase
+BEFORE UPDATE OF phase ON activities
+WHEN NEW.phase IN ('PREPARING','LIVE') AND EXISTS (
+    SELECT 1 FROM classroom_activities target
+    JOIN classroom_activities other ON target.classroom_id=other.classroom_id
+    JOIN activities a ON a.id=other.activity_id
+    WHERE target.activity_id=NEW.id AND a.id<>NEW.id AND a.phase IN ('PREPARING','LIVE')
+)
+BEGIN
+    SELECT RAISE(ABORT, 'classroom_unfinished');
+END;
+
+CREATE TRIGGER IF NOT EXISTS classroom_closed_activity_stays_closed
+BEFORE UPDATE OF phase ON activities
+WHEN OLD.phase='CLOSED' AND NEW.phase<>'CLOSED'
+AND EXISTS (SELECT 1 FROM classroom_activities WHERE activity_id=NEW.id)
+BEGIN
+    SELECT RAISE(ABORT, 'classroom_closed_activity');
+END;
+
 CREATE TABLE IF NOT EXISTS classroom_memberships (
     id INTEGER PRIMARY KEY,
     classroom_id TEXT NOT NULL,

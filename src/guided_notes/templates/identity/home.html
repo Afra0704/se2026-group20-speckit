@@ -1,0 +1,6 @@
+<!doctype html><html lang="zh-Hant"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guided Notes · 選擇身分</title>
+<link rel="stylesheet" href="{{ url_for('static',filename='classroom.css') }}">
+<main><h1>Guided Notes</h1><p>請選擇本次使用的身分。</p>
+<section class="card"><h2>我是老師</h2><p>用 Google 帳號登入，管理自己的課程與講義。</p><a href="{{ url_for('teacher.page') }}">教師入口</a></section>
+<section class="card"><h2>我是學生</h2><p>輸入課堂碼與組別即可加入。</p><a href="{{ url_for('student_entry') }}">學生入口</a></section></main></html>

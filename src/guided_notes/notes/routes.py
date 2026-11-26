@@ -38,8 +38,11 @@ def taipei_time(value):
 
 def gateway(teacher):
     substitute = current_app.config.get("NOTES_GATEWAY")
-    if substitute is not None:
+    if substitute is not None and current_app.testing:
         return substitute
+    if current_app.config.get('TEACHER_AUTH_MODE') == 'google':
+        from ..google_login.sheets_service import credentials
+        return SheetsGateway(build_google_service(credentials(teacher)))
     profile = current_app.config.get("NOTES_GOOGLE_TEACHER_ID")
     if profile is None:
         raise ApiError(503, "GOOGLE_PROFILE_NOT_CONFIGURED")
@@ -79,8 +82,11 @@ def error_response(code, status, context=None):
         "IDEMPOTENCY_CONFLICT": "這次重送的內容與原確認不同，請回到預覽重新確認。",
         "OVERWRITE_CONFIRMATION_REQUIRED": "請逐項確認所有需要覆寫的答案格。"})
     messages["INVALID_LECTURE_NAME"] = "請選擇名稱方式；自訂講義名稱須為 1–100 個字元，且不能包含換行或控制字元。"
+    if current_app.config.get('TEACHER_AUTH_MODE') == 'google':
+        from ..google_login.routes import MESSAGES
+        messages.update(MESSAGES)
     data = {"code": code, "message": messages.get(code, "操作未完成，請確認來源與設定後重試。"),
-            "retryable": code in {"SOURCE_READ_UNAVAILABLE", "GOOGLE_RATE_LIMITED"}, "context": context or {}}
+            "retryable": code in {"SOURCE_READ_UNAVAILABLE", "GOOGLE_RATE_LIMITED", 'GOOGLE_REFRESH_BUSY', 'GOOGLE_REFRESH_TIMEOUT', 'GOOGLE_CREDENTIALS_REFRESH_REQUIRED'}, "context": context or {}}
     if (request.is_json or request.accept_mimetypes.best == "application/json"
             or (request.method == "GET" and request.accept_mimetypes.best != "text/html")):
         return jsonify(error=data), status
@@ -89,7 +95,10 @@ def error_response(code, status, context=None):
 
 @notes.errorhandler(ApiError)
 def api_error(error):
-    return error_response(error.code, error.status, getattr(error, "context", None))
+    response = current_app.make_response(error_response(error.code, error.status, getattr(error, "context", None)))
+    if error.retry_after is not None:
+        response.headers['Retry-After'] = str(error.retry_after)
+    return response
 
 
 @notes.errorhandler(GatewayError)
@@ -125,12 +134,15 @@ def index():
         CASE WHEN n.name_mode='custom' THEN n.custom_title ELSE s.display_title END AS display_title
         FROM notes_catalogs c JOIN notes_imports i USING(import_id)
         JOIN notes_sources s USING(source_id) LEFT JOIN notes_catalog_names n ON n.import_id=c.import_id AND n.version=c.version
-        WHERE s.teacher_id=? ORDER BY c.confirmed_at DESC""",
+        WHERE s.teacher_id=? AND NOT EXISTS(SELECT 1 FROM notes_lecture_removals r WHERE r.import_id=i.import_id) ORDER BY c.confirmed_at DESC""",
         (teacher.teacher_id,)).fetchall()
     configured = (current_app.config.get("NOTES_GATEWAY") is not None or (
         current_app.config.get("NOTES_GOOGLE_TEACHER_ID") == teacher.teacher_id
         and bool(current_app.config.get("NOTES_GOOGLE_CLIENT_SECRETS"))
         and bool(current_app.config.get("NOTES_GOOGLE_TOKEN"))))
+    if current_app.config.get('TEACHER_AUTH_MODE') == 'google':
+        from ..google_login.sheets_service import authorization_status
+        configured = authorization_status(teacher)['status'] == 'connected'
     return render_template("notes/import.html", catalogs=catalogs, configured=configured)
 
 
@@ -179,6 +191,11 @@ def create_preview():
 def view_preview(preview_id):
     teacher = require_teacher()
     row = repo.owned_preview(connection(), teacher.teacher_id, preview_id)
+    if not api_request() and current_app.config["TEACHER_AUTH_MODE"] == "google" and current_app.config["CLASSROOM_MODE"]:
+        from ..workspace.import_flows import preview_context
+        context = preview_context(connection(), preview_id)
+        if context:
+            return redirect(url_for("workspace.import_page", flow_id=context["flow_id"]), code=303)
     course = courses.get_owned_course(teacher, row["course_id"]) if row["course_id"] is not None else None
     imports = connection().execute("""SELECT i.import_id,c.version,
         CASE WHEN n.name_mode='custom' THEN n.custom_title ELSE s.display_title END AS display_title
@@ -186,7 +203,7 @@ def view_preview(preview_id):
         JOIN notes_catalogs c ON c.import_id=i.import_id
         LEFT JOIN notes_catalog_names n ON n.import_id=c.import_id AND n.version=c.version
         LEFT JOIN notes_import_courses ic ON ic.import_id=i.import_id
-        WHERE i.source_id=? AND ic.course_id IS ? AND c.version=(SELECT max(version) FROM notes_catalogs WHERE import_id=i.import_id)
+        WHERE i.source_id=? AND ic.course_id IS ? AND NOT EXISTS(SELECT 1 FROM notes_lecture_removals r WHERE r.import_id=i.import_id) AND c.version=(SELECT max(version) FROM notes_catalogs WHERE import_id=i.import_id)
         ORDER BY c.confirmed_at DESC""", (row["source_id"], row["course_id"])).fetchall()
     return render_template("notes/import_preview.html", preview=preview_data(row), imports=imports,
         confirmed_import_id=row["confirmed_import_id"], confirmed_version=row["confirmed_version"], course=course)
@@ -210,6 +227,12 @@ def confirm_preview(preview_id):
             "preview_url": url_for("notes.view_preview", preview_id=new_preview_id)})
     if api_request():
         return jsonify(catalog)
+    if current_app.config["TEACHER_AUTH_MODE"] == "google" and current_app.config["CLASSROOM_MODE"]:
+        from ..workspace.import_flows import preview_context
+        context = preview_context(connection(), preview_id)
+        if context:
+            row = repo.owned_preview(connection(), teacher.teacher_id, preview_id)
+            return redirect(url_for("workspace.lectures", course_id=row["course_id"]), code=303)
     return redirect(url_for("notes.view_catalog", import_id=catalog["import_id"], version=catalog["import_version"]), code=303)
 
 
@@ -224,15 +247,26 @@ def view_catalog(import_id, version):
     row = repo.catalog_row(connection(), teacher.teacher_id, import_id, version)
     source = repo.owned_import(connection(), teacher.teacher_id, import_id)
     title = row["custom_title"] if row["name_mode"] == "custom" else source["display_title"]
+    from .display_service import get_display_content
+    try:
+        display = get_display_content(teacher, import_id, version)
+    except ApiError as error:
+        if error.code != 'QUESTION_TEXT_UNAVAILABLE':
+            raise
+        display = None
     return render_template("notes/catalog.html", catalog=catalog, title=title, course=course,
+                           display=display,
                            source_title=source["display_title"],
                            source_url=f"https://docs.google.com/spreadsheets/d/{source['spreadsheet_id']}/edit#gid={source['sheet_id']}",
-                           recognized=repo.unpack_recognition(row["recognized"]))
+                           recognized=repo.unpack_recognition(row["recognized"]) if display else None)
 
 
 @notes.get("/courses/<course_id>")
 def course_page(course_id):
     teacher = require_teacher()
+    if current_app.config["TEACHER_AUTH_MODE"] == "google" and current_app.config["CLASSROOM_MODE"] and not api_request():
+        courses.get_owned_course(teacher, course_id)
+        return redirect(url_for("workspace.lectures", course_id=course_id), code=303)
     data = courses.list_course_catalogs(teacher, course_id)
     unassigned = connection().execute("""SELECT i.import_id,
         CASE WHEN n.name_mode='custom' THEN n.custom_title ELSE s.display_title END AS title
@@ -240,7 +274,7 @@ def course_page(course_id):
         JOIN notes_catalogs c ON c.import_id=i.import_id
         LEFT JOIN notes_catalog_names n ON n.import_id=c.import_id AND n.version=c.version
         LEFT JOIN notes_import_courses ic ON ic.import_id=i.import_id
-        WHERE s.teacher_id=? AND ic.import_id IS NULL
+        WHERE s.teacher_id=? AND ic.import_id IS NULL AND NOT EXISTS(SELECT 1 FROM notes_lecture_removals r WHERE r.import_id=i.import_id)
         AND c.version=(SELECT max(version) FROM notes_catalogs WHERE import_id=i.import_id)
         ORDER BY c.confirmed_at DESC""", (teacher.teacher_id,)).fetchall()
     return render_template("notes/course.html", course=data, unassigned=unassigned)
@@ -374,3 +408,14 @@ def recover_export(operation_id):
         row, preview = export_service.get_saved_preview(teacher, pid)
         return jsonify(export_preview_data(row, preview)), 201
     return redirect(url_for("notes.view_export_preview", preview_id=pid), code=303)
+
+
+@notes.post('/courses/<course_id>/lectures/<import_id>/remove')
+def remove_lecture(course_id,import_id):
+    from .lecture_lifecycle import remove
+    data=dict(payload());data.pop('csrf_token',None)
+    if set(data)!={'confirm'} or (data['confirm'] is not True if request.is_json else data['confirm']!='true'):
+        raise ApiError(400,'INVALID_REQUEST')
+    result=remove(require_teacher(),course_id,import_id)
+    if api_request():return jsonify(result)
+    return redirect(url_for('workspace.lectures',course_id=course_id),code=303)

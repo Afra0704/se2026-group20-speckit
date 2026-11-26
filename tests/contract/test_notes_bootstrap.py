@@ -21,7 +21,7 @@ def test_notes_blueprint_shares_teacher_db_and_csrf(tmp_path):
         return render_template_string("{{ csrf_token() }}")
 
     app = create_app({
-        "TESTING": True, "SECRET_KEY": "test-only", "DATABASE": str(tmp_path / "notes.sqlite3"),
+        "TESTING": True, "TEACHER_AUTH_MODE": "test_password", "SECRET_KEY": "test-only", "DATABASE": str(tmp_path / "notes.sqlite3"),
         "NOTES_BLUEPRINT": notes,
     })
     with app.app_context(), write_transaction() as db:

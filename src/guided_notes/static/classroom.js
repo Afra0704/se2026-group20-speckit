@@ -15,7 +15,7 @@ const store = {
     }
   },
 };
-let room = store.get();
+let room = main.dataset.classroomId || store.get();
 let version = -1;
 let activeId = null;
 let polling = false;
@@ -23,6 +23,16 @@ let selection = 0;
 let courseSelection = 0;
 let historyRequest = 0;
 let historyNeedsRefresh = true;
+let roomOpen = false;
+let stateUnfinished = true;
+let historyUnfinished = true;
+let creatingActivity = false;
+
+function updateCreateAvailability() {
+  const button = byId("create-activity")?.querySelector("button");
+  if (button) button.disabled = !room || !roomOpen || historyNeedsRefresh ||
+    stateUnfinished || historyUnfinished || creatingActivity;
+}
 
 function url(id) {
   return encodeURIComponent(id);
@@ -54,8 +64,12 @@ const errors = {
   INVALID_LOGIN: "帳號或密碼不正確。",
   INVALID_CSRF: "頁面驗證已過期，請重新整理後再試。",
   CATALOG_UNAVAILABLE: "課程講義服務尚未接入。",
+  DISPLAY_CONTENT_UNAVAILABLE: "題目全文服務暫時無法使用，請稍後重試。",
+  DISPLAY_CONTENT_MISMATCH: "題目全文與講義版本不一致，請老師核對版本後重試。",
+  QUESTION_TEXT_UNAVAILABLE: "這份講義版本缺少完整題目，請重新匯入並確認文字。",
   CLASSROOM_CODE_UNAVAILABLE: "暫時無法產生課堂碼，請再試一次。",
   CLASSROOM_CLOSED: "課堂已結束。",
+  ACTIVITY_IN_PROGRESS: "請先結束目前活動，再建立下一活動。",
   INVALID_PHASE: "活動已切換或已結束，這筆操作未受理。",
   QUIZ_UNAVAILABLE: "正式搶答受理服務尚未接入。",
 };
@@ -93,9 +107,10 @@ function form(id, run, onError = report) {
   let submitting = false;
   target?.addEventListener("submit", async (event) => {
     event.preventDefault();
-    if (submitting) return;
     const button = target.querySelector("button");
+    if (submitting || (id === "create-activity" && button?.disabled)) return;
     submitting = true;
+    if (id === "create-activity") creatingActivity = true;
     if (button) button.disabled = true;
     try {
       await run(Object.fromEntries(new FormData(target)));
@@ -103,7 +118,10 @@ function form(id, run, onError = report) {
       onError(error);
     } finally {
       submitting = false;
-      if (button) button.disabled = false;
+      if (id === "create-activity") {
+        creatingActivity = false;
+        updateCreateAvailability();
+      } else if (button) button.disabled = false;
     }
   });
 }
@@ -157,11 +175,15 @@ async function selectCourse() {
 function setRoom(id) {
   room = id;
   selection++;
-  store.set(id);
+  if (!main.dataset.classroomId) store.set(id);
   version = -1;
   activeId = null;
   historyRequest++;
   historyNeedsRefresh = true;
+  roomOpen = false;
+  stateUnfinished = true;
+  historyUnfinished = true;
+  updateCreateAvailability();
   for (const field of ["questions", "activities", "results", "state"]) byId(field)?.replaceChildren();
   if (byId("close-room")) byId("close-room").disabled = true;
 }
@@ -169,9 +191,12 @@ function setRoom(id) {
 async function activityList(id) {
   const request = ++historyRequest;
   const context = selection;
+  const stateVersion = version;
   historyNeedsRefresh = true;
+  updateCreateAvailability();
   const data = await api(`/teacher/classrooms/${url(id)}/activities`);
-  if (room !== id || context !== selection || request !== historyRequest) return;
+  if (room !== id || context !== selection || request !== historyRequest || stateVersion !== version) return;
+  historyUnfinished = data.activities.some((activity) => activity.phase !== "CLOSED");
   const list = byId("activities");
   list.replaceChildren();
   for (const activity of data.activities) {
@@ -179,23 +204,36 @@ async function activityList(id) {
     const phase = {PREPARING: "準備中", LIVE: "搶答中", CLOSED: "已結束"};
     line.textContent = `${activity.title} · ${phase[activity.phase]} · ${activity.created_at}`;
     if (activity.phase !== "CLOSED" && !byId("close-room").disabled) {
-      const button = document.createElement("button");
-      const action = activity.phase === "LIVE" ? "finish" : "start";
-      button.textContent = action === "start" ? "開啟搶答" : "結束活動";
-      button.onclick = async () => {
-        try {
-          await api(`/teacher/classrooms/${url(id)}/activities/${url(activity.activity_id)}/${action}`, {});
-          await refresh();
-        } catch (error) {
-          report(error);
-        }
-      };
-      line.append(button);
+      for (const action of activity.phase === "PREPARING" ? ["start", "finish"] : ["finish"]) {
+        const button = document.createElement("button");
+        button.textContent = action === "start" ? "開啟搶答" : "結束活動";
+        button.onclick = async () => {
+          if (context !== selection || room !== id || button.disabled) return;
+          button.disabled = true;
+          try {
+            await api(`/teacher/classrooms/${url(id)}/activities/${url(activity.activity_id)}/${action}`, {});
+            historyNeedsRefresh = true;
+            await refresh();
+          } catch (error) {
+            if (context !== selection) return;
+            historyNeedsRefresh = true;
+            report(error);
+          }
+        };
+        line.append(button);
+      }
     }
     if (activity.phase === "CLOSED" || activity.phase === "LIVE") addResultButton(line, activity);
+    if (main.dataset.classroomId) {
+      const historyLink = document.createElement("a");
+      historyLink.href = `/teacher/workspace/activities/${url(activity.activity_id)}/lecture`;
+      historyLink.textContent = "查看活動講義歷史";
+      line.append(historyLink);
+    }
     list.append(line);
   }
   historyNeedsRefresh = false;
+  updateCreateAvailability();
 }
 
 function addResultButton(list, activity) {
@@ -239,7 +277,11 @@ function showQuestions(activity, classroomOpen) {
       const inputForm = document.createElement("form");
       for (const item of question.items) {
         const label = document.createElement("label");
-        label.append(item.subitem_label || "答案");
+        if (item.subitem_label) label.append(item.subitem_label);
+        const prompt = document.createElement("p");
+        prompt.className = "question-prompt";
+        prompt.textContent = item.prompt_text ?? "此活動版本未包含完整題目，請老師選擇完整版本並建立新活動；文字仍缺漏時請重新匯入。";
+        label.append(prompt);
         const input = document.createElement("input");
         input.required = true;
         input.name = item.item_id;
@@ -265,7 +307,7 @@ function showQuestions(activity, classroomOpen) {
       list.append(li);
     }
   }
-  for (const button of list.querySelectorAll("button")) {
+  for (const button of list.querySelectorAll("input, button")) {
     button.disabled = !classroomOpen || activity?.phase !== "LIVE";
   }
 }
@@ -283,13 +325,24 @@ async function refresh() {
     const open = data.classroom_state === "OPEN";
     const phase = data.activity?.phase;
     const text = !open ? "課堂已結束" :
-      phase === "LIVE" ? "搶答中" : phase === "CLOSED" ? "活動已結束，等候下一活動" : "等候老師開始活動";
-    byId("state").textContent = data.group_name ? `${text} · ${data.group_name}` : text;
+      phase === "LIVE" ? "搶答中" : phase === "CLOSED" ? "活動已結束，等候下一活動" :
+      phase === "PREPARING" ? "尚未開放搶答" : "等候老師建立活動";
+    byId("state").textContent = [data.activity?.title, text, data.group_name].filter(Boolean).join(" · ");
     showQuestions(data.activity, open);
     if (role === "teacher") {
+      roomOpen = open;
+      stateUnfinished = phase === "PREPARING" || phase === "LIVE";
       byId("close-room").disabled = !open;
       if (changed) historyNeedsRefresh = true;
+      updateCreateAvailability();
       if (historyNeedsRefresh) await activityList(id);
+      if (main.dataset.classroomId && byId("classroom-groups")) {
+        const groups = await api(`/teacher/workspace/courses/${url(main.dataset.courseId)}/classrooms/${url(id)}/groups`);
+        if (context !== selection || room !== id) return;
+        const list = byId("classroom-groups"); list.replaceChildren();
+        for (const group of groups.groups) { const item = document.createElement("li"); item.textContent = group.name; list.append(item); }
+        if (!groups.groups.length) { const item = document.createElement("li"); item.textContent = "尚無學生組別"; list.append(item); }
+      }
     } else {
       byId("recover").hidden = true;
       if (!open) {
@@ -302,8 +355,12 @@ async function refresh() {
     }
   } catch (error) {
     if (context !== selection) return;
-    if (role === "teacher") historyNeedsRefresh = true;
-    for (const button of main.querySelectorAll("#questions button, #activities button")) button.disabled = true;
+    if (role === "teacher") {
+      historyNeedsRefresh = true;
+      roomOpen = false;
+      updateCreateAvailability();
+    }
+    for (const button of main.querySelectorAll("#questions input, #questions button, #activities button")) button.disabled = true;
     if (byId("close-room")) byId("close-room").disabled = true;
     if (byId("recover")) byId("recover").hidden = error.message !== "AUTH_REQUIRED";
     report(error);
@@ -337,9 +394,18 @@ form("create-classroom", async (body) => {
 form("create-activity", async ({title}) => {
   if (!room || !byId("catalogs").value) return note("請先選課堂和講義版本。");
   const id = room;
+  const context = selection;
   const [import_id, import_version] = JSON.parse(byId("catalogs").value);
-  await api(`/teacher/classrooms/${url(id)}/activities`, {title, import_id, import_version});
-  await activityList(id);
+  try {
+    await api(`/teacher/classrooms/${url(id)}/activities`, {title, import_id, import_version});
+  } finally {
+    if (context === selection) {
+      historyNeedsRefresh = true;
+      roomOpen = false;
+      updateCreateAvailability();
+    }
+  }
+  if (context === selection) await refresh();
 });
 form("join", async (body) => {
   const data = await api("/classroom-memberships", body);
@@ -354,7 +420,7 @@ byId("classrooms")?.addEventListener("change", (event) => {
   refresh();
 });
 byId("close-room")?.addEventListener("click", async () => {
-  if (!room || !window.confirm("確定結束課堂？搶答中的活動也會結束。")) return;
+  if (!room || !window.confirm("確定結束課堂？準備中或搶答中的活動也會結束。")) return;
   try {
     await api(`/teacher/classrooms/${url(room)}/close`, {confirm: true});
     await refresh();
@@ -371,7 +437,7 @@ byId("recover")?.addEventListener("click", async () => {
   }
 });
 if (role === "teacher") {
-  courses().catch((error) => {
+  (main.dataset.classroomId ? fixedClassroom() : courses()).catch((error) => {
     if (error.message === "AUTH_REQUIRED") setLoginStatus(false);
   });
   const feedback = document.querySelector("[data-feedback]");
@@ -385,3 +451,11 @@ document.addEventListener("visibilitychange", () => {
 });
 setInterval(refresh, 1000);
 refresh();
+
+async function fixedClassroom() {
+  setRoom(main.dataset.classroomId);
+  const data = await api(`/teacher/courses/${url(main.dataset.courseId)}/catalogs`);
+  const select = byId('catalogs');select.replaceChildren();
+  for(const lecture of data.lectures) for(const v of lecture.versions) option(select,JSON.stringify([lecture.import_id,v.import_version]),`${v.title} · 版本 ${v.import_version}`);
+  await refresh();
+}

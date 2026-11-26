@@ -9,10 +9,6 @@ from ..http import ApiError
 
 def fixed_questions(teacher, import_id, import_version):
     provider = current_app.config.get("GET_CATALOG")
-    if provider is None and current_app.config["DEMO_CATALOG"]:
-        from .demo_catalog import get_demo_catalog
-
-        provider = get_demo_catalog
     if provider is None:
         try:
             service = import_module("..notes.import_service", __package__)

@@ -1,3 +1,4 @@
+from catalog_support import course_import_id
 from conftest import post
 from guided_notes.auth import require_teacher
 from guided_notes.quiz.results_gateway import get_ended_snapshot
@@ -12,17 +13,17 @@ def test_closed_room_only_exposes_its_settled_results(classroom_app, classroom_t
     gid = post(student, "/classroom-memberships", code=room["code"], group_name="A").json["group_id"]
     ids = []
     for _ in range(3):
-        activity = post(classroom_teacher, path + "/activities", import_id=cid, import_version=1).json
+        activity = post(classroom_teacher, path + "/activities", import_id=course_import_id(cid), import_version=1).json
         ids.append(activity["activity_id"])
         assert post(classroom_teacher, f"{path}/activities/{ids[-1]}/start").status_code == 200
         assert post(classroom_teacher, f"{path}/activities/{ids[-1]}/finish").status_code == 200
     other = post(classroom_teacher, f"/teacher/courses/{cid}/classrooms", title="其他班").json["classroom_id"]
     foreign_id = post(classroom_teacher, f"/teacher/classrooms/{other}/activities",
-                      import_id=cid, import_version=1).json["activity_id"]
+                      import_id=course_import_id(cid), import_version=1).json["activity_id"]
     assert post(classroom_teacher, path + "/close", confirm=True).status_code == 200
     classroom_app.config["GET_SETTLED_RESULTS"] = lambda db, activity_id: (
         {"snapshot": {"activity_id": activity_id, "result_version": 1},
-         "results": [{"question_id": "demo-q1", "winner_name": "A", "winner_answer": "答案",
+         "results": [{"question_id": "fixture-q1", "winner_name": "A", "winner_answer": "答案",
                       "groups": [{"group_id": gid, "group_name": "A", "answer": "答案", "rank": 1},
                                  {"group_id": -1, "group_name": "B", "answer": "隱藏", "rank": 2}]}]}
         if activity_id in ids[:2] else None
@@ -41,5 +42,5 @@ def test_closed_room_only_exposes_its_settled_results(classroom_app, classroom_t
         context = require_teacher()
         assert get_ended_snapshot(context, ids[0])["activity_id"] == ids[0]
         assert get_activity_reference(context, ids[0]) == {
-            "activity_id": ids[0], "import_id": cid, "import_version": 1, "ended": True,
+            "activity_id": ids[0], "import_id": course_import_id(cid), "import_version": 1, "ended": True,
         }

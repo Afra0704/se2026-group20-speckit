@@ -90,12 +90,14 @@ def get_catalog(teacher_context, import_id, import_version):
         raise ApiError(403, "TEACHER_REQUIRED")
     if type(import_version) is not int or import_version <= 0:
         raise ApiError(400, "INVALID_REQUEST")
+    from .lecture_lifecycle import require_active_import
+    require_active_import(connection(), teacher_context.teacher_id, import_id)
     return validate_catalog(json.loads(catalog_row(connection(), teacher_context.teacher_id,
                                                    import_id, import_version)["dto"]))
 
 
 def create_preview(teacher_context, gateway, spreadsheet_id, sheet_id, name_mode="source", custom_title=None,
-                   course_id=None):
+                   course_id=None, *, flow_guard=None):
     from ..auth import require_teacher
     from ..db import write_transaction
     from .recognition import recognize
@@ -116,7 +118,10 @@ def create_preview(teacher_context, gateway, spreadsheet_id, sheet_id, name_mode
             raise ApiError(403, "TEACHER_REQUIRED")
         source_id = repo.source(db, teacher_context.teacher_id, spreadsheet_id, sheet_id,
                                 sheet["properties"].get("title", str(sheet_id)))
-        return repo.insert_preview(db, source_id, recognized, hashes, name_mode, custom_title, course_id)
+        pid = repo.insert_preview(db, source_id, recognized, hashes, name_mode, custom_title, course_id)
+        if flow_guard is not None:
+            flow_guard(db, pid)
+        return pid
 
 
 def confirm_preview(teacher_context, preview_id, gateway_factory, existing_import_id=None):
@@ -127,17 +132,22 @@ def confirm_preview(teacher_context, preview_id, gateway_factory, existing_impor
     from . import repository as repo
     from .course_catalogs import check_import_context, get_owned_course
 
+    from .lecture_lifecycle import require_active_import
+
     def existing_result(row, db):
         if row["status"] == "confirmed":
             if row["requested_import_id"] != existing_import_id:
                 raise ApiError(409, "PREVIEW_STALE")
+            require_active_import(db, teacher_context.teacher_id, row["confirmed_import_id"])
             return validate_catalog(json.loads(repo.catalog_row(db, teacher_context.teacher_id,
                 row["confirmed_import_id"], row["confirmed_version"])["dto"]))
         if row["status"] != "ready":
             raise ApiError(409, "PREVIEW_STALE")
         return None
 
+    from ..workspace.import_flows import guard_preview, published
     db = connection()
+    flow = guard_preview(db, preview_id, existing_import_id)
     row = repo.owned_preview(db, teacher_context.teacher_id, preview_id)
     course_id = row["course_id"]
     if course_id is not None:
@@ -146,6 +156,7 @@ def confirm_preview(teacher_context, preview_id, gateway_factory, existing_impor
     if result is not None:
         return result, None
     if existing_import_id is not None:
+        require_active_import(db, teacher_context.teacher_id, existing_import_id)
         check_import_context(db, teacher_context.teacher_id, existing_import_id, course_id)
         target = repo.owned_import(db, teacher_context.teacher_id, existing_import_id)
         if target["source_id"] != row["source_id"]:
@@ -160,6 +171,7 @@ def confirm_preview(teacher_context, preview_id, gateway_factory, existing_impor
     with write_transaction() as db:
         if require_teacher(db) != teacher_context:
             raise ApiError(403, "TEACHER_REQUIRED")
+        current_flow = guard_preview(db, preview_id, existing_import_id, expected_revision=flow["revision"] if flow else None)
         row = repo.owned_preview(db, teacher_context.teacher_id, preview_id)
         result = existing_result(row, db)
         if result is not None:
@@ -169,6 +181,7 @@ def confirm_preview(teacher_context, preview_id, gateway_factory, existing_impor
                 hashes.semantic_hash, hashes.structure_hash, hashes.value_hash):
             db.execute("UPDATE notes_import_previews SET status='invalidated' WHERE preview_id=?", (preview_id,))
             next_id = repo.insert_preview(db, row["source_id"], current, hashes, row["name_mode"], row["custom_title"], course_id)
+            published(db, current_flow, preview_id, existing_import_id, next_pid=next_id)
             return None, next_id
         if existing_import_id is None:
             import_id = str(uuid4())
@@ -177,6 +190,7 @@ def confirm_preview(teacher_context, preview_id, gateway_factory, existing_impor
             if course_id is not None:
                 db.execute("INSERT INTO notes_import_courses VALUES(?,?,?)", (import_id, course_id, repo.now()))
         else:
+            require_active_import(db, teacher_context.teacher_id, existing_import_id)
             check_import_context(db, teacher_context.teacher_id, existing_import_id, course_id)
             target = repo.owned_import(db, teacher_context.teacher_id, existing_import_id)
             if target["source_id"] != row["source_id"]:
@@ -189,4 +203,5 @@ def confirm_preview(teacher_context, preview_id, gateway_factory, existing_impor
         db.execute("""UPDATE notes_import_previews SET status='confirmed',requested_import_id=?,
             confirmed_import_id=?,confirmed_version=? WHERE preview_id=?""",
             (existing_import_id, import_id, version, preview_id))
+        published(db, current_flow, preview_id, existing_import_id, catalog=bundle.catalog)
         return bundle.catalog, None

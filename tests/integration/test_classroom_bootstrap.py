@@ -10,9 +10,9 @@ def test_classroom_bootstrap_is_separate_and_idempotent(app, tmp_path):
     original = app.config["DATABASE"]
     original_bytes = Path(original).read_bytes()
     with pytest.raises(RuntimeError, match="separate database"):
-        create_app({"TESTING": True, "SECRET_KEY": "test-only", "CLASSROOM_MODE": True, "DATABASE": original})
+        create_app({"TESTING": True, "TEACHER_AUTH_MODE": "test_password", "SECRET_KEY": "test-only", "CLASSROOM_MODE": True, "DATABASE": original})
     assert Path(original).read_bytes() == original_bytes
-    config = {"TESTING": True, "SECRET_KEY": "test-only", "CLASSROOM_MODE": True,
+    config = {"TESTING": True, "TEACHER_AUTH_MODE": "test_password", "SECRET_KEY": "test-only", "CLASSROOM_MODE": True,
               "DATABASE": str(tmp_path / "separate.sqlite3")}
     create_app(config)
     with sqlite3.connect(config["DATABASE"]) as db:

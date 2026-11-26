@@ -9,6 +9,7 @@ import random
 import re
 import time
 from urllib.parse import parse_qs, urlsplit
+from ..google_login.transport import CredentialSnapshot, CredentialSnapshotExpired
 
 
 class GatewayError(RuntimeError):
@@ -80,6 +81,8 @@ class SheetsGateway:
         for attempt in range(3):
             try:
                 return make_request().execute(num_retries=0)
+            except CredentialSnapshotExpired:
+                raise GatewayError('GOOGLE_CREDENTIALS_REFRESH_REQUIRED', http_status=503) from None
             except Exception as error:
                 status = getattr(getattr(error, "resp", None), "status", None)
                 if status in (429, 500, 502, 503, 504) and attempt < 2:
@@ -187,6 +190,8 @@ class SheetsGateway:
                 spreadsheetId=spreadsheet_id,
                 body={"valueInputOption": "RAW", "includeValuesInResponse": False,
                       "data": data}).execute(num_retries=0)
+        except CredentialSnapshotExpired:
+            raise GatewayError('GOOGLE_CREDENTIALS_REFRESH_REQUIRED', http_status=503, write_outcome='failed') from None
         except Exception as error:
             status = getattr(getattr(error, "resp", None), "status", None)
             known_failure = status in (400, 401, 403, 404, 429)
@@ -215,6 +220,8 @@ def build_google_service(credentials):
     except ImportError:
         raise GatewayError("GOOGLE_DEPENDENCIES_MISSING") from None
     if not credentials.valid:
+        if isinstance(credentials, CredentialSnapshot):
+            raise GatewayError('GOOGLE_CREDENTIALS_REFRESH_REQUIRED', http_status=503)
         raise GatewayError("GOOGLE_REAUTH_REQUIRED")
     try:
         return build("sheets", "v4", http=AuthorizedHttp(credentials,

@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS teachers (
     id INTEGER PRIMARY KEY,
-    username TEXT NOT NULL UNIQUE,
-    password_hash TEXT NOT NULL,
+    username TEXT UNIQUE,
+    password_hash TEXT,
     active INTEGER NOT NULL DEFAULT 1
 );
 CREATE TABLE IF NOT EXISTS activities (
@@ -51,3 +51,12 @@ CREATE TABLE IF NOT EXISTS attempts (
     count INTEGER NOT NULL,
     expires INTEGER NOT NULL
 );
+CREATE TABLE IF NOT EXISTS activity_displays (
+    activity_id TEXT PRIMARY KEY REFERENCES activities(id),
+    dto TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TRIGGER IF NOT EXISTS activity_displays_no_update BEFORE UPDATE ON activity_displays
+BEGIN SELECT RAISE(ABORT, 'Activity display is immutable'); END;
+CREATE TRIGGER IF NOT EXISTS activity_displays_no_delete BEFORE DELETE ON activity_displays
+BEGIN SELECT RAISE(ABORT, 'Activity display is immutable'); END;

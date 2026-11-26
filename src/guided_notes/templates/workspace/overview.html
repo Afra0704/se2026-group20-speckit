@@ -1,0 +1,1 @@
+{% extends 'workspace/base.html' %}{% block content %}<h2>課程總覽</h2><p>先從講義管理匯入 Google Sheets，再到課堂管理建立本次課堂。</p><a href="{{ url_for('workspace.lectures',course_id=course.course_id) }}">管理講義</a> · <a href="{{ url_for('workspace.classrooms',course_id=course.course_id) }}">管理課堂</a>{% endblock %}

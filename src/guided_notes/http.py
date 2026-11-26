@@ -1,3 +1,4 @@
+import sqlite3
 from flask import jsonify, request
 
 from .db import DatabaseBusy
@@ -34,6 +35,12 @@ def init_app(app):
             headers["Retry-After"] = str(error.retry_after)
         return jsonify(body), error.status, headers
 
+    @app.errorhandler(sqlite3.IntegrityError)
+    def visibility_error(error):
+        if str(error) != "lecture_removed":
+            raise error
+        return jsonify(error={"code":"LECTURE_REMOVED","message":"講義已移除，請選擇其他講義。","retryable":False,"context":{}}),410
+
     @app.errorhandler(DatabaseBusy)
     def busy(_error):
         return jsonify(error="TEMPORARILY_UNAVAILABLE"), 503
@@ -41,4 +48,5 @@ def init_app(app):
     @app.after_request
     def privacy(response):
         response.headers["Cache-Control"] = "no-store"
+        response.headers['Referrer-Policy'] = ('strict-origin-when-cross-origin' if request.endpoint == 'workspace.import_page' and response.mimetype == 'text/html' and not request.query_string else 'no-referrer')
         return response
