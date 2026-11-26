@@ -4,7 +4,7 @@ from string import ascii_uppercase, digits
 from flask import Blueprint, current_app, flash, jsonify, redirect, request, session, url_for
 
 from ..auth import limit_attempts, require_teacher
-from ..db import connection, write_transaction
+from ..db import connection, write_transaction, read_view
 from ..http import ApiError, payload, string
 from ..quiz.results_gateway import snapshot
 from .classroom_access import (
@@ -12,7 +12,7 @@ from .classroom_access import (
 )
 from .classroom_catalog import get_catalog, list_catalogs, get_display_content
 from .display_service import save_display
-from .classroom_membership import group_for, join, recover
+from .classroom_membership import group_for, identity_for, join, recover
 from .course_service import get_owned_course
 from .state_routes import state_view
 from .teacher import store_activity, transition, validate_catalog
@@ -86,7 +86,7 @@ def insert_room(db, classroom_id, course_id, title):
         code = make_room_code()
         inserted = db.execute(
             """INSERT INTO classrooms(id, course_id, title, code) VALUES (?, ?, ?, ?)
-               ON CONFLICT(code) DO NOTHING""",
+               ON CONFLICT(code) WHERE state='OPEN' DO NOTHING""",
             (classroom_id, course_id, title, code),
         )
         if inserted.rowcount:
@@ -184,7 +184,8 @@ def close(classroom_id):
     with activity_transaction() as db:
         teacher = require_teacher(db)
         room = owned_classroom(db, teacher, classroom_id)
-        require_open(room)
+        if room['state'] == 'CLOSED':
+            return {'classroom_state': 'CLOSED'}
         unfinished = db.execute(
             """SELECT a.id, a.phase FROM classroom_activities c JOIN activities a ON a.id=c.activity_id
                WHERE c.classroom_id=? AND a.phase IN ('PREPARING','LIVE')""", (classroom_id,)
@@ -223,8 +224,10 @@ def state(classroom_id):
         if role == "teacher":
             room, group = owned_classroom(db, require_teacher(db), classroom_id), None
         else:
-            group = group_for(db, classroom_id)
+            group = identity_for(db, classroom_id)
             room = classroom(db, classroom_id)
+            if room['state'] == 'CLOSED':
+                return dict(classroom_id=room['id'], classroom_state='CLOSED', state_version=room['state_version'])
         activity_id = room["current_activity_id"]
         activity = requested_activity(db, activity_id) if activity_id else None
         view = state_view(db, activity, group) if activity is not None else None
@@ -241,6 +244,9 @@ def state(classroom_id):
 
 @rooms.post("/classrooms/<classroom_id>/result-access")
 def result_access(classroom_id):
+    data = payload()
+    if 'group_id' in data or 'group_name' in data:
+        raise ApiError(400, 'INVALID_REQUEST')
     limit_attempts("classroom-recover")
     with write_transaction() as db:
         token = recover(db, classroom_id, request.cookies.get("classroom_proof"))
@@ -249,6 +255,7 @@ def result_access(classroom_id):
 
 
 @rooms.get("/classrooms/<classroom_id>/results")
+@read_view
 def settled_activities(classroom_id):
     db = connection()
     group_for(db, classroom_id)

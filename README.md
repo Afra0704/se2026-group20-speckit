@@ -52,6 +52,14 @@ PR #6 合流已將 001 與 004 的真實課程授權、課程講義清單／版�
 
 使用者已回報圖意核對完畢並允許plan；[008 計畫](specs/008-teacher-course-workspace/plan.md)、研究／資料模型／四份契約／[設定驗收指南](specs/008-teacher-course-workspace/quickstart.md)及新版三圖已產生，尚未改產品介面、實作雲端選檔或刪講義。計畫採專用窄Picker token及講義清單移除，原007資料保留。本次技術修圖／介面互審、具名分工及D21 OpenSpec同步仍待補；下一階段tasks、analyze再implement，原人工任務不代勾。
 
+## 009：一次性課堂碼釋放與重用（本機實作，待整合及人工驗收）
+
+課堂結束後永久關閉，立即釋放有效碼；歷史仍保留原課堂與活動歸屬。學生從獨立 `/student` 頁輸入課堂碼＋組別，成功後進固定課堂頁。整堂結束只顯示「課堂已結束」及「加入其他課堂」，舊資格不能因碼重用進入新堂；課堂仍開放時的活動結果規則保持。
+
+沿用兩個大寫字母＋三個數字，系統全域分配，教師不指定碼。既有007／008資料庫會在啟動前以專用連線升級；正式部署前須停止舊服務、備份原DB及私有key並沿用原設定，未知schema或升級失敗即停止。歷史碼可重複後，不能直接回退到永久UNIQUE舊schema。本輪只在臨時測試DB驗證，沒有操作操作者DB或憑證。
+
+003 [PR #9](https://github.com/Afra0704/se2026-group20-speckit/pull/9) 已固定版本檢查，但未合併其順位／結算實作。正式003聯測、教師加兩組學生人工操作及真Google回填仍待完成。規格／計畫／任務及報告見 [009目錄](specs/009-release-classroom-codes/)、[驗證紀錄](specs/009-release-classroom-codes/validation.md)與[操作指南](specs/009-release-classroom-codes/quickstart.md)。008原人工與互審待辦維持。
+
 ## 兩小組協調（協作規則）
 
 SpecKit 小組兩人共用本 repo。OpenSpec 小組另建 repo，兩小組依共同需求實作一致的使用者功能。請 OpenSpec 組建立 repo、互邀協作者，並將連結提供給大組。確認後在共同需求文件補上 repo 連結、確認日期與確認者。

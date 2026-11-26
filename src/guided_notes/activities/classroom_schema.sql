@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS classrooms (
     id TEXT PRIMARY KEY,
     course_id TEXT NOT NULL REFERENCES courses(id),
     title TEXT NOT NULL CHECK (length(trim(title)) > 0),
-    code TEXT NOT NULL UNIQUE,
+    code TEXT NOT NULL,
     state TEXT NOT NULL DEFAULT 'OPEN' CHECK (state IN ('OPEN', 'CLOSED')),
     state_version INTEGER NOT NULL DEFAULT 0,
     current_activity_id TEXT,
@@ -94,3 +94,21 @@ CREATE TABLE IF NOT EXISTS classroom_grants (
     expires INTEGER NOT NULL,
     read_only INTEGER NOT NULL DEFAULT 0 CHECK (read_only IN (0, 1))
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS classrooms_open_code_unique ON classrooms(code) WHERE state='OPEN';
+
+CREATE TRIGGER IF NOT EXISTS classroom_permanently_closed
+BEFORE UPDATE OF state ON classrooms
+WHEN OLD.state='CLOSED' AND NEW.state<>'CLOSED'
+BEGIN SELECT RAISE(ABORT, 'classroom_permanently_closed'); END;
+
+CREATE TRIGGER IF NOT EXISTS classroom_identity_immutable
+BEFORE UPDATE OF id,course_id,code ON classrooms
+WHEN NEW.id<>OLD.id OR NEW.course_id<>OLD.course_id OR NEW.code<>OLD.code
+BEGIN SELECT RAISE(ABORT, 'classroom_identity_immutable'); END;
+
+CREATE TABLE IF NOT EXISTS classroom_schema_versions (
+    version INTEGER PRIMARY KEY CHECK (version=9),
+    applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+INSERT INTO classroom_schema_versions(version) VALUES (9) ON CONFLICT DO NOTHING;

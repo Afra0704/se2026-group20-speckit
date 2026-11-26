@@ -50,8 +50,11 @@ def test_real_course_catalog_binding_switch_and_writeback_adapter(classroom_app,
     report = confirm_export(classroom_teacher, preview.json["preview_id"], key="integration").json
     assert report["status"] == "completed" and report["counts"]["verified"] == 3
     assert [len(batch) for batch in classroom_app.config["NOTES_GATEWAY"].writes] == [2,1]
-    assert post(classroom_teacher, f"/teacher/classrooms/{room['classroom_id']}/close", confirm=True).status_code == 200
     assert student.get(f"/classrooms/{room['classroom_id']}/results").json["activities"][0]["activity_id"] == aid
+    assert post(classroom_teacher, f"/teacher/classrooms/{room['classroom_id']}/close", confirm=True).status_code == 200
+    assert student.get(f"/classrooms/{room['classroom_id']}/results").status_code == 409
+    # Closing student access must not remove the owner's original export history.
+    assert post(classroom_teacher, '/teacher/notes/export-previews', activity_id=aid).status_code == 201
 
 
 def test_classroom_read_releases_transaction_and_init_db_preserves_notes(classroom_app, classroom_teacher):

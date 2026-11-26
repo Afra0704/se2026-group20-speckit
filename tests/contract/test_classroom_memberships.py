@@ -1,5 +1,15 @@
 from catalog_support import course_import_id
 from conftest import post
+import pytest
+
+
+@pytest.mark.parametrize('name', [None, 3, '', ' ', 'A'*81])
+def test_join_rejects_invalid_raw_group_names(classroom_app, classroom_setup, name):
+    _, room = classroom_setup
+    client = classroom_app.test_client()
+    response = post(client, '/classroom-memberships', code=room['code'], group_name=name)
+    assert response.status_code == 400
+    assert not response.headers.getlist('Set-Cookie')
 
 
 def test_classroom_join_isolated_and_switch_preserves_group(classroom_app, classroom_teacher, classroom_setup):

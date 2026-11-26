@@ -4,10 +4,11 @@ from ..activities.membership import activity_scope
 from ..activities.classroom_access import owned_classroom, requested_activity
 from ..activities.classroom_membership import group_for
 from ..auth import require_teacher
-from ..db import connection
+from ..db import connection, read_view
 from ..http import ApiError
 
 
+@read_view
 def results_for(activity_id):
     db = connection()
     if current_app.config["CLASSROOM_MODE"]:

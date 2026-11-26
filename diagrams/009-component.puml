@@ -1,0 +1,52 @@
+@startuml
+!pragma layout smetana
+title 009 一次性課堂碼釋放與重用｜Component（009 本機實作；003 待正式整合）
+skinparam defaultFontName "Microsoft JhengHei"
+left to right direction
+actor 教師 as T
+actor "新加入學生" as S
+actor "原學生" as O
+component "教師課堂介面" as TI
+component "獨立學生加入頁\n課堂碼＋組別，成功後進課堂\n不常駐登入提示" as SI
+component "學生課堂頁／開放期間恢復\n關課後顯示結束＋加入其他課堂" as OI
+package "002／004 課堂責任（009 擴充，非新增服務定案）" {
+  component "教師權限與永久關課" as Close
+  component "有效碼分配／查詢\n一碼最多一個開放課堂" as Code
+  component "加入／原證明驗證\n固定 classroom_id＋group_id" as Join
+  component "原課堂、活動及歷史引用" as History
+}
+component "003 正式受理／順位／結算\nPR9 已核對；合流聯測待完成" as Quiz
+component "001 固定講義版本\n回填／未知結果恢復" as Notes
+T --> TI
+S --> SI
+O --> OI
+TI --> Close : 指定原課堂 ID，確認結束
+TI --> Code : 有權建立新課堂時分配碼
+SI --> Code : 只解析有效碼
+Code --> Join : 固定目標課堂再驗證加入
+OI --> Join : 原證明＋原課堂；關課拒絕內容，不查碼
+Close --> Code : 關閉時釋放該堂有效占用
+Close --> History : 一併結束未結束活動，保留歷史
+Join --> History : 驗原課堂／組別與狀態
+Quiz --> Join : 同範圍驗權，提交與關課競態
+Quiz --> History : 固定 activity_id，保留原結果
+Notes --> Quiz : 原活動已結算快照／未就緒
+Notes --> History : 固定版本與回填依賴
+note bottom of Code
+  FR-002～006、012～015：各操作使用 BEGIN IMMEDIATE。
+  有效碼為 classrooms OPEN 投影＋部分唯一索引。
+  重送結束 A 不得釋放 B 的同碼對應。
+  5 碼：AA000 格式；輸入去首尾空白、轉大寫。
+  關課即釋放，無冷卻、全域系統分配；教師不指定碼。
+  db.py／classroom_migration.py：專用 bootstrap 連線升級。
+  FK OFF 僅用於升級；一般 request 連線維持 FK ON。
+end note
+note bottom of Join
+  FR-007～009、012：舊資格只屬原堂原組。
+  加入同碼新堂必須明確重新送碼與組別。
+  關課後停止學生題目／結果存取，教師歷史保留。
+  /student 加入成功 → /student/classrooms/{id} 固定堂頁。
+  原 proof 僅 OPEN 可恢復；CLOSED state 只回最小提示。
+  按加入其他課堂才回獨立加入頁，內部 ID 無須操作。
+end note
+@enduml

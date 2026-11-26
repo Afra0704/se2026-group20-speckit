@@ -41,6 +41,17 @@ def test_classroom_code_collision_retries(classroom_teacher, classroom_setup, mo
     assert created.json["code"] == replacement
 
 
+def test_close_requires_confirmation_and_actual_owner(classroom_app, classroom_teacher, classroom_setup):
+    _, room = classroom_setup
+    path = f"/teacher/classrooms/{room['classroom_id']}/close"
+    assert post(classroom_teacher, path).status_code == 400
+    assert post(classroom_app.test_client(), path, confirm=True).status_code == 401
+    other = classroom_app.test_client()
+    post(other, '/teacher/session', username='other', password='test-password')
+    assert post(other, path, confirm=True).status_code == 404
+    assert classroom_teacher.get(f"/classrooms/{room['classroom_id']}/state", headers={'X-Activity-Role':'teacher'}).json['classroom_state'] == 'OPEN'
+
+
 def test_teacher_can_initialize_four_character_password(classroom_app):
     runner = classroom_app.test_cli_runner()
     assert runner.invoke(args=["init-teacher", "four", "--password", "123"]).exit_code != 0

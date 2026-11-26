@@ -1,0 +1,14 @@
+.student-page{background:#f4f7f6;color:#183b35;min-height:100vh}
+.student-nav{max-width:1120px;margin:auto;padding:24px;display:flex;justify-content:space-between;gap:16px;border-bottom:1px solid #dce5e0}
+.student-nav a{color:#24594e;text-decoration:none;font-weight:700}
+.student-entry{max-width:560px;margin:64px auto;padding:0 24px}
+.student-entry h1{font-size:clamp(1.8rem,5vw,2.4rem);line-height:1.3;letter-spacing:-.04em}
+.eyebrow{font-size:.75rem;letter-spacing:.16em;font-weight:700;color:#547a6b}
+.student-entry .card{padding:28px;margin:28px 0;border-radius:18px;border:1px solid #dce5e0;box-shadow:0 14px 40px #153e2a08}
+.student-entry form{display:grid;gap:12px}.student-entry input{width:100%;box-sizing:border-box;min-height:48px}
+.student-entry button,.student-action{background:#24594e;color:white;padding:14px 22px;border-radius:9px;text-align:center;text-decoration:none;font-weight:700}
+.student-entry button{margin-top:12px}.student-footnote{font-size:.85rem;line-height:1.7;color:#667c74}
+.student-ended{text-align:center;max-width:560px;margin:64px auto;padding:48px 24px}.student-action{display:inline-block;margin-top:20px}
+[hidden]{display:none!important}#access-notice{max-width:560px;margin:40px auto}#access-notice a{display:block;margin-top:18px}
+#room-content{max-width:900px;margin:auto}#results{white-space:pre-wrap;overflow-wrap:anywhere}.student-page button:focus-visible,.student-page a:focus-visible,.student-page input:focus-visible{outline:3px solid #5ca493;outline-offset:3px}
+@media(max-width:600px){.student-entry{margin:32px auto}.student-nav{padding:18px}.student-entry .card{padding:22px}main{padding:20px}#room-content .question-list{padding-left:22px}}
