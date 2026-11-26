@@ -17,6 +17,7 @@
   const byId=id=>document.getElementById(id), content=byId('room-content');
   let activity=null,group=null,view=null,polling=false,controller=new AbortController(),recovering=false;
   let historyKey=null,selectedResult=null,resultOutput=null;
+  let historyRequest=null;
   let scopeBlocked=false;
   const phaseText={PREPARING:'尚未開放搶答',LIVE:'搶答中',CLOSED:'活動已結束'};
   function clear(){content.hidden=true;byId('questions').replaceChildren();byId('results').replaceChildren();activity=null;view=null;historyKey=null;selectedResult=null;resultOutput=null;}
@@ -69,25 +70,42 @@
     for(const form of byId('questions').querySelectorAll('form'))form.quizUpdate?.();
   }
   async function results(gen){
+    if(historyRequest?.generation===gen)return;
+    const request={generation:gen};
+    historyRequest=request;
+    try{await loadHistory(gen);}
+    catch(e){error(e,gen);}
+    finally{if(historyRequest===request)historyRequest=null;}
+  }
+  async function loadHistory(gen){
     const list=await api(`/classrooms/${encodeURIComponent(room)}/results`);
     if(!valid(gen))return;
     const key=JSON.stringify(list.activities||[]),container=byId('results');
     if(key!==historyKey){
-      historyKey=key;container.replaceChildren();resultOutput=document.createElement('p');
+      historyKey=key;container.replaceChildren();resultOutput??=document.createElement('p');
       for(const item of list.activities||[]){
         const button=document.createElement('button');button.textContent=item.title||'活動結果';button.type='button';
-        button.onclick=async()=>{selectedResult=item.activity_id;await selected(gen);};container.append(button);
+        button.onclick=async()=>{
+          if(!valid(gen)||historyKey!==key)return;
+          selectedResult={id:item.activity_id,loading:false};
+          resultOutput.textContent='';
+          await selected(gen);
+        };container.append(button);
       }
       container.append(resultOutput);
     }
-    if(selectedResult)await selected(gen);
+    void selected(gen);
   }
   async function selected(gen){
-    const id=selectedResult;
-    try{const data=await api(`/activities/${encodeURIComponent(id)}/results`);
-      if(!valid(gen)||selectedResult!==id||!resultOutput)return;
+    const selection=selectedResult;
+    if(!selection||selection.loading||!valid(gen))return;
+    const isCurrent=()=>valid(gen)&&selectedResult===selection&&resultOutput;
+    selection.loading=true;
+    try{const data=await api(`/activities/${encodeURIComponent(selection.id)}/results`);
+      if(!isCurrent())return;
       resultOutput.textContent=data.status==='settled'?describe(data.results||[]):data.status==='unavailable'?'此活動沒有可用的正式結果。':'結算中';
-    }catch(e){error(e,gen);}
+    }catch(e){if(isCurrent())error(e,gen);}
+    finally{selection.loading=false;}
   }
   async function refresh(){
     if(polling||state.closed||recovering||scopeBlocked)return;
@@ -103,7 +121,7 @@
       byId('access-notice').hidden=true;byId('state').textContent=[data.group_name,phaseText[data.activity?.phase]||'等候老師建立活動'].filter(Boolean).join(' · ');
       group=data.activity?.group_id??group;questions(data);
       byId('activity-title').textContent=data.activity?.title||'等候老師建立活動';content.hidden=false;
-      await results(gen);
+      void results(gen);
     }catch(e){error(e,gen);}finally{polling=false;}
   }
   byId('recover').onclick=async()=>{

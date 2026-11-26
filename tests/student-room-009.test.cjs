@@ -32,21 +32,25 @@ class Element {
 async function dom(){
  const ids=Object.fromEntries(['room-content','questions','results','state','message','closed-notice','access-notice','activity-title','recover'].map(x=>[x,new Element()]));
  const main=new Element();main.dataset={classroomId:'A',csrf:'test'};
- let closed=false,delay=false,release,currentGroup=1;
+ let closed=false,delay=false,fail=false,release,currentGroup=1;
  const timers=[],listeners={};
  const ctx=vm.createContext({document:{hidden:false,querySelector:()=>main,getElementById:x=>ids[x],createElement:x=>new Element(x),addEventListener:(e,f)=>listeners[e]=f},
  window:{addEventListener:(e,f)=>listeners[e]=f},AbortController,setInterval:f=>timers.push(f),
  fetch:async path=>{
   let data;
   if(path.endsWith('/state'))data={classroom_id:'A',classroom_state:closed?'CLOSED':'OPEN',state_version:closed?2:1,group_name:'A',activity:{activity_id:'quiz',phase:'CLOSED',group_id:currentGroup,questions:[]}};
-  else if(path.startsWith('/classrooms/'))data={activities:[{activity_id:'quiz',title:'Original result'}]};
-  else {if(delay)await new Promise(r=>release=r);data={status:'settled',results:[{question_id:'q',winner_name:'A',winner_answer:'original answer',own:{answer:'own answer',rank:1}}]};}
+  else if(path.startsWith('/classrooms/'))data={activities:[{activity_id:'quiz',title:'Original result'},{activity_id:'other',title:'Other result'}]};
+  else {
+   const original=path.includes('/quiz/');
+   if(delay&&original){await new Promise(r=>release=r);if(fail)throw new Error('Network failure');}
+   data={status:'settled',results:[{question_id:'q',winner_name:'A',winner_answer:original?'original answer':'other answer',own:{answer:'own answer',rank:1}}]};
+  }
   return {ok:true,status:200,json:async()=>data};
  }});
  vm.runInContext(fs.readFileSync('src/guided_notes/static/student-room.js','utf8'),ctx);
  const flush=async()=>{await new Promise(setImmediate);await new Promise(setImmediate);};
  await flush();
- return {ids,flush,async tick(){timers[0]();await flush();},close(){closed=true;},changeGroup(){currentGroup=2;},delay(){delay=true;},release(){release();},listeners};
+ return {ids,flush,async tick(){timers[0]();await flush();},close(){closed=true;},changeGroup(){currentGroup=2;},delay({reject=false}={}){delay=true;fail=reject;},release(){release();},listeners};
 }
 test('a selected result remains visible across ordinary classroom polling',async()=>{
  const x=await dom();await x.ids.results.children[0].onclick();
@@ -66,4 +70,23 @@ test('another tab changing the group never transfers the old page or its draft',
  assert.equal(x.ids['room-content'].hidden,true);
  assert.equal(x.ids['access-notice'].hidden,false);
  assert.equal(x.ids.questions.children.length,0);
+});
+
+test('automatic result polling does not block the classroom closing',async()=>{
+ const x=await dom();
+ await x.ids.results.children[0].onclick();
+ x.delay();await x.tick();
+ x.close();await x.tick();
+ assert.equal(x.ids.state.textContent,'課堂已結束');
+ assert.equal(x.ids['room-content'].hidden,true);
+ x.release();await x.flush();
+ assert.equal(x.ids.results.children.length,0);
+});
+test('an obsolete result request failure leaves the new selection visible',async()=>{
+ const x=await dom();
+ x.delay({reject:true});const pending=x.ids.results.children[0].onclick();await x.flush();
+ await x.ids.results.children[1].onclick();
+ x.release();await pending;
+ assert.equal(x.ids['room-content'].hidden,false);
+ assert.ok(x.ids.results.children.some(e=>e.textContent.includes('other answer')));
 });
