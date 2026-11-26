@@ -1,0 +1,17 @@
+@startuml
+title B 課堂在線估計
+actor 學生
+actor 教師
+component "009 固定課堂 ID 與 OPEN 授權" as Auth
+component "頁面在線更新與逾時" as Presence
+component "教師組別與在線統計" as Roster
+component "既有正式送答與結算" as Quiz
+學生 --> Presence : 固定課堂頁的在線訊號
+Presence --> Auth : 驗證參與身分
+教師 --> Roster
+Roster --> Auth : 驗證管理權限
+Roster --> Presence : 依課堂與組別去重
+note right of Quiz
+在線資訊獨立於正式結果
+end note
+@enduml

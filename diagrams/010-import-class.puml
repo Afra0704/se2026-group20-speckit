@@ -1,0 +1,14 @@
+@startuml
+title A 講義匯入欄位提示
+class "連結欄位" as Field {
+  目前輸入
+  驗證狀態
+}
+class "錯誤提示" as Error {
+  原因
+  修正說明
+}
+class "匯入流程" as Flow
+Field "1" -- "0..1" Error
+Field --> Flow : 來源驗證通過
+@enduml

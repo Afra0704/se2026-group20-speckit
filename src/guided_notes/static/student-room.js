@@ -39,11 +39,11 @@
     }else{state.invalidate();clear();byId('state').textContent='連線中斷，正在重新連線…';}
   }
   function textAnswer(value){return typeof value==='string'?value:Object.values(value||{}).join('、');}
-  function describe(rows){return rows.map(row=>{
+  function describeRow(row) {
     const winner=row.winner_items?.map(i=>`${i.subitem_label||''} ${i.answer_text}`).join('；')||textAnswer(row.winner_answer);
     const own=row.own?.items?.map(i=>`${i.subitem_label||''} ${i.answer_text}`).join('；')||textAnswer(row.own?.answer);
-    return `${row.display_number||row.question_id} · ${row.winner_name?`勝組 ${row.winner_name}：${winner}`:'無勝組'}${row.own?`\n本組：${own}（順位 ${row.own.rank}）`:''}`;
-  }).join('\n\n');}
+    return `${row.display_number||row.question_id} · ${row.winner_name?`勝組 ${row.winner_name}：${winner}`:'無勝組'}${row.own?`\n本組：${own}（順位 ${row.own.rank}）`:'\n本組未提交'}`;
+  }
   function questions(data){
     const current=data.activity, id=current?.activity_id||null;
     if(activity!==id||!view){
@@ -77,34 +77,71 @@
     catch(e){error(e,gen);}
     finally{if(historyRequest===request)historyRequest=null;}
   }
+  function output(){
+    if(!resultOutput){
+      resultOutput=document.createElement('div');
+      resultOutput.className='classroom-result-output';
+      byId('results').append(resultOutput);
+    }
+    return resultOutput;
+  }
   async function loadHistory(gen){
     const list=await api(`/classrooms/${encodeURIComponent(room)}/results`);
     if(!valid(gen))return;
     const key=JSON.stringify(list.activities||[]),container=byId('results');
     if(key!==historyKey){
-      historyKey=key;container.replaceChildren();resultOutput??=document.createElement('p');
+      const panel=output();
+      historyKey=key;container.replaceChildren();
       for(const item of list.activities||[]){
         const button=document.createElement('button');button.textContent=item.title||'活動結果';button.type='button';
         button.onclick=async()=>{
           if(!valid(gen)||historyKey!==key)return;
-          selectedResult={id:item.activity_id,loading:false};
-          resultOutput.textContent='';
+          selectedResult={id:item.activity_id,title:item.title,loading:false};
+          panel.textContent='';
           await selected(gen);
         };container.append(button);
       }
-      container.append(resultOutput);
+      container.append(panel);
     }
     void selected(gen);
   }
   async function selected(gen){
     const selection=selectedResult;
-    if(!selection||selection.loading||!valid(gen))return;
+    if(!selection||selection.loading||selection.done||!valid(gen))return;
     const isCurrent=()=>valid(gen)&&selectedResult===selection&&resultOutput;
     selection.loading=true;
     try{const data=await api(`/activities/${encodeURIComponent(selection.id)}/results`);
       if(!isCurrent())return;
-      resultOutput.textContent=data.status==='settled'?describe(data.results||[]):data.status==='unavailable'?'此活動沒有可用的正式結果。':'結算中';
-    }catch(e){if(isCurrent())error(e,gen);}
+      selection.done=data.status==='settled'||data.status==='unavailable';
+      const title=document.createElement('h2');
+      title.textContent=selection.title||'活動結果';
+      resultOutput.replaceChildren(title);
+      if(data.status==='settled'&&data.results?.length){
+        for(const row of data.results){
+          const card=document.createElement('p');
+          card.className='classroom-result-card';
+          card.textContent=describeRow(row);
+          resultOutput.append(card);
+        }
+      }else{
+        const status=document.createElement('p');
+        status.textContent=data.status==='unavailable'?'此活動沒有可用的正式結果。':
+          data.status==='settled'?'沒有已公布的結果。':'結果結算中';
+        resultOutput.append(status);
+      }
+    }catch(e){
+      if(!isCurrent())return;
+      if(['CLASSROOM_CLOSED','AUTH_REQUIRED','FORBIDDEN','RECOVERY_DENIED'].includes(e.message)){
+        error(e,gen);
+      }else if(e.name!=='AbortError'){
+        selection.done=true;
+        const retry=document.createElement('button');
+        retry.type='button';
+        retry.textContent='結果讀取失敗，重試';
+        retry.onclick=()=>{if(isCurrent()){selection.done=false;void selected(gen);}};
+        resultOutput.replaceChildren(retry);
+      }
+    }
     finally{selection.loading=false;}
   }
   async function refresh(){
@@ -119,7 +156,18 @@
         byId('state').textContent='組別資格已變更，請返回加入頁重新加入。';return;
       }
       byId('access-notice').hidden=true;byId('state').textContent=[data.group_name,phaseText[data.activity?.phase]||'等候老師建立活動'].filter(Boolean).join(' · ');
+      const nextId=data.activity?.activity_id||null;
+      if(activity!==nextId&&selectedResult){
+        selectedResult=null;
+        if(resultOutput)resultOutput.replaceChildren();
+      }
       group=data.activity?.group_id??group;questions(data);
+      byId('questions').hidden=data.activity?.phase==='CLOSED';
+      if(data.activity?.phase==='CLOSED'&&!selectedResult){
+        selectedResult={id:nextId,title:data.activity.title,loading:false};
+        output();
+      }
+      void selected(gen);
       byId('activity-title').textContent=data.activity?.title||'等候老師建立活動';content.hidden=false;
       void results(gen);
     }catch(e){error(e,gen);}finally{polling=false;}
@@ -135,5 +183,24 @@
   function resume(){suspend();refresh();}
   window.addEventListener('pagehide',suspend);window.addEventListener('pageshow',resume);window.addEventListener('online',resume);
   document.addEventListener('visibilitychange',()=>{if(document.hidden)suspend();else resume();});
-  setInterval(()=>{if(!document.hidden)refresh();},1000);refresh();
+  setInterval(()=>{if(!document.hidden)refresh();},1000);
+  const pageId=globalThis.crypto?.getRandomValues
+    ? Array.from(crypto.getRandomValues(new Uint8Array(16)), value=>value.toString(16).padStart(2,'0')).join('')
+    : null;
+  if(pageId){
+    let presencePending=false;
+    const heartbeat=async()=>{
+      if(presencePending||state.closed||scopeBlocked)return;
+      presencePending=true;
+      const generation=state.generation;
+      try{await api(`/classrooms/${encodeURIComponent(room)}/presence`,{page_id:pageId});}
+      catch(e){if(valid(generation)&&e.message==='CLASSROOM_CLOSED')ended();}
+      finally{presencePending=false;}
+    };
+    setInterval(heartbeat,3000);
+    window.addEventListener('online',heartbeat);
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden)void heartbeat();});
+    void heartbeat();
+  }
+  refresh();
 })();

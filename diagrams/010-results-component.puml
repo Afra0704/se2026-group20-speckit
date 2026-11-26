@@ -1,0 +1,16 @@
+@startuml
+title C 活動結束結果
+actor 學生
+actor 教師
+component "009 課堂狀態輪詢與關課終止" as Phase
+component "009 固定學生課堂頁" as Student
+component "教師結果區" as Teacher
+component "既有結果授權與投影" as Projection
+component "003 正式結算快照" as Snapshot
+學生 --> Student
+教師 --> Teacher
+Student --> Phase
+Student --> Projection : 獨立結果查詢（限 OPEN）
+Teacher --> Projection
+Projection --> Snapshot
+@enduml

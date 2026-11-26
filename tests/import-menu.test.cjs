@@ -2,7 +2,9 @@ const test=require('node:test');const assert=require('node:assert/strict');const
 function setup(){
  const listeners={},nodes={};
  function node(id){return nodes[id]={dataset:{},hidden:false,disabled:false,events:{},addEventListener(e,f){this.events[e]=f;},setAttribute(k,v){this[k]=v;},focus(){this.focused=true;},contains(n){return n===this;},querySelector(){return nodes.input;}};}
- for(const id of ['main','import-toggle','import-menu','link-import','input','cloud','link','remove'])node(id);
+ for(const id of ['main','import-toggle','import-menu','link-import','input','cloud','link','remove','spreadsheet-url-error','link-import-error','submit'])node(id);
+ nodes.input.value='https://docs.google.com/spreadsheets/d/test/edit';nodes.input.removeAttribute=()=>{};
+ nodes['link-import'].querySelector=s=>s==='input'?nodes.input:nodes.submit;
  nodes.main.dataset={courseId:'course-A'};nodes['import-menu'].hidden=true;nodes.remove.dataset={remove:'lecture-A',title:'範本'};
  const calls=[],locations=[],reports=[];let confirmed=false;let failure=false;
  const context={document:{querySelector:s=>s==='main'?nodes.main:s==='[data-cloud]'?nodes.cloud:s==='[data-link]'?nodes.link:null,getElementById:id=>nodes[id]||null,querySelectorAll:s=>s==='[data-remove]'?[nodes.remove]:[],addEventListener:(e,f)=>listeners[e]=f},window:{confirm:()=>confirmed},location:{assign:p=>locations.push(p),reload:()=>locations.push('reload')},api:async(p,b)=>{calls.push([p,b]);if(failure)throw new Error('offline');return {flow_url:'/teacher/workspace/imports/flow-A'};},report:e=>reports.push(e.message),FormData:class{get(){return 'https://docs.google.com/spreadsheets/d/test/edit';}},setInterval(){},sessionStorage:{getItem:()=>null}};

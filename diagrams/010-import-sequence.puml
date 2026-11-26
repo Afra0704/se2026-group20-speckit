@@ -1,0 +1,24 @@
+@startuml
+title A 講義匯入欄位提示
+actor 教師
+participant 匯入表單
+participant 來源驗證
+participant 授權與讀取
+教師 -> 匯入表單 : 送出連結
+alt 空白或格式無效
+  匯入表單 --> 教師 : 欄位旁提示並保留輸入
+else 可送出的格式
+  匯入表單 -> 來源驗證 : 查核支援來源
+  alt 不支援來源
+    來源驗證 --> 匯入表單 : INVALID_SHEETS_URL
+    匯入表單 --> 教師 : 欄位旁提示並可重試
+  else 來源通過
+    來源驗證 -> 授權與讀取 : 依既有流程進行
+    alt 權限不足或暫時讀取失敗
+      授權與讀取 --> 教師 : 顯示對應原因
+    else 成功
+      授權與讀取 --> 教師 : 清除錯誤並繼續匯入
+    end
+  end
+end
+@enduml

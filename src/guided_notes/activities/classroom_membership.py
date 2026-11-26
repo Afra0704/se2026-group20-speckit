@@ -43,7 +43,7 @@ def identity_for(db, classroom_id, *, submitting=False):
     if not token:
         raise ApiError(401, "AUTH_REQUIRED")
     row = db.execute(
-        """SELECT g.*, s.read_only, c.state AS classroom_state, c.state_version FROM classroom_grants s
+        """SELECT g.*, m.id AS membership_id, s.read_only, c.state AS classroom_state, c.state_version FROM classroom_grants s
            JOIN classroom_memberships m ON m.id = s.membership_id
            JOIN classroom_groups g ON g.classroom_id = m.classroom_id AND g.id = m.group_id
            JOIN classrooms c ON c.id=m.classroom_id

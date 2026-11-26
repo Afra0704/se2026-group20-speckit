@@ -248,6 +248,19 @@ def state(classroom_id):
         db.execute("ROLLBACK")
 
 
+@rooms.post("/classrooms/<classroom_id>/presence")
+def update_presence(classroom_id):
+    from .classroom_presence import heartbeat
+
+    data = payload()
+    if set(data) != {'page_id'}:
+        raise ApiError(400, 'INVALID_REQUEST')
+    page_id = string(data, 'page_id', 64)
+    with write_transaction() as db:
+        heartbeat(db, classroom_id, page_id)
+    return '', 204
+
+
 @rooms.post("/classrooms/<classroom_id>/result-access")
 def result_access(classroom_id):
     data = payload()

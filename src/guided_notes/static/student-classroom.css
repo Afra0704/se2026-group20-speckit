@@ -12,3 +12,11 @@
 [hidden]{display:none!important}#access-notice{max-width:560px;margin:40px auto}#access-notice a{display:block;margin-top:18px}
 #room-content{max-width:900px;margin:auto}#results{white-space:pre-wrap;overflow-wrap:anywhere}.student-page button:focus-visible,.student-page a:focus-visible,.student-page input:focus-visible{outline:3px solid #5ca493;outline-offset:3px}
 @media(max-width:600px){.student-entry{margin:32px auto}.student-nav{padding:18px}.student-entry .card{padding:22px}main{padding:20px}#room-content .question-list{padding-left:22px}}
+
+.classroom-result-card {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.4rem;
+}

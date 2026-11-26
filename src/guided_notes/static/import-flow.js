@@ -12,7 +12,59 @@ document.addEventListener('click',event=>{if(menu && !menu.hidden && !menu.conta
 async function create(source_kind,spreadsheet_url){const result=await api(`/teacher/workspace/courses/${encodeURIComponent(course)}/imports`,{source_kind,...(spreadsheet_url ? {spreadsheet_url}: {})});location.assign(result.flow_url);}
 document.querySelector('[data-cloud]')?.addEventListener('click',()=>create('cloud').catch(report));
 document.querySelector('[data-link]')?.addEventListener('click',()=>{closeMenu();const form=document.getElementById('link-import');form.hidden=false;form.querySelector('input').focus();});
-document.getElementById('link-import')?.addEventListener('submit',event=>{event.preventDefault();create('link',new FormData(event.target).get('spreadsheet_url')).catch(report);});
+const linkForm = document.getElementById('link-import');
+if (linkForm) {
+  const input = linkForm.querySelector('input');
+  const button = linkForm.querySelector('button');
+  const fieldError = document.getElementById('spreadsheet-url-error');
+  const operationError = document.getElementById('link-import-error');
+
+  function clearLinkErrors() {
+    fieldError.textContent = '';
+    fieldError.hidden = true;
+    operationError.textContent = '';
+    operationError.hidden = true;
+    input.removeAttribute('aria-invalid');
+  }
+
+  function showLinkError(message) {
+    fieldError.textContent = message;
+    fieldError.hidden = false;
+    input.setAttribute('aria-invalid', 'true');
+    input.focus();
+  }
+
+  input.addEventListener('invalid', event => {
+    event.preventDefault();
+    clearLinkErrors();
+    showLinkError(input.validity.valueMissing
+      ? '請輸入 Google Sheets 連結。'
+      : '請輸入有效的 Google Sheets 連結。');
+  });
+  input.addEventListener('input', clearLinkErrors);
+
+  linkForm.addEventListener('submit', async event => {
+    event.preventDefault();
+    if (button.disabled) return;
+    clearLinkErrors();
+    const url = input.value;
+    button.disabled = true;
+    try {
+      await create('link', url);
+    } catch (error) {
+      if (error.code === 'INVALID_SHEETS_URL') {
+        if (input.value === url) showLinkError('請輸入有效的 Google Sheets 連結。');
+      } else {
+        operationError.textContent = error.code
+          ? error.message
+          : '暫時無法讀取 Google Sheets，請稍後重試。';
+        operationError.hidden = false;
+      }
+    } finally {
+      button.disabled = false;
+    }
+  });
+}
 let busy=false;
 async function run(action,body={}){if(busy)return;busy=true;const buttons=flow?.querySelectorAll('button')||[];buttons.forEach(b=>b.disabled=true);try{return await api(base+'/'+action,body);}catch(error){if(error.code==='SOURCE_CHANGED')location.reload();else report(error);throw error;}finally{busy=false;buttons.forEach(b=>b.disabled=false);}}
 async function read(){let result=await run('read');if(result.needs_authorization){result=await run('authorize',{credential_kind:result.needs_authorization});if(result.authorization_url){location.assign(result.authorization_url);return;}}location.reload();}

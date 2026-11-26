@@ -44,4 +44,4 @@ def test_teacher_group_list_is_private_and_live(google_app,google_teacher):
     assert student.get(route,headers={'Accept':'application/json'}).status_code==401
     result=google_teacher.get(route).json
     assert result['groups'][0]['name']=='<script>甲</script>'
-    assert set(result['groups'][0])=={'group_id','name'}
+    assert set(result['groups'][0])=={'group_id','name','online_count'}

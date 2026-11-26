@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, jsonify, flash
 from ..auth import require_teacher, csrf_token
-from ..db import connection
+from ..db import connection, read_view
 from ..http import ApiError
 from ..activities.course_service import get_owned_course
 from ..activities.classroom_access import owned_classroom
@@ -13,6 +13,13 @@ workspace = Blueprint('workspace', __name__)
 def error_response(error):
     if error.status == 401 and not request.is_json and request.accept_mimetypes.best != 'application/json':
         return redirect('/teacher/login', code=303)
+    response=jsonify(error={'code': error.code, 'message': workspace_error_message(error.code), 'retryable': error.retry_after is not None, 'context': {}})
+    response.status_code=error.status
+    if error.retry_after is not None:response.headers['Retry-After']=str(error.retry_after)
+    return response
+
+
+def workspace_error_message(code):
     messages = {
         'FLOW_BUSY':'正在處理，請稍候；讀取逾時後可按重試。',
         'FLOW_STEP_CONFLICT':'這筆操作已被較新的選擇取代，請重新整理後繼續。',
@@ -23,6 +30,11 @@ def error_response(error):
         'PICKER_SCOPE_UNSAFE':'選檔授權範圍不符，請檢查專用Google選檔設定。',
         'PICKER_SCOPE_REQUIRED':'需要同意選檔權限才能繼續。',
         'GOOGLE_ACCOUNT_MISMATCH':'請使用與目前教師相同的Google帳號授權。',
+        'INVALID_SHEETS_URL':'請輸入有效的 Google Sheets 連結。',
+        'SOURCE_NOT_FOUND':'找不到講義，請確認連結、Google 帳號與分享權限。',
+        'GOOGLE_REAUTH_REQUIRED':'Google 授權已失效，請重新授權後再試。',
+        'GOOGLE_CREDENTIALS_REFRESH_REQUIRED':'Google 授權需要更新，請重新授權後再試。',
+        'GOOGLE_RATE_LIMITED':'Google Sheets 暫時限制讀取，請稍後重試。',
         'SOURCE_READ_FORBIDDEN':'無法讀取來源，請確認Google帳號與講義分享權限。',
         'SOURCE_READ_UNAVAILABLE':'暫時無法讀取Google Sheets，請稍後重試。',
         'SOURCE_NOT_GOOGLE_SHEETS':'請選擇Google Sheets檔案。',
@@ -32,10 +44,7 @@ def error_response(error):
         'INVALID_REQUEST':'輸入內容不完整或格式不正確，請檢查後重試。',
         'INVALID_CSRF':'頁面驗證已過期，請重新整理。',
     }
-    response=jsonify(error={'code': error.code, 'message': messages.get(error.code,'操作未完成，請核對權限與來源後重試。'), 'retryable': error.retry_after is not None, 'context': {}})
-    response.status_code=error.status
-    if error.retry_after is not None:response.headers['Retry-After']=str(error.retry_after)
-    return response
+    return messages.get(code, '操作未完成，請核對權限與來源後重試。')
 
 
 def page(name, **values):
@@ -126,7 +135,8 @@ def import_page(flow_id):
     if row['current_preview_id']:
         source=connection().execute('SELECT source_id FROM notes_import_previews WHERE preview_id=?',(row['current_preview_id'],)).fetchone()
         existing=connection().execute('SELECT i.import_id,s.display_title FROM notes_imports i JOIN notes_sources s USING(source_id) JOIN notes_import_courses c USING(import_id) WHERE i.source_id=? AND c.course_id=? AND NOT EXISTS(SELECT 1 FROM notes_lecture_removals r WHERE r.import_id=i.import_id)',(source[0],row['course_id'])).fetchall()
-    return page('import',existing_imports=existing,course=get_owned_course(require_teacher(),row['course_id']),section='lectures',flow=data,preview=preview)
+    return page('import',existing_imports=existing,course=get_owned_course(require_teacher(),row['course_id']),section='lectures',flow=data,preview=preview,
+                import_error=workspace_error_message(data.get('error_code')))
 
 
 @workspace.post('/teacher/workspace/imports/<flow_id>/<any(read,previews,confirm,cancel,retry,revise,authorize):action>')
@@ -183,9 +193,13 @@ def history_lecture(activity_id):
 
 
 @workspace.get('/teacher/workspace/courses/<course_id>/classrooms/<classroom_id>/groups')
-def classroom_groups(course_id,classroom_id):
-    teacher=require_teacher();db=connection()
-    get_owned_course(teacher,course_id)
-    room=owned_classroom(db,teacher,classroom_id)
-    if room['course_id']!=course_id:raise ApiError(404,'CLASSROOM_NOT_FOUND')
-    return jsonify(groups=[dict(row) for row in db.execute('SELECT id AS group_id,name FROM classroom_groups WHERE classroom_id=? ORDER BY id',(classroom_id,))])
+@read_view
+def classroom_groups(course_id, classroom_id):
+    from ..activities.classroom_presence import roster
+
+    db = connection()
+    teacher = require_teacher(db)
+    room = owned_classroom(db, teacher, classroom_id)
+    if room['course_id'] != course_id:
+        raise ApiError(404, 'CLASSROOM_NOT_FOUND')
+    return jsonify(classroom_state=room['state'], groups=[dict(row) for row in roster(db, room)])
