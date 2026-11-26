@@ -77,5 +77,13 @@ def test_confirm_after_source_changed_requires_new_preview(google_app,google_tea
     assert result.status_code==409 and result.json['error']['code']=='SOURCE_CHANGED',result.text
     current=google_teacher.get(path(flow),headers={'Accept':'application/json'}).json
     assert current['preview_id']!=pid
+    with google_app.app_context():
+        assert connection().execute('SELECT count(*) FROM notes_catalogs').fetchone()[0]==0
+    page=google_teacher.get(path(flow),headers={'Accept':'text/html'})
+    assert page.status_code==200
+    assert '來源已變動，已更新預覽，目前尚未匯入。' in page.text
+    assert '請核對最新題目與作答格後，再次確認匯入。' in page.text
+    assert 'role="alert"' in page.text
+    assert '來源已變動，已更新預覽，目前尚未匯入。' not in google_teacher.get(path(flow),headers={'Accept':'text/html'}).text
     assert post(google_teacher,path(flow,'confirm'),confirm=True,preview_id=pid).status_code==409
     assert post(google_teacher,path(flow,'confirm'),confirm=True,preview_id=current['preview_id']).status_code==200

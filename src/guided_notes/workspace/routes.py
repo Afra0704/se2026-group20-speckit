@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, jsonify, flash
 from ..auth import require_teacher, csrf_token
 from ..db import connection
 from ..http import ApiError
@@ -149,7 +149,9 @@ def import_action(flow_id,action):
         if data.get('preview_id')!=row['current_preview_id']:raise ApiError(409,'PREVIEW_STALE')
         if data.get('existing_import_id') is not None and (not isinstance(data['existing_import_id'],str) or len(data['existing_import_id'])>128):raise ApiError(400,'INVALID_REQUEST')
         catalog,next_pid=confirm_preview(require_teacher(),data['preview_id'],lambda:gateway(require_teacher()),data.get('existing_import_id') or None)
-        if next_pid:return jsonify(error={'code':'SOURCE_CHANGED','message':'來源已變動，請重新確認預覽。','retryable':False,'context':{'preview_url':url_for('workspace.import_page',flow_id=flow_id)}}),409
+        if next_pid:
+            flash('來源已變動，已更新預覽，目前尚未匯入。請核對最新題目與作答格後，再次確認匯入。', 'warning')
+            return jsonify(error={'code':'SOURCE_CHANGED','message':'來源已變動，請重新確認預覽。','retryable':False,'context':{'preview_url':url_for('workspace.import_page',flow_id=flow_id)}}),409
         result={'catalog':catalog,'flow_id':flow_id,'course_url':url_for('workspace.lectures',course_id=row['course_id'])};status=200
     if not request.is_json:
         return redirect(result.get('course_url') or url_for('workspace.import_page',flow_id=flow_id),code=303)
