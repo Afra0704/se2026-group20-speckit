@@ -105,7 +105,7 @@ set "GUIDED_NOTES_GOOGLE_PICKER_CLIENT_SECRETS="
 set "GUIDED_NOTES_PICKER_API_KEY="
 set "GUIDED_NOTES_PICKER_APP_ID="
 .venv\Scripts\python.exe -m pytest tests -q
-node --test tests/workspace-navigation.test.cjs tests/import-menu.test.cjs tests/picker-flow.test.cjs tests/identity-ui.test.cjs tests/student-question-text.test.cjs tests/classroom-preview.test.cjs tests/classroom-sync.test.cjs tests/classroom-recovery.test.cjs tests/activity-sync.test.cjs tests/notes-ui.test.cjs
+node --test tests/workspace-navigation.test.cjs tests/import-menu.test.cjs tests/import-confirm.test.cjs tests/picker-flow.test.cjs tests/identity-ui.test.cjs tests/student-question-text.test.cjs tests/classroom-preview.test.cjs tests/classroom-sync.test.cjs tests/classroom-recovery.test.cjs tests/activity-sync.test.cjs tests/notes-ui.test.cjs
 ```
 
 新增case至少包含：populated007初始化兩次／中途失敗rollback／密文及UUID保留、舊JSON路由、所有可見性入口、remove↔activity/version屏障競態、confirmed重送、同source新UUID、歷史unknown恢復、窄scope/client/profile／加密用途錯配、flow/grant/claim/ticket重放晚回、reconnect先完成後selection晚回、008 flow留存超過24小時後新login／authorize可清attempt不受FK阻擋、取消／expired preview從舊notes URL確認仍被拒、header／log無秘密。
@@ -118,3 +118,10 @@ node --test tests/workspace-navigation.test.cjs tests/import-menu.test.cjs tests
 - 原分頁／名稱不改重送，取得同preview_id且沒有重讀。直接換sheet或名稱重送回FLOW_STEP_CONFLICT，不回舊預覽冒充新內容。
 - 真人：按「重新選擇／修改名稱」，確認保留原表單輸入、舊預覽失效；改選／改名並明確建新預覽。舊choice_revision、原notes舊確認URL均不能出版，完成後無修改入口。
 - 自動屏障驗revise↔confirm與雙retry，並比較confirm的existing_import_id；真人操作不能代替這些競態測試。各結果在implement後如實記錄，不預填通過。
+
+## PR #7 修正後複審
+
+- 同一匯入flow網址分別開A／B分頁，A保留舊預覽；B用「重新選擇／修改名稱」建立新預覽。回A按確認，應提示PREVIEW_STALE且沒有保存；B核對後明確確認才保存。不能用兩個不同flow代替這個情境。
+- Picker晚到請求與初始化中斷以受控測試重現：`tests/unit/test_picker_authorization.py`、`tests/integration/test_google_schema_atomicity.py`。不要求人工修改真實DB或撤銷Google授權來造故障。
+- 新的空白DB初始化失敗會回滾基礎／Google原子段，修正故障後可重試；既有007 DB不清空、不更換key。notes／workspace仍各自附加交易，不能宣稱整個app factory全原子。
+- 圖意差異見007／008 Sequence，須由同學複審；本輪沒有代填其他人工／雙組確認任務。

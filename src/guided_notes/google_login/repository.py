@@ -4,7 +4,7 @@ from uuid import uuid4
 
 from flask import current_app
 
-from ..db import connection
+from ..db import connection, execute_schema_statements
 
 
 def google_mode():
@@ -12,7 +12,7 @@ def google_mode():
 
 
 def initialize(db):
-    db.executescript(Path(__file__).with_name('schema.sql').read_text(encoding='utf-8'))
+    execute_schema_statements(db, Path(__file__).with_name('schema.sql').read_text(encoding='utf-8'))
     db.execute('INSERT INTO auth_instance(singleton,instance_uuid) VALUES(1,?) ON CONFLICT DO NOTHING', (str(uuid4()),))
 
 

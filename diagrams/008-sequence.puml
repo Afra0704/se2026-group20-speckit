@@ -31,6 +31,16 @@ alt cloud
     Flow -> Picker : finalize 窄 access 密文，無 refresh
     Picker -> DB : 新 generation，不覆寫 main Sheets
     Auth --> UI : 303 乾淨 flow 頁
+  else 有有效 cache
+    group 最終短交易：禁止晚到請求倒退流程
+      Flow -> DB : 重驗原 revision / cloud / 可選檔 status / grant
+      Flow -> Picker : 同交易重驗 cache owner / scope / expiry
+      alt 階段或 revision 已變 / cache失效
+        Flow --> UI : FLOW_STEP_CONFLICT / PICKER_REAUTH_REQUIRED
+      else 檢查通過
+        Flow -> DB : status=picking / revision++
+      end
+    end
   end
   UI -> Picker : CSRF POST token，重驗 flow/grant/scope/expiry
   Picker -> DB : ticket 綁 flow / generation，最長300秒
@@ -87,12 +97,24 @@ else 可繼續
   不同輸入FLOW_STEP_CONFLICT；completed不可revise
   end note
   Teacher -> UI : 確認
-  Flow -> Notes : 原confirm_preview / 來源重檢
-  group 最終出版短交易
-    Notes -> DB : 同grant/course/flow + 指定existing import active
-    Notes -> DB : immutable catalog + flow completed 同commit
+  UI -> Flow : POST confirm(畫面表單的 preview_id)
+  alt 畫面preview已被另一分頁取代
+    Flow --> UI : PREVIEW_STALE，不替換為最新ID確認
+    UI --> Teacher : 重新整理並核對最新內容後再確認
+  else 畫面preview仍有效
+    Flow -> Notes : 原confirm_preview / 來源重檢
+    alt 來源已變動
+      Notes -> DB : 失效舊preview / 建新preview，尚不保存catalog
+      Flow --> UI : SOURCE_CHANGED / reload後一次性提示
+      UI --> Teacher : 尚未匯入，核對新預覽後再次確認
+    else 來源未變動
+      group 最終出版短交易
+        Notes -> DB : 同grant/course/flow + 指定existing import active
+        Notes -> DB : immutable catalog + flow completed 同commit
+      end
+      Flow --> UI : 原課程講義清單
+    end
   end
-  Flow --> UI : 原課程講義清單
 end
 == 刪除講義與新引用 ==
 Teacher -> UI : 刪講義 → 閱讀影響 → 確認

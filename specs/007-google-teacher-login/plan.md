@@ -129,3 +129,7 @@ Fernet BLOB 與 owner metadata 在同一 SQLite 交易，避免額外 token 檔�
 模組責任依三圖落於 google_login/provider.py、service.py、sheets_service.py、crypto.py、transport.py、routes.py 與 log_redaction.py；共用 repository.py 管 schema/instance/identity。登入 UI 以 Jinja 與原生 CSRF 表單工作，不依賴 JavaScript 完成 OAuth；identity.js 只提供純文字顯示工具。原 notes 匯入模板實際是 notes/import.html（原計畫的 index.html 指稱更正），本人授權區放 notes/base.html 供所有教師講義頁共用。attempt 終態清除秘密、開始新流程清理過期秘密；未變更登入或 Sheets 契約。
 
 005/006 人工任務保持原狀，D20 與本輪具名互審未回報；不把本次實作授權當作雙組確認。
+
+## PR #7 初始化一致性補強（2026-11-26）
+
+啟動與init-db共用initialize_application_schema：在同一BEGIN IMMEDIATE內辨識DB相容性、建立基礎／課堂表、Google schema及auth_instance。schema逐statement執行，不以獨立executescript切斷邊界；任何中途失敗回滾該段，新的空白DB可直接重試。既有UUID／教師／課程／密文保留，真正不相容舊DB仍拒絕且不改內容。notes與008 workspace的附加初始化仍各自可重跑／各自交易，不宣稱整個app factory全原子。007時序圖補此交易說明，無新增身分系統或資料遷移。

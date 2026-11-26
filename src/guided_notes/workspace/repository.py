@@ -1,7 +1,6 @@
 """Additive schema and bounded flow cleanup. No application data reset."""
 from pathlib import Path
-import sqlite3
-from ..db import connection, write_transaction
+from ..db import connection, write_transaction, execute_schema_statements
 
 
 def execute_schema(db, sql):
@@ -9,14 +8,7 @@ def execute_schema(db, sql):
         raise RuntimeError('Schema initialization requires its own transaction.')
     db.execute('BEGIN IMMEDIATE')
     try:
-        statement = ''
-        for line in sql.splitlines(keepends=True):
-            statement += line
-            if sqlite3.complete_statement(statement):
-                db.execute(statement)
-                statement = ''
-        if statement.strip():
-            raise RuntimeError('Incomplete schema statement')
+        execute_schema_statements(db, sql)
         db.execute('COMMIT')
     except BaseException:
         db.execute('ROLLBACK')

@@ -74,3 +74,7 @@ Phase0由本技能要求的兩研究代理唯讀核對Google授權及現有可�
 Codex對照Component→workspace.routes／flow_context／picker_service／lecture_lifecycle，Class→workspace.schema與notes tombstone，Sequence→外網前claim、外網後重檢、notes出版同交易、revise及活動／版本移除線性化。groups僅讀原classroom_groups，屬原Rooms責任，不變更三圖圖意。真實scope、來源限制與人工作業未由AI對圖替代。
 
 實際CLI `& 'C:/Program Files/Java/jdk-24/bin/java.exe' -jar D:/os_final/tmp/tools/plantuml-1.2026.10.jar 'D:/os_final/diagrams/008-*.puml'` 退出碼0；Component1698×1128、Class1654×935、Sequence1741×2934。技術互審仍待組員具名記錄。對應T064；本次不是同學審圖完成證據。
+
+### 2026-11-26 PR #7 審查修圖（待同學複審）
+
+007 Sequence補基礎／課堂／Google schema與auth_instance原子初始化；008 Sequence補Picker cache最終交易重驗、當前畫面preview_id及PREVIEW_STALE／SOURCE_CHANGED拒絕與再次核對分支。未新增Component／Class資料關係。兩圖已CLI重繪PNG並由Codex檢視；此處只記技術修改，不代填組員圖意核准。具名複審及D20／D21外部同步保持原狀態。

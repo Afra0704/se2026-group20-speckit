@@ -19,3 +19,7 @@
 ## 可重現證據
 
 最終Python391 passed／98 subtests、Node24 passed、三圖CLI與diff檢查詳validation.md。實際產品以worktree為版本，HEAD起點見該檔；無commit/push。extensions.yml不存在，無before/after hooks。
+
+## PR #7 審查修正核對（2026-11-26）
+
+review 6070380173三項問題已由受控重現及先失敗回歸確認，按T074–T076修正：畫面preview_id固定、Picker交易內status/revision/cache重驗、core/Google初始化同交易。414 Python tests、98 subtests、26 Node tests通過；007／008 Sequence已補交易及拒絕分支，與既有Component／Class責任一致。這是本輪三項修正的對照檢查，不冒充新的完整speckit-analyze／converge流程或同學核准；前述人工／外部確認缺口仍有效，PR維持Draft待複審。

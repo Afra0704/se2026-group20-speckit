@@ -70,3 +70,7 @@ Phase 0 本機只檢查版本、metadata、函式簽名及 source，Google 功�
 - 修圖僅將標題改為實作、補終態清除秘密；未改功能需求。CLI：`& 'C:/Program Files/Java/jdk-24/bin/java.exe' -jar D:/os_final/tmp/tools/plantuml-1.2026.10.jar 'diagrams/007-*.puml'`，退出碼 0。
 - PNG 格式與尺寸：component 1766×733、class 1090×723、sequence 2040×2691；Codex 已查看 class PNG，文字與關係可讀。其餘以 CLI／來源對照驗證。
 - 本輪同學需核對 grants/current pointer、雙 purpose、密文歸屬、notes snapshot、fixtures 與新版三圖；D20／分工／具名互審保持待補。
+
+### 2026-11-26 PR #7 審查修圖（待同學複審）
+
+007 Sequence補基礎／課堂／Google schema與auth_instance原子初始化；008 Sequence補Picker cache最終交易重驗、當前畫面preview_id及PREVIEW_STALE／SOURCE_CHANGED拒絕與再次核對分支。未新增Component／Class資料關係。兩圖已CLI重繪PNG並由Codex檢視；此處只記技術修改，不代填組員圖意核准。具名複審及D20／D21外部同步保持原狀態。

@@ -10,6 +10,12 @@ participant "Sheets credential service" as Sheets
 participant "不可刷新快照" as Snapshot
 participant "既有 Sheets SDK" as Transport
 participant "Google Sheets API" as SheetAPI
+note over Identity, DB
+啟動與init-db共用初始化；同一短交易建立
+基礎／課堂schema + Google schema + auth_instance
+中途失敗全部回滾；重跑保留既有UUID與資料
+notes／workspace附加段各自冪等，不宣稱全factory原子
+end note
 User -> Web : 選擇身分
 alt 學生
   Web --> User : /student 課堂碼與組別，沿用加入

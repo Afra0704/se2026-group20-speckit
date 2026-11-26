@@ -203,3 +203,17 @@
 - T075先補4例受控交錯回歸，初跑4 failed／14 passed：外側快取檢查後進度變worksheets_ready／preview_ready或同picking revision已前進，舊請求仍回200覆寫；快取在外側檢查後到期仍被接受。
 - 修正最終write transaction內重驗source_kind、允許status、原revision及cache有效性／owner，晚到回FLOW_STEP_CONFLICT，交易內到期回PICKER_REAUTH_REQUIRED，既有進度與revision不變。沿用原flows.load的教師／grant／browser／course／expiry防線，不在交易內呼叫Google。
 - `.venv/Scripts/python.exe -m pytest tests/unit/test_picker_authorization.py tests/integration/test_import_flow_oauth.py tests/unit/test_import_flow.py -q --tb=short`：24 passed，7.35秒。此為受控交錯及到期注入，不宣稱真人同時網路請求測試。
+
+- T076先補5例故障注入，初跑5 failed：Google metadata建立前／後失敗皆殘留已提交表，CLI init-db失敗也殘留新表。修正db.initialize_application_schema共用原子段及execute_schema_statements（需active transaction），Google schema／auth_instance與基礎／課堂表同commit；workspace附加段沿用獨立交易但共用不提交的DDL執行器。
+- `.venv/Scripts/python.exe -m pytest tests/integration/test_google_schema_atomicity.py tests/integration/test_google_schema.py tests/integration/test_workspace_007_compatibility.py tests/integration/test_classroom_bootstrap.py -q --tb=short`：12 passed，3.21秒。包含Google模式classroom開／關、metadata前／後中斷回滾可重試、重啟UUID保留、CLI故障回滾與原教師／課程保留、populated007密文與catalog保留、不相容舊DB拒絕且檔案不變。
+- 007及008 Sequence圖補初始化交易、Picker快取最終重驗、畫面preview_id、PREVIEW_STALE及SOURCE_CHANGED未保存分支；未新增Component／Class節點或資料關係。先前plan「沒有新增圖表節點」仍成立，本輪將既有防線的時序分支補明；技術圖意需同學複審，未代填通過。
+
+- Java CLI重新渲染diagrams/007-sequence.puml與008-sequence.puml退出碼0；PNG分別2040×2776、1803×3502，Codex檢視圖像確認可讀且無PlantUML錯誤頁。尺寸以Python標準庫讀PNG IHDR核對，未為圖片檢查安裝新套件；venv無PIL，先前PIL尺寸輔助檢查失敗不影響CLI結果。
+- 最終全套Python回歸正在執行；11檔Node包含新import-confirm回歸已26 passed、0 failed、退出碼0。本輪仍沒有直接操作真實DB或Google憑證，不代勾原聚合人工驗收；同學複審尚未回報。
+
+### PR #7 修正最終回歸（2026-11-26）
+
+- `.venv/Scripts/python.exe -m pytest tests -q --tb=short`：414 passed、98 subtests passed，148.39秒，退出碼0。相較本輪開始404個tests增加10例；此後未再修改產品程式。
+- `node --test tests/workspace-navigation.test.cjs tests/import-menu.test.cjs tests/import-confirm.test.cjs tests/picker-flow.test.cjs tests/identity-ui.test.cjs tests/student-question-text.test.cjs tests/classroom-preview.test.cjs tests/classroom-sync.test.cjs tests/classroom-recovery.test.cjs tests/activity-sync.test.cjs tests/notes-ui.test.cjs`：26 passed、0 failed，退出碼0。
+- `git diff --check`通過；相較原PR head 276ec55的23份變更文字檔掃描Google API key／GitHub token／私鑰標頭樣式，0命中，不輸出憑證值。非通用秘密不存在證明；ignored真實DB／JSON／key／token未納入提交。
+- T074–T076自動修正完成；007／008 Sequence差異待同學複審，原聚合人工／雙組確認與正式003整合任務不代勾。維持Draft、不合併、不關Issue；PR說明更新含本機驗收、六筆待推送commit及本次三項修正。
