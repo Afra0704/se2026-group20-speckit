@@ -55,13 +55,16 @@ globalThis.QuizSubmission = (() => {
         const current = context();
         return current && scopeOf(current) === scope;
       };
+      const clearOwnOperation = () => {
+        if (read(scope)?.key === operation.key) save(scope, null);
+      };
       try {
         await send(value.activity, operation.body, operation.key);
-        save(scope, null);
+        clearOwnOperation();
         if (sameContext()) accepted();
       } catch (error) {
         if (error.status >= 400 && error.status < 500 && ![401, 403, 429].includes(error.status)) {
-          save(scope, null);
+          clearOwnOperation();
         }
         if (sameContext()) report(error);
       } finally {
