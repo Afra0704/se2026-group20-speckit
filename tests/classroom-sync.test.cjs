@@ -22,8 +22,8 @@ const context = vm.createContext({
     setItem() { throw new Error("Storage blocked"); },
   },
   setInterval() {},
-  fetch: async () => ({ok: true, status: 200, headers: {get: () => "application/json"},
-    json: async () => responses.shift()}),
+  fetch: async (path) => ({ok: true, status: 200, headers: {get: () => "application/json"},
+    json: async () => path.endsWith("/results") ? {activities: []} : responses.shift()}),
 });
 
 vm.runInContext(fs.readFileSync("src/guided_notes/static/classroom.js", "utf8"), context);

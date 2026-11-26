@@ -3,6 +3,7 @@ import sys
 
 from conftest import post
 from catalog_support import IMPORT_ID, course_import_id
+from quiz_support import submit
 
 
 def test_old_flag_cannot_enable_fake_catalog(app, teacher, monkeypatch):
@@ -26,6 +27,8 @@ def test_no_submission_fallback(app, teacher, activity, joined, monkeypatch):
     app.config['DEMO_CATALOG'] = True
     aid = activity['activity_id']
     assert post(teacher, f'/activities/{aid}/start').status_code == 200
+    assert submit(joined[0], aid).status_code == 201
+    app.config['ACCEPT_SUBMISSION'] = None
     response = post(joined[0], f'/activities/{aid}/submissions', question_id='q1',
                     items=[dict(item_id='i1-1', answer_text='test')])
     assert response.status_code == 503 and response.json['error'] == 'QUIZ_UNAVAILABLE'
