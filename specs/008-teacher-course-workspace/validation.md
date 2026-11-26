@@ -60,3 +60,20 @@
 驗證：391 Python tests、98 subtests、24 Node tests及git diff --check通過；原007資料／密文保留、OAuth安全邊界、CAS及刪除競態有受控測試。真Google Picker窄scope／來源限制、真人兩教師與兩組學生、窄視窗／鍵盤及D21具名互審尚未完成，PR應先作草稿，完成T066–T070/T073後再審交付。
 
 分支含005／006／007既有未提交修改，以上前置成果需在正式PR說明範圍，不將它們隱藏或當本輪新產物。未commit、push、建立或合併PR；真實DB／key備份由操作者另行確認。
+
+
+## 補充異常驗收（2026-11-26，PR #7 後續）
+
+- 執行者Codex；使用合成Google帳號、暫存DB／受控Sheets，不是兩位真人或真Google驗收。
+- 新增 `tests/integration/test_workspace_failure_acceptance.py`：非法連結／gid、403／404／503來源失敗及恢復、授權缺少、取消後舊確認、來源變動再預覽，以及已完成流程在授權失效後的防重開。
+- 初跑13例：11 passed、2 failed。其中產品問題為已完成匯入再次read且缺少Sheets授權時被改成awaiting_sheets_auth；另一項是測試fixture的實體座標偏移，修正測試定位後重驗。
+- 修正read先拒絕terminal、成功read重送直接用既有安全狀態；進入等待授權前在最終交易重檢狀態與revision，避免晚到授權檢查重開已完成流程。
+- 指令 `.venv/Scripts/python.exe -m pytest tests/integration/test_workspace_failure_acceptance.py tests/unit/test_import_flow.py tests/integration/test_import_flow_oauth.py tests/contract/test_import_flow_routes.py -q --tb=short`：22 passed，退出碼0。
+- 使用者回報My First Project的Drive／Picker API已啟用，Picker專用Web client已建立並另存JSON；API key限制與本機環境正逐步設定，未讀取／輸出真實key，未將上述狀態當作真Google連線通過。
+- 本機5000未啟動、agent環境無Google設定。曾啟動獨立5001合成資料QA server；內建瀏覽器連線逾時，未據此勾瀏覽器視覺或真人任務。正式服務與真實DB未被當成測試fixture。
+
+- 真實007 DB在QA前以SQLite backup建立一致副本：`instance/qa-backups/classroom-007-before-qa-47805bd9b8.sqlite3`（ignored），未查出或輸出個人資料，原Fernet key未變更。這次是實際DB備份，不再僅為「備份未回報」。
+- 同目錄只核對檔名，確認web-client.json、web-token.key及picker-client.json存在；未讀取憑證內容。使用者正在同一CMD透過只顯示SET/MISSING的檢查補環境，不以此宣稱Google往返成功。
+
+- 修正後完整回歸：`.venv/Scripts/python.exe -m pytest tests -q --tb=short`，404 passed、98 subtests passed，131.29秒，退出碼0；產品程式自該輪執行後未再變更。這次13個HTTP異常驗收案例均通過。
+- 使用者回報SECRET_KEY及Picker三項環境均SET，原登入client／Fernet key路徑已補；正進行本機啟動與真Google驗收，尚未回報成功前不勾T066–T069。

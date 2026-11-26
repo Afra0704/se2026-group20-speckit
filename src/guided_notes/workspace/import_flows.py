@@ -131,13 +131,20 @@ def fail(row,cid,error):
 
 def read(fid, *, retry=False):
     initial=get(fid)
+    if initial['status'] in TERMINAL:
+        raise ApiError(409,'FLOW_STEP_CONFLICT')
     if not initial['spreadsheet_id'] or (initial['source_kind']=='cloud' and not initial['source_verified_at']):raise ApiError(409,'FLOW_STEP_CONFLICT')
+    prior=json.loads(initial['request_state_json']).get('read')
+    if prior and prior.get('result') is not None:
+        return safe(initial),200
     from ..notes.routes import gateway
     from ..google_login.sheets_service import authorization_status
     teacher=require_teacher()
     if not (current_app.testing and current_app.config.get('NOTES_GATEWAY')) and authorization_status(teacher)['status']!='connected':
         with write_transaction() as db:
-            load(db,fid)
+            current=load(db,fid)
+            if current['status'] in TERMINAL or current['revision']!=initial['revision']:
+                raise ApiError(409,'FLOW_STEP_CONFLICT')
             db.execute("UPDATE workspace_import_flows SET status='awaiting_sheets_auth',claim_id=NULL,claim_action=NULL,claim_until=NULL,revision=revision+1 WHERE flow_id=?",(fid,))
         return safe(get(fid)),202
     body={'spreadsheet_id':initial['spreadsheet_id']}
