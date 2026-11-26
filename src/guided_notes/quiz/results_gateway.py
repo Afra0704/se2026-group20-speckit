@@ -6,6 +6,7 @@ from ..activities.classroom_membership import group_for
 from ..auth import require_teacher
 from ..db import connection
 from ..http import ApiError
+from .settlement import settled, status, try_pending
 
 
 def results_for(activity_id):
@@ -25,8 +26,11 @@ def results_for(activity_id):
         return {"status": "active", "results": [
             {key: row[key] for key in ("question_id", "group_name", "submitted") if key in row} for row in rows
         ]}
+    try_pending(activity_id)
     published = snapshot(db, activity_id)
     if published is None:
+        if current_app.config.get("GET_SETTLED_RESULTS") is settled and status(db, activity_id) == "unavailable":
+            return {"status": "unavailable"}
         return {"status": "pending"}
     return {"status": "settled", "results": [project(row, group) for row in published["results"]]}
 
@@ -40,14 +44,28 @@ def project(row, group):
     result = {"question_id": row["question_id"], "winner_name": row["winner_name"],
               "winner_answer": row["winner_answer"]}
     entries = row["groups"]
+    for key in ("display_number", "no_winner"):
+        if key in row:
+            result[key] = row[key]
+    if "winner_items" in row:
+        result["winner_items"] = public_items(row["winner_items"])
     if group is None:
-        result["groups"] = [
-            {key: entry[key] for key in ("group_name", "answer", "rank")} for entry in entries
-        ]
+        result["groups"] = [dict(project_entry(entry), group_name=entry["group_name"]) for entry in entries]
     else:
         own = next((entry for entry in entries if entry["group_id"] == group["id"]), None)
-        result["own"] = {"answer": own["answer"], "rank": own["rank"]} if own else None
+        result["own"] = project_entry(own) if own else None
     return result
+
+
+def project_entry(entry):
+    result = {key: entry[key] for key in ("answer", "rank")}
+    if "items" in entry:
+        result["items"] = public_items(entry["items"])
+    return result
+
+
+def public_items(items):
+    return [{key: item[key] for key in ("item_id", "subitem_label", "answer_text")} for item in items]
 
 
 def get_ended_snapshot(teacher_context, activity_id):
@@ -64,6 +82,7 @@ def get_ended_snapshot(teacher_context, activity_id):
             raise ApiError(403, "FORBIDDEN")
     if activity["phase"] != "CLOSED":
         raise ApiError(409, "ACTIVITY_NOT_ENDED")
+    try_pending(activity_id)
     data = snapshot(db, activity_id)
     if data is None:
         raise ApiError(409, "RESULT_NOT_READY")

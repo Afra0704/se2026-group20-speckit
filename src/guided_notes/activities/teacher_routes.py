@@ -102,4 +102,6 @@ def start(activity_id):
 def close(activity_id):
     with write_transaction() as db:
         result = transition(db, activity_id, require_teacher(db), "LIVE", "CLOSED")
+    from ..quiz.settlement import try_pending
+    try_pending(activity_id)
     return result

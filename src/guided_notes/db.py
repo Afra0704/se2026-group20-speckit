@@ -72,6 +72,8 @@ def initialize_application_schema():
         if current_app.config['CLASSROOM_MODE']:
             sql += '\n' + (schemas / 'classroom_schema.sql').read_text(encoding='utf-8')
         execute_schema_statements(db, sql)
+        quiz_schema = schemas.parent / 'quiz' / 'schema.sql'
+        execute_schema_statements(db, quiz_schema.read_text(encoding="utf-8"))
         if current_app.config['TEACHER_AUTH_MODE'] == 'google':
             from .google_login.repository import initialize
             initialize(db)

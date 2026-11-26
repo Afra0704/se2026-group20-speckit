@@ -86,6 +86,9 @@ def transition(db, activity_id, teacher, before, after):
         raise ApiError(409, "INVALID_PHASE")
     version = row["phase_version"] + 1
     db.execute("UPDATE activities SET phase = ?, phase_version = ? WHERE id = ?", (after, version, activity_id))
+    if after == "CLOSED":
+        from ..quiz.settlement import queue
+        queue(db, activity_id)
     return dict(activity_id=activity_id, phase=after, phase_version=version)
 
 

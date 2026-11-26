@@ -1,0 +1,41 @@
+@startuml
+!pragma layout smetana
+title 003 正式搶答與結果 — 組件圖
+actor "學生組別" as Student
+actor "教師" as Teacher
+component "既有教師與學生入口\n007 / 008" as UI
+component "活動與課堂授權\n002 / 004 / 005" as Activities
+component "活動固定題目與全文\n002 / 006" as CatalogRef
+package "003 正式搶答與結果" {
+  component "答案受理與完整性檢查" as Receive
+  component "順位與結算" as Settle
+  component "進度與師生結果投影" as View
+  component "已結算快照交接" as Snapshot
+}
+database "共用持久資料\n依活動隔離" as Store
+component "001 講義版本與回填\n來源檢查、確認、回讀及恢復" as Notes
+cloud "Google Sheets 講義副本" as Sheets
+Student --> UI : 送答 / 查看本組與勝組
+Teacher --> UI : 控制活動 / 進度與結果
+UI --> Activities : 開始 / 結束
+UI --> Receive : 正式提交
+UI --> View : 查進度或結果
+Receive --> Activities : 信任活動階段及原組別
+Receive --> CatalogRef : 核對主題及完整小題
+CatalogRef --> Notes : 已固定的講義版本
+Receive --> Store : 新答案成功受理後取代舊答案\n同一次重試讀取原受理結果
+Settle --> Activities : 依權威結束界線
+Settle --> CatalogRef : 所有題目的固定集合
+Settle --> Store : 依有效提交的受理順序選出勝組
+View --> Store : 教師進度及已結算結果
+View --> Activities : 查閱權限
+Notes --> Snapshot : 要求已結算快照
+Snapshot --> Activities : 核對教師範圍及階段
+Snapshot --> Store : 固定結果版本與逐題答案
+Notes --> Sheets : 只回填經核對的目標格
+note right of Settle
+  同組同題只保留一筆有效提交，
+  依唯一受理順序排列，第一名為勝組。
+  網路重試不重新排序。
+end note
+@enduml

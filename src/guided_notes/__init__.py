@@ -22,6 +22,12 @@ def create_app(test_config=None):
     from .activities.student_routes import student
     from .activities.teacher_routes import teacher
     from .quiz.activity_routes import quiz
+    from .quiz.repository import accept, progress
+    from .quiz.settlement import recover_pending, settled
+
+    app.config.setdefault("ACCEPT_SUBMISSION", accept)
+    app.config.setdefault("GET_PROGRESS", progress)
+    app.config.setdefault("GET_SETTLED_RESULTS", settled)
 
     app.cli.add_command(init_teacher)
     if app.config["CLASSROOM_MODE"]:
@@ -40,6 +46,7 @@ def create_app(test_config=None):
         from .notes.routes import notes
     with app.app_context():
         init_schema()
+        recover_pending()
     app.register_blueprint(notes)
     register_flask_cli(app)
     app.jinja_env.filters["notes_a1"] = a1_range

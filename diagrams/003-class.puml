@@ -1,0 +1,67 @@
+@startuml
+!pragma layout smetana
+title 003 正式搶答與結果 — 概念類別圖
+class "活動" as Activity {
+  活動識別
+  課堂識別
+  權威階段
+}
+class "固定講義版本" as Catalog {
+  清單識別
+  清單版本
+}
+class "主題號" as Question {
+  題目識別
+}
+class "小題" as Item {
+  小題識別
+  顯示標號
+}
+class "組別資格" as Group {
+  課堂識別
+  組別識別
+}
+class "已受理提交" as Submission {
+  活動及主題
+  屬於一個組別
+  單次送答的識別
+  伺服器唯一受理順序
+  是否為該組該題有效提交
+}
+class "小題答案" as Answer {
+  小題識別
+  原字串
+}
+class "已結算快照" as Snapshot {
+  活動識別
+  固定清單及版本
+  不可變結果版本
+}
+class "逐題結果" as Result {
+  題目識別
+  無勝組標示
+}
+Activity "*" --> "1" Catalog : 建立時固定
+Catalog "1" *-- "1..*" Question
+Question "1" *-- "1..*" Item
+Activity "1" -- "0..*" Submission
+Question "1" -- "0..*" Submission
+Group "1" -- "0..*" Submission
+Submission "1" *-- "1..*" Answer
+Answer "*" --> "1" Item
+Activity "1" -- "0..1" Snapshot
+Snapshot "1" *-- "1..*" Result
+Result "*" --> "1" Question
+Result "*" --> "0..1" Submission : 勝組的整筆提交
+note bottom of Submission
+  完整小題一次提交。
+  同組同題只以最新成功受理的一筆計入。
+  舊提交退出順位。新答遭拒時舊答案仍有效。
+  重試同一次送答只取回原受理結果。
+end note
+note bottom of Result
+  依有效提交的受理順序排序，第一名勝出。
+  無勝組時無勝組答案。
+  教師與學生結果使用各自的投影。
+end note
+@enduml
