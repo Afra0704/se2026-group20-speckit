@@ -72,6 +72,51 @@ def test_missing_picker_only_blocks_cloud(google_app,google_teacher):
     assert google_teacher.get('/teacher/workspace').status_code==200
 
 
+@pytest.mark.parametrize('advanced_status',['worksheets_ready','preview_ready','picking'])
+def test_cached_authorize_cannot_overwrite_a_newer_flow(google_app,google_teacher,tmp_path,monkeypatch,advanced_status):
+    from guided_notes.google_login import picker_service
+    fake=configure(google_app,tmp_path);fid=cloud(google_teacher);fake.scopes=sorted(SCOPES)
+    auth(google_teacher,google_app,fid)
+    with google_app.app_context():
+        before=connection().execute('SELECT revision FROM workspace_import_flows WHERE flow_id=?',(fid,)).fetchone()[0]
+    original=picker_service.usable_cache
+    calls=[]
+    def advance_after_cache_check(*args,**kwargs):
+        result=original(*args,**kwargs)
+        calls.append(True)
+        if len(calls)==1:
+            assert not connection().in_transaction
+            connection().execute('UPDATE workspace_import_flows SET status=?,revision=revision+1 WHERE flow_id=?',(advanced_status,fid))
+        return result
+    monkeypatch.setattr(picker_service,'usable_cache',advance_after_cache_check)
+    response=post(google_teacher,url(fid,'authorize'),credential_kind='picker')
+    assert response.status_code==409 and response.json['error']['code']=='FLOW_STEP_CONFLICT',response.text
+    with google_app.app_context():
+        after=connection().execute('SELECT status,revision FROM workspace_import_flows WHERE flow_id=?',(fid,)).fetchone()
+        assert tuple(after)==(advanced_status,before+1)
+
+
+def test_cached_authorize_rechecks_credential_expiry_inside_transaction(google_app,google_teacher,tmp_path,monkeypatch):
+    from guided_notes.google_login import picker_service
+    fake=configure(google_app,tmp_path);fid=cloud(google_teacher);fake.scopes=sorted(SCOPES)
+    auth(google_teacher,google_app,fid)
+    with google_app.app_context():
+        before=tuple(connection().execute('SELECT status,revision FROM workspace_import_flows WHERE flow_id=?',(fid,)).fetchone())
+    original=picker_service.usable_cache
+    checks=[]
+    def expire_after_first_check(*args,**kwargs):
+        checks.append(connection().in_transaction)
+        result=original(*args,**kwargs)
+        if len(checks)==1:connection().execute('UPDATE google_picker_credentials SET expires_at=0')
+        return result
+    monkeypatch.setattr(picker_service,'usable_cache',expire_after_first_check)
+    response=post(google_teacher,url(fid,'authorize'),credential_kind='picker')
+    assert response.status_code==409 and response.json['error']['code']=='PICKER_REAUTH_REQUIRED',response.text
+    assert checks==[False,True]
+    with google_app.app_context():
+        assert tuple(connection().execute('SELECT status,revision FROM workspace_import_flows WHERE flow_id=?',(fid,)).fetchone())==before
+
+
 def test_actual_picker_authorization_url_uses_dedicated_profile(google_app,google_teacher,tmp_path):
     from guided_notes.google_login.provider import GoogleProvider
     from flask import session

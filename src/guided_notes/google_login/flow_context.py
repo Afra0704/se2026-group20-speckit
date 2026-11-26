@@ -51,8 +51,14 @@ def authorize(fid, kind):
         from ..db import write_transaction
         if usable_cache(require_teacher(),missing_ok=True):
             with write_transaction() as db:
-                flows.load(db,fid)
-                db.execute("UPDATE workspace_import_flows SET status='picking',revision=revision+1 WHERE flow_id=?",(fid,))
+                current=flows.load(db,fid)
+                if (current['source_kind']!='cloud'
+                    or current['status'] not in ('source_pending','awaiting_picker_auth','picking')
+                    or current['revision']!=flow['revision']):
+                    raise ApiError(409,'FLOW_STEP_CONFLICT')
+                if not usable_cache(require_teacher(db),missing_ok=True,db=db):
+                    raise ApiError(409,'PICKER_REAUTH_REQUIRED')
+                db.execute("UPDATE workspace_import_flows SET status='picking',revision=revision+1 WHERE flow_id=? AND revision=?",(fid,current['revision']))
             return flows.safe(flows.get(fid))
     else:
         if flow['status']!='awaiting_sheets_auth':raise ApiError(409,'FLOW_STEP_CONFLICT')

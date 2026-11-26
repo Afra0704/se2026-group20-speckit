@@ -211,5 +211,5 @@ Cloud／真人／互審未能執行時，仍可整理T071/T072的缺口與草稿
 依itsusername15的review 6070380173補強既有契約，不新增使用者功能；每項自動驗證後分段commit，人工聚合任務維持原狀。
 
 - [X] T074 確認表單固定使用畫面渲染時的preview_id，不在提交前GET最新ID；補前端雙分頁及HTTP舊確認拒絕／無誤存回歸，保留來源變動須再次確認的提示。
-- [ ] T075 Picker快取授權在寫入交易內重驗flow階段、revision與cache，拒絕晚到請求倒退流程；補階段前進與同階段版本更新的交錯測試。
+- [X] T075 Picker快取授權在寫入交易內重驗flow階段、revision與cache，拒絕晚到請求倒退流程；補階段前進與同階段版本更新的交錯測試。
 - [ ] T076 基礎／課堂schema與Google身分schema、auth_instance同交易初始化，啟動與init-db共用；補中途故障回滾、重試、重跑UUID／既有資料保留及不相容舊DB拒絕測試。

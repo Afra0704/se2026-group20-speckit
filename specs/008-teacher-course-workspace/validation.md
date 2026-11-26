@@ -199,3 +199,7 @@
 - 審查者itsusername15，review當時遠端head為276ec55。使用者明確授權修正並將本機後續修正與驗收紀錄一起push到原PR，不合併。
 - T074先補回歸：Node 2 failed、HTTP 1 failed／3 passed，重現確認前GET新ID及表單未綁定畫面ID。修正表單hidden preview_id及提交handler，PREVIEW_STALE提示核對新內容，不自動確認。
 - T074重驗：`node --test tests/import-confirm.test.cjs tests/import-menu.test.cjs`，5 passed；`.venv/Scripts/python.exe -m pytest tests/contract/test_import_flow_routes.py tests/integration/test_workspace_failure_acceptance.py -q --tb=short`，17 passed，5.15秒。HTTP證明A舊頁ID被409拒絕且無catalog保存，B新預覽明確確認才成功；不是人工雙分頁畫面驗收。
+
+- T075先補4例受控交錯回歸，初跑4 failed／14 passed：外側快取檢查後進度變worksheets_ready／preview_ready或同picking revision已前進，舊請求仍回200覆寫；快取在外側檢查後到期仍被接受。
+- 修正最終write transaction內重驗source_kind、允許status、原revision及cache有效性／owner，晚到回FLOW_STEP_CONFLICT，交易內到期回PICKER_REAUTH_REQUIRED，既有進度與revision不變。沿用原flows.load的教師／grant／browser／course／expiry防線，不在交易內呼叫Google。
+- `.venv/Scripts/python.exe -m pytest tests/unit/test_picker_authorization.py tests/integration/test_import_flow_oauth.py tests/unit/test_import_flow.py -q --tb=short`：24 passed，7.35秒。此為受控交錯及到期注入，不宣稱真人同時網路請求測試。
