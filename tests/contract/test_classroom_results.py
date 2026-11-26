@@ -27,14 +27,14 @@ def test_late_member_can_view_same_room_results_until_room_closes(classroom_app,
     assert row["own"]["rank"] == 1 and row["winner_name"] == "A"
     assert "groups" not in row and b"private second" not in response.data
     assert post(classroom_teacher, paths + "/close", confirm=True).status_code == 200
-    assert post(outsider, "/classroom-memberships", code=room["code"], group_name="A").status_code == 409
+    assert post(outsider, "/classroom-memberships", code=room["code"], group_name="A").status_code == 403
     assert outsider.get(result_url).status_code == outsider.get(history).status_code == 401
     late.delete_cookie("session")
-    assert post(late, f"/classrooms/{rid}/result-access").status_code == 204
-    assert late.get(result_url).json == response.json
+    assert post(late, f"/classrooms/{rid}/result-access").status_code == 409
+    assert late.get(result_url).status_code == 401
 
 
-def test_closed_room_only_exposes_its_settled_results(classroom_app, classroom_teacher, classroom_setup):
+def test_open_room_results_remain_private_and_closing_blocks_student(classroom_app, classroom_teacher, classroom_setup):
     course, room = classroom_setup
     cid, rid = course["course_id"], room["classroom_id"]
     path = f"/teacher/classrooms/{rid}"
@@ -49,7 +49,6 @@ def test_closed_room_only_exposes_its_settled_results(classroom_app, classroom_t
     other = post(classroom_teacher, f"/teacher/courses/{cid}/classrooms", title="其他班").json["classroom_id"]
     foreign_id = post(classroom_teacher, f"/teacher/classrooms/{other}/activities",
                       import_id=course_import_id(cid), import_version=1).json["activity_id"]
-    assert post(classroom_teacher, path + "/close", confirm=True).status_code == 200
     classroom_app.config["GET_SETTLED_RESULTS"] = lambda db, activity_id: (
         {"snapshot": {"activity_id": activity_id, "result_version": 1},
          "results": [{"question_id": "fixture-q1", "winner_name": "A", "winner_answer": "答案",
@@ -66,6 +65,10 @@ def test_closed_room_only_exposes_its_settled_results(classroom_app, classroom_t
     result = student.get(f"/activities/{ids[0]}/results").json["results"][0]
     assert result["own"] == {"answer": "答案", "rank": 1}
     assert "groups" not in result
+    assert post(classroom_teacher, path + "/close", confirm=True).status_code == 200
+    for url in (f"/classrooms/{rid}/results", f"/activities/{ids[0]}/results"):
+        assert student.get(url).status_code == 409
+    assert post(student, f"/classrooms/{rid}/result-access").status_code == 409
     with classroom_teacher:
         classroom_teacher.get(path + "/activities")
         context = require_teacher()

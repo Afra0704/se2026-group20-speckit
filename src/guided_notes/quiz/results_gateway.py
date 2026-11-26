@@ -4,13 +4,19 @@ from ..activities.membership import activity_scope
 from ..activities.classroom_access import owned_classroom, requested_activity
 from ..activities.classroom_membership import group_for
 from ..auth import require_teacher
-from ..db import connection
+from ..db import connection, read_view
 from ..http import ApiError
 from .settlement import settled, status, try_pending
 
 
 def results_for(activity_id):
-    db = connection()
+    if closed_for_results(activity_id):
+        # Settlement may write. Never run it inside the final authorized snapshot.
+        try_pending(activity_id)
+    return read_results(activity_id)
+
+
+def result_scope(db, activity_id):
     if current_app.config["CLASSROOM_MODE"]:
         activity = requested_activity(db, activity_id)
         if request.headers.get("X-Activity-Role") == "teacher":
@@ -20,13 +26,25 @@ def results_for(activity_id):
             group = group_for(db, activity["classroom_id"])
     else:
         activity, group = activity_scope(db, activity_id)
+    return activity, group
+
+
+@read_view
+def closed_for_results(activity_id):
+    activity, _ = result_scope(connection(), activity_id)
+    return activity['phase'] == 'CLOSED'
+
+
+@read_view
+def read_results(activity_id):
+    db = connection()
+    activity, group = result_scope(db, activity_id)
     if activity["phase"] != "CLOSED":
         progress = current_app.config.get("GET_PROGRESS")
         rows = progress(db, activity_id) if group is None and activity["phase"] == "LIVE" and progress else []
         return {"status": "active", "results": [
             {key: row[key] for key in ("question_id", "group_name", "submitted") if key in row} for row in rows
         ]}
-    try_pending(activity_id)
     published = snapshot(db, activity_id)
     if published is None:
         if current_app.config.get("GET_SETTLED_RESULTS") is settled and status(db, activity_id) == "unavailable":

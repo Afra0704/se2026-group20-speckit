@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="zh-Hant">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>學生課堂 · Guided Notes</title>
+<link rel="stylesheet" href="{{ url_for('static',filename='classroom.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='question-text.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='student-classroom.css') }}">
+<body class="student-page">
+<header class="student-nav"><a href="{{ url_for('index') }}">Guided Notes</a><span>學生課堂</span></header>
+<main data-role="student" data-classroom-id="{{ classroom_id }}" data-csrf="{{ csrf }}">
+  <p id="state" role="status">正在確認課堂狀態…</p>
+  <p id="message" role="status"></p>
+  <section id="closed-notice" class="card student-ended" hidden><p class="eyebrow">CLASS ENDED</p><h1>課堂已結束</h1><p>這一堂課已關閉，謝謝你的參與。</p><a class="student-action" href="{{ url_for('student_entry') }}">加入其他課堂</a></section>
+  <section id="access-notice" class="card" hidden><h1>請確認加入資格</h1><p>這個頁面的課堂資格已失效或已在其他分頁切換。</p><button id="recover" type="button">重新驗證本堂資格</button><a href="{{ url_for('student_entry') }}">返回加入頁</a></section>
+  <section id="room-content" hidden><h1 id="activity-title">等候老師建立活動</h1><ol id="questions" class="question-list"></ol><section id="results" aria-label="活動結果"></section></section>
+</main>
+<script src="{{ url_for('static',filename='quiz-submission.js') }}"></script>
+<script src="{{ url_for('static',filename='student-room.js') }}"></script>
+</body></html>

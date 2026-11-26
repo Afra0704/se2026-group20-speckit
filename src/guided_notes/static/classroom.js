@@ -67,7 +67,7 @@ function note(text) {
 }
 
 const errors = {
-  AUTH_REQUIRED: "請重新登入或加入。關課後可在原瀏覽器恢復結果。",
+  AUTH_REQUIRED: "請重新登入或重新驗證加入資格。",
   INVALID_LOGIN: "帳號或密碼不正確。",
   INVALID_CSRF: "頁面驗證已過期，請重新整理後再試。",
   CATALOG_UNAVAILABLE: "課程講義服務尚未接入。",
@@ -356,6 +356,10 @@ async function refresh() {
     const changed = data.state_version !== version;
     version = data.state_version;
     const open = data.classroom_state === "OPEN";
+    if (role === 'teacher' && byId('code') && !open) {
+      const currentCode = byId('code').textContent;
+      if (!currentCode.includes('已失效')) byId('code').textContent = currentCode + '（已失效，可能重用）';
+    }
     const phase = data.activity?.phase;
     verifiedGroup = data.activity?.group_id ?? null;
     const text = !open ? "課堂已結束" :

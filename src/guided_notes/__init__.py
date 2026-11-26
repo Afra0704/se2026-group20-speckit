@@ -77,8 +77,14 @@ def create_app(test_config=None):
 
     @app.get('/student')
     def student_entry():
-        template = "activities/classroom.html" if app.config["CLASSROOM_MODE"] else "activities/student.html"
+        template = "activities/student_join.html" if app.config["CLASSROOM_MODE"] else "activities/student.html"
         return render_template(template, csrf=csrf_token(), role="student")
+
+    @app.get('/student/classrooms/<classroom_id>')
+    def student_room(classroom_id):
+        if not app.config['CLASSROOM_MODE']:
+            raise http.ApiError(404, 'CLASSROOM_NOT_FOUND')
+        return render_template('activities/student_room.html', classroom_id=classroom_id, csrf=csrf_token())
 
     @app.get("/csrf")
     def csrf():

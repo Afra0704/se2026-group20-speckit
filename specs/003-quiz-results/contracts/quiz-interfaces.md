@@ -1,5 +1,7 @@
 # 003 搶答與結果介面契約
 
+> **009整合覆蓋規則（2026-11-26）**：本檔原D22記為003-D22，僅處理OPEN堂的晚加入結果。下文CLOSED沿用D16／原證明的敘述保留為PR9原契約紀錄，整合時由009-D22取代：CLOSED學生recover／results／原提交重試均拒絕，state至多回最小結束提示；教師原歷史及回填快照保持。結果入口先驗權、結束預檢讀交易，再try_pending，最後以新的read transaction重新驗權並組DTO，禁止巢狀寫交易。詳見[009整合契約](../../009-release-classroom-codes/contracts/quiz-history.md)。
+
 ## 既有提交路由
 
 `POST /activities/{activity_id}/submissions`。沿用 CSRF、活動路徑與既有答案格式。正式前端在 header 帶 `Idempotency-Key`，以 UUID 代表同一次送答。body 只含 `question_id` 及 `items[{item_id, answer_text}]`。組別、來源空格、結果順序與活動階段由後端解析。

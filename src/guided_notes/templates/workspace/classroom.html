@@ -1,4 +1,4 @@
-{% extends 'workspace/base.html' %}{% block content %}<h2>{{ room.title }}</h2><p id="code" class="classroom-code">課堂碼：{{ room.code }}</p><section class="card"><h3>已加入組別</h3><ul id="classroom-groups" aria-live="polite"><li>尚無學生組別</li></ul></section><section class="card" aria-labelledby="activities-heading">
+{% extends 'workspace/base.html' %}{% block content %}<h2>{{ room.title }}</h2><p id="code" class="classroom-code">課堂碼：{{ room.code }}{% if room.state=='CLOSED' %}（已失效，可能重用）{% endif %}</p><section class="card"><h3>已加入組別</h3><ul id="classroom-groups" aria-live="polite"><li>尚無學生組別</li></ul></section><section class="card" aria-labelledby="activities-heading">
         <div class="section-heading">
           <h2 id="activities-heading">講義活動</h2>
           <button id="close-room" class="danger" type="button" disabled>結束課堂</button>

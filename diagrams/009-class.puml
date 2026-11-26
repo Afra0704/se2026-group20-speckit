@@ -1,0 +1,78 @@
+@startuml
+!pragma layout smetana
+title 009 一次性課堂碼釋放與重用｜Class（003＋009 本機整合）
+skinparam defaultFontName "Microsoft JhengHei"
+class "教師" as Teacher
+class "課程" as Course {
+  course_id
+}
+class "一次性課堂" as Room {
+  classroom_id：固定、不重用
+  state：OPEN → CLOSED
+  code：保留歷史值
+  state_version／closed_at
+  結束不可逆
+}
+class "有效碼對應" as Code {
+  code
+  只對開放課堂有效
+}
+class "歷史配碼事實" as Past {
+  曾使用的碼
+  不是加入或恢復資格
+}
+class "課堂組別" as Group {
+  group_id
+  自填組名
+}
+class "原加入紀錄" as Membership {
+  固定 classroom_id＋group_id
+  原瀏覽器證明及有效性
+}
+class "學生授權" as Grant {
+  原加入紀錄
+  原課堂／原組別範圍
+  課堂 CLOSED 後不得讀學生內容
+}
+class "活動" as Activity {
+  activity_id：固定
+  PREPARING → LIVE → CLOSED
+  亦可 PREPARING → CLOSED
+}
+class "固定講義版本／題目快照（001）" as Catalog
+class "作答／順位／結算快照（003）" as Result
+class "回填報告／恢復依賴（001）" as Export
+Teacher "1" -- "0..*" Course : 擁有
+Course "1" -- "0..*" Room
+Room "1" -- "0..1" Code : 當下有效占用
+Room "1" -- "0..*" Past : 保留配碼事實
+Room "1" -- "0..*" Group
+Room "1" -- "0..*" Membership
+Group "1" -- "0..*" Membership
+Membership "1" -- "0..*" Grant
+Room "1" -- "0..*" Activity : 永久原歸屬
+Activity "0..*" --> "1" Catalog : 固定引用
+Activity "1" -- "0..*" Result
+Group "1" -- "0..*" Result : 原組別
+Activity "1" -- "0..*" Export
+Export --> Catalog
+Export --> Result : 原活動已結算快照
+note right of Code
+  FR-002～006：全入口一碼最多一堂有效。
+  CLOSED 的有效占用為 0；新堂有新 ID。
+  實作為 classrooms 的 OPEN 投影，不建碼池表。
+  部分唯一索引 code WHERE state=OPEN。
+  舊表全域 UNIQUE 需非破壞重建移除。
+  classroom_schema_versions 記錄版本 9，與升級同交易。
+  可重用碼值，不能重用原堂或授權。
+  5 碼：兩個 A–Z 字母＋三個 0–9 數字。
+  關課後立即全域可分配，教師不指定碼。
+end note
+note bottom of Membership
+  FR-007～010：同碼／同名不等於同堂／同組。
+  Group 與 Membership 必須屬同一 Room。
+  恢復僅限課堂開放，不沿有效碼對應找新堂。
+  關課後學生不可看歷史；教師保留歷史權限。
+  歷史配碼事實為概念，不要求新增獨立資料表。
+end note
+@enduml

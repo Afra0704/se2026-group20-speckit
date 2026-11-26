@@ -34,8 +34,9 @@ def test_close_waits_for_committed_submission(classroom_app, classroom_teacher, 
         assert pending.result().status_code == 201
         assert closing.result().status_code == 200
     state = student.get(f"/classrooms/{rid}/state").json
-    assert (state["classroom_state"], state["activity"]["phase"]) == ("CLOSED", "CLOSED")
+    assert state["classroom_state"] == "CLOSED"
+    assert set(state) == {"classroom_id", "classroom_state", "state_version"}
     assert post(student, f"/activities/{activity_id}/submissions", **body).status_code == 409
-    assert post(student, "/classroom-memberships", code=room["code"], group_name="B").status_code == 409
+    assert post(student, "/classroom-memberships", code=room["code"], group_name="B").status_code == 403
     assert post(classroom_teacher, f"{path}/activities/{activity_id}/start").status_code == 409
     assert classroom_teacher.get(path + "/activities").json["activities"][0]["closed_at"]

@@ -4,7 +4,7 @@ from string import ascii_uppercase, digits
 from flask import Blueprint, current_app, flash, jsonify, redirect, request, session, url_for
 
 from ..auth import limit_attempts, require_teacher
-from ..db import connection, write_transaction
+from ..db import connection, write_transaction, read_view
 from ..http import ApiError, payload, string
 from ..quiz.results_gateway import snapshot
 from .classroom_access import (
@@ -12,7 +12,7 @@ from .classroom_access import (
 )
 from .classroom_catalog import get_catalog, list_catalogs, get_display_content
 from .display_service import save_display
-from .classroom_membership import group_for, join, recover
+from .classroom_membership import group_for, identity_for, join, recover
 from .course_service import get_owned_course
 from .state_routes import state_view
 from .teacher import store_activity, transition, validate_catalog
@@ -86,7 +86,7 @@ def insert_room(db, classroom_id, course_id, title):
         code = make_room_code()
         inserted = db.execute(
             """INSERT INTO classrooms(id, course_id, title, code) VALUES (?, ?, ?, ?)
-               ON CONFLICT(code) DO NOTHING""",
+               ON CONFLICT(code) WHERE state='OPEN' DO NOTHING""",
             (classroom_id, course_id, title, code),
         )
         if inserted.rowcount:
@@ -187,7 +187,8 @@ def close(classroom_id):
     with activity_transaction() as db:
         teacher = require_teacher(db)
         room = owned_classroom(db, teacher, classroom_id)
-        require_open(room)
+        if room['state'] == 'CLOSED':
+            return {'classroom_state': 'CLOSED'}
         unfinished = db.execute(
             """SELECT a.id, a.phase FROM classroom_activities c JOIN activities a ON a.id=c.activity_id
                WHERE c.classroom_id=? AND a.phase IN ('PREPARING','LIVE')""", (classroom_id,)
@@ -229,8 +230,10 @@ def state(classroom_id):
         if role == "teacher":
             room, group = owned_classroom(db, require_teacher(db), classroom_id), None
         else:
-            group = group_for(db, classroom_id)
+            group = identity_for(db, classroom_id)
             room = classroom(db, classroom_id)
+            if room['state'] == 'CLOSED':
+                return dict(classroom_id=room['id'], classroom_state='CLOSED', state_version=room['state_version'])
         activity_id = room["current_activity_id"]
         activity = requested_activity(db, activity_id) if activity_id else None
         view = state_view(db, activity, group) if activity is not None else None
@@ -247,6 +250,9 @@ def state(classroom_id):
 
 @rooms.post("/classrooms/<classroom_id>/result-access")
 def result_access(classroom_id):
+    data = payload()
+    if 'group_id' in data or 'group_name' in data:
+        raise ApiError(400, 'INVALID_REQUEST')
     limit_attempts("classroom-recover")
     with write_transaction() as db:
         token = recover(db, classroom_id, request.cookies.get("classroom_proof"))
@@ -256,20 +262,39 @@ def result_access(classroom_id):
 
 @rooms.get("/classrooms/<classroom_id>/results")
 def settled_activities(classroom_id):
-    db = connection()
+    from ..quiz.settlement import try_pending
+    for activity_id in pending_results(classroom_id):
+        try_pending(activity_id)
+    return read_settled_activities(classroom_id)
+
+
+def result_history(db, classroom_id):
     if request.headers.get("X-Activity-Role") == "teacher":
         owned_classroom(db, require_teacher(db), classroom_id)
     else:
         group_for(db, classroom_id)
-    rows = db.execute(
+    return db.execute(
         """SELECT a.id AS activity_id, c.title FROM classroom_activities c
            JOIN activities a ON a.id = c.activity_id
            WHERE c.classroom_id = ? AND a.phase = 'CLOSED' ORDER BY c.rowid""", (classroom_id,)
     ).fetchall()
-    from ..quiz.settlement import settled, status, try_pending
+
+
+@read_view
+def pending_results(classroom_id):
+    from ..quiz.settlement import settled, status
+    db = connection()
+    rows = result_history(db, classroom_id)
+    if current_app.config.get('GET_SETTLED_RESULTS') is not settled:
+        return []
+    return [row['activity_id'] for row in rows if status(db, row['activity_id']) == 'pending'][:4]
+
+
+@read_view
+def read_settled_activities(classroom_id):
+    from ..quiz.settlement import settled, status
+    db = connection()
+    rows = result_history(db, classroom_id)
     if current_app.config.get("GET_SETTLED_RESULTS") is not settled:
         return {"activities": [dict(row) for row in rows if snapshot(db, row["activity_id"]) is not None]}
-    pending = [row["activity_id"] for row in rows if status(db, row["activity_id"]) == "pending"]
-    for activity_id in pending[:4]:
-        try_pending(activity_id)
     return {"activities": [dict(row, status=status(db, row["activity_id"])) for row in rows]}

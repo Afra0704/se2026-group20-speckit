@@ -1,0 +1,116 @@
+@startuml
+title 009 一次性課堂碼釋放與重用｜Sequence（003＋009 本機整合）
+skinparam defaultFontName "Microsoft JhengHei"
+actor 教師 as T
+actor "原學生／新加入學生" as S
+participant "課堂權限與生命週期" as R
+participant "有效碼對應" as C
+participant "原加入／恢復資格" as M
+participant "003 受理與結果" as Q
+participant "001 回填與恢復" as N
+
+== A 開放，C 對應 A ==
+S -> C : 明確輸入 C＋組別加入
+C --> R : 解析目標 A（內部識別）
+R -> M : 確認 A 仍開放並固定原組別
+M --> S : A／原組別資格及原證明
+
+== 永久結束 A 與有效占用釋放（FR-001～006） ==
+T -> R : 確認結束指定 A
+alt 非擁有教師／未授權
+  R --> T : 拒絕，不改任何對應
+else A 已結束（含 B 已重用 C）
+  R --> T : 200 CLOSED；不改版本／時間、不重釋 C、不重做結算
+else 有權且 A 開放
+  group BEGIN IMMEDIATE：活動與課堂同一 commit／rollback
+    R -> R : A 永久 CLOSED，一併結束未結束活動
+    R -> Q : 同寫交易登記結算待辦，保留已受理答案
+    R -> C : A 的 CLOSED 狀態退出部分唯一索引，有效占用釋放
+  end
+  alt 操作未成功
+    R --> T : 明確失敗，可重試；無半完成成功或雙重有效碼
+  else 成功
+    R -> Q : commit 後 try_pending；故障留待重試，不重開課堂
+    R --> T : A 已結束，歷史保留，不可重開
+  end
+end
+note over R,Q
+  關課與提交沿用原受理界線（US4 R8）。
+  關課不等於結算完成；已受理答案固定原活動。
+end note
+
+== 尚無新有效對應 ==
+S -> C : 新加入 C＋組別
+C --> S : 查無此課堂
+
+== 新堂分配與競爭（US4 R1、R7） ==
+T -> R : 在有權課程建立新課堂 B
+R -> C : 分配可用碼（可能選到 C）
+alt 同碼另有有效占用／分配失敗
+  C --> R : 改選其他可用碼或明確失敗；不能重複成功
+else C 可立即再分配（全域，無冷卻）
+  C --> R : C 現僅對應 B；B 的 ID 不同於 A
+  R --> T : 新堂 B 建立成功
+end
+note over R,C
+  成功關課即釋放；無冷卻，跨教師／課程由系統選碼。
+  碼為兩個 A–Z 字母＋三個 0–9 數字，輸入去首尾空白、轉大寫。
+  不保證下一堂取得 C；此圖以 B 取得 C 說明隔離。
+end note
+
+== 舊恢復與明確新加入分流（FR-007～012） ==
+S -> M : 重整／重開 A 舊頁：原 grant 查狀態或原 proof 恢復
+alt A 已結束（即使原證明仍有效）
+  M -> R : 驗 A 已 CLOSED；不查 C、不授予內容權限
+  R --> S : 原 grant state：200 最小 CLOSED；原 proof 恢復：409 CLOSED\n顯示「課堂已結束」＋「加入其他課堂」
+  S -> Q : 舊網址／原資格直接查 A 結果
+  Q -> M : 驗原堂狀態及權限
+  M --> Q : A 已關課，拒絕學生內容
+  Q --> S : 409 CLASSROOM_CLOSED；不回題目／答案／順位／結果
+  S -> S : 按「加入其他課堂」後回獨立加入頁
+else 課堂仍開放且證明有效、歸屬相符
+  M --> S : 恢復原堂／原組別；不常駐登入提示
+  S -> Q : 查原堂已結束活動的結果
+  Q -> M : 預檢原堂 OPEN／原組別，結束預檢讀交易
+  Q -> Q : 讀交易外 try_pending，可開寫交易
+  group 新讀交易：重新驗權＋組 DTO
+    Q -> M : 重驗原堂狀態／原組別
+    alt 原堂仍 OPEN
+      Q --> S : D06 結果或 pending／unavailable
+    else 預檢後已關課
+      Q --> S : 409 CLASSROOM_CLOSED，零結果內容
+    end
+  end
+  note over S,Q
+    活動已結束且結算、課堂仍開放時，學生依 D06 看結果。
+    未結算只顯示結算狀態；整堂結束即停止內容存取。
+  end note
+else 證明缺少／失效或跨堂跨組
+  M --> S : 401／403；不依同碼補資格
+end
+S -> C : 明確重新輸入 C＋組別加入新堂
+C --> R : 固定目標 B
+alt B 仍開放且判定可確認
+  R -> M : 建立 B 的新加入／組別資格
+  M --> S : 201 B 新資格；導航固定 B 課堂頁，不轉移 A 資料
+else 目標在確認前已關閉／改配（US4 R5）
+  R --> S : 拒絕或要求明確重試，不悄悄轉投下一堂
+end
+note over S,M
+  學生仍以碼＋組別從獨立頁加入，不新增 Google 登入。
+  成功後顯示課堂內容，不常駐登入提示。
+  晚到 A 回應不能覆蓋 B；B 資格也不能讀 A。
+  內容讀取同交易開始即驗權，關課 commit 後的新讀取拒絕。
+  關課前合法快照可晚到，但前端確認 CLOSED 後不得套用。
+end note
+
+== 歷史固定原歸屬 ==
+T -> N : 依原活動讀回填報告／恢復（驗原教師權限）
+N -> Q : 原 activity_id 的已結算快照
+Q --> N : 不可變結果或 RESULT_NOT_READY
+N --> T : 沿用原固定版本、勝組與回讀規則
+note over R,N
+  碼重用不搬移／刪除課堂、組別、答案、順位、結果及回填依賴。
+  正式 003 已合流自動驗證，真人與真 Sheets 尚待驗收。
+end note
+@enduml

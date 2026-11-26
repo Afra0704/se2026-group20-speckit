@@ -3,12 +3,29 @@ from pathlib import Path
 import sqlite3
 import time
 import click
+from functools import wraps
 
 from flask import current_app, g
 
 
 class DatabaseBusy(Exception):
     pass
+
+
+def read_view(view):
+    """Authorize and materialize a response from one request-local snapshot."""
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        db = connection()
+        owns = not db.in_transaction
+        if owns:
+            db.execute('BEGIN')
+        try:
+            return view(*args, **kwargs)
+        finally:
+            if owns and db.in_transaction:
+                db.execute('ROLLBACK')
+    return wrapped
 
 
 def connection():
@@ -20,8 +37,8 @@ def connection():
 
 
 @contextmanager
-def write_transaction():
-    db = connection()
+def write_transaction(db=None):
+    db = db if db is not None else connection()
     try:
         for attempt in range(3):
             try:
@@ -58,9 +75,31 @@ def execute_schema_statements(db, sql):
 
 
 def initialize_application_schema():
+    # Private connection: foreign_keys=OFF must never escape into request g.db.
+    bootstrap = sqlite3.connect(current_app.config['DATABASE'], autocommit=True, timeout=0.25)
+    bootstrap.row_factory = sqlite3.Row
+    bootstrap.execute('PRAGMA foreign_keys=ON')
+    try:
+        if current_app.config['CLASSROOM_MODE']:
+            from .activities.classroom_migration import needs_rebuild
+            if needs_rebuild(bootstrap):
+                bootstrap.execute('PRAGMA foreign_keys=OFF')
+        _initialize_application_schema(bootstrap)
+    finally:
+        if bootstrap.in_transaction:
+            bootstrap.execute('ROLLBACK')
+        try:
+            bootstrap.execute('PRAGMA foreign_keys=ON')
+            if bootstrap.execute('PRAGMA foreign_keys').fetchone()[0] != 1:
+                raise RuntimeError('Could not restore bootstrap foreign key enforcement.')
+        finally:
+            bootstrap.close()
+
+
+def _initialize_application_schema(bootstrap):
     """Core tables and Google database identity form one recoverable unit."""
     schemas = Path(__file__).parent / 'activities'
-    with write_transaction() as db:
+    with write_transaction(bootstrap) as db:
         tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         if current_app.config['TEACHER_AUTH_MODE'] == 'google' and tables and 'auth_instance' not in tables:
             raise RuntimeError('007 Google login requires a new empty database; existing data was preserved.')
@@ -70,8 +109,14 @@ def initialize_application_schema():
             raise RuntimeError('The selected database uses 004 classroom mode.')
         sql = (schemas / 'schema.sql').read_text(encoding='utf-8')
         if current_app.config['CLASSROOM_MODE']:
-            sql += '\n' + (schemas / 'classroom_schema.sql').read_text(encoding='utf-8')
+            from .activities.classroom_migration import upgrade
+            classroom_sql = (schemas / 'classroom_schema.sql').read_text(encoding='utf-8')
+            upgrade(db, classroom_sql, execute_schema_statements)
+            sql += '\n' + classroom_sql
         execute_schema_statements(db, sql)
+        if current_app.config['CLASSROOM_MODE']:
+            from .activities.classroom_migration import validate
+            validate(db)
         quiz_schema = schemas.parent / 'quiz' / 'schema.sql'
         execute_schema_statements(db, quiz_schema.read_text(encoding="utf-8"))
         if current_app.config['TEACHER_AUTH_MODE'] == 'google':

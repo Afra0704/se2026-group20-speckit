@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="zh-Hant">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>學生加入課堂 · Guided Notes</title>
+<link rel="stylesheet" href="{{ url_for('static',filename='classroom.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='student-classroom.css') }}">
+<body class="student-page">
+<header class="student-nav"><a href="{{ url_for('index') }}">Guided Notes</a><a href="{{ url_for('teacher.page') }}">教師入口</a></header>
+<main class="student-entry" data-csrf="{{ csrf }}">
+  <p class="eyebrow">STUDENT ACCESS</p><h1>準備好一起上課了嗎？</h1>
+  <p class="muted">輸入老師提供的課堂碼與你的組別，加入這一堂課。</p>
+  <section class="card"><form id="join">
+    <label for="join-code">課堂碼</label><input id="join-code" name="code" class="code-input" placeholder="例如 AB123" maxlength="32" required autocomplete="off" autocapitalize="characters" spellcheck="false">
+    <label for="join-group">組別</label><input id="join-group" name="group_name" placeholder="例如 甲組" maxlength="80" required autocomplete="off">
+    <button type="submit">加入課堂</button>
+  </form><p id="message" role="status" tabindex="-1"></p></section>
+  <p class="student-footnote">每一堂課都是獨立的。加入其他課堂時，請重新輸入課堂碼與組別。</p>
+</main><script src="{{ url_for('static',filename='student-entry.js') }}"></script>
+</body></html>

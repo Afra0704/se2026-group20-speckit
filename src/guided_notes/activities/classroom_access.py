@@ -23,6 +23,8 @@ def activity_transaction():
         with write_transaction() as db:
             yield db
     except sqlite3.IntegrityError as error:
+        if str(error) in ('classroom_permanently_closed', 'classroom_identity_immutable'):
+            raise ApiError(409, 'CLASSROOM_CLOSED' if str(error) == 'classroom_permanently_closed' else 'INVALID_REQUEST') from error
         if str(error) == "lecture_removed":
             raise ApiError(410, "LECTURE_REMOVED") from None
         if str(error) == "classroom_unfinished":

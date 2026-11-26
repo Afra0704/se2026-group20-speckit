@@ -17,7 +17,7 @@ def issue(db, membership_id, *, read_only=False):
 
 
 def join(db, code, name):
-    room = db.execute("SELECT * FROM classrooms WHERE code = ?", (code,)).fetchone()
+    room = db.execute("SELECT * FROM classrooms WHERE code = ? AND state='OPEN'", (code,)).fetchone()
     if room is None:
         raise ApiError(403, "JOIN_DENIED")
     if room["state"] != "OPEN":
@@ -38,14 +38,15 @@ def join(db, code, name):
     return room["id"], group["id"], proof, issue(db, result.lastrowid)
 
 
-def group_for(db, classroom_id, *, submitting=False):
+def identity_for(db, classroom_id, *, submitting=False):
     token = session.get("classroom_grant")
     if not token:
         raise ApiError(401, "AUTH_REQUIRED")
     row = db.execute(
-        """SELECT g.*, s.read_only FROM classroom_grants s
+        """SELECT g.*, s.read_only, c.state AS classroom_state, c.state_version FROM classroom_grants s
            JOIN classroom_memberships m ON m.id = s.membership_id
            JOIN classroom_groups g ON g.classroom_id = m.classroom_id AND g.id = m.group_id
+           JOIN classrooms c ON c.id=m.classroom_id
            WHERE s.token = ? AND s.expires > ?""",
         (digest(token), int(time.time())),
     ).fetchone()
@@ -56,14 +57,23 @@ def group_for(db, classroom_id, *, submitting=False):
     return row
 
 
+def group_for(db, classroom_id, *, submitting=False):
+    row = identity_for(db, classroom_id, submitting=submitting)
+    if row['classroom_state'] != 'OPEN':
+        raise ApiError(409, 'CLASSROOM_CLOSED')
+    return row
+
+
 def recover(db, classroom_id, proof):
     if not proof:
         raise ApiError(403, "RECOVERY_DENIED")
     row = db.execute(
-        """SELECT m.id FROM classroom_memberships m JOIN classrooms c ON c.id = m.classroom_id
-           WHERE c.id = ? AND c.state = 'CLOSED' AND m.proof = ? AND m.expires > ?""",
+        """SELECT m.id, c.state FROM classroom_memberships m JOIN classrooms c ON c.id = m.classroom_id
+           WHERE c.id = ? AND m.proof = ? AND m.expires > ?""",
         (classroom_id, digest(proof), int(time.time())),
     ).fetchone()
     if row is None:
         raise ApiError(403, "RECOVERY_DENIED")
-    return issue(db, row["id"], read_only=True)
+    if row['state'] != 'OPEN':
+        raise ApiError(409, 'CLASSROOM_CLOSED')
+    return issue(db, row["id"])
