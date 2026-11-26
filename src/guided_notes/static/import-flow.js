@@ -66,7 +66,21 @@ if (linkForm) {
   });
 }
 let busy=false;
-async function run(action,body={}){if(busy)return;busy=true;const buttons=flow?.querySelectorAll('button')||[];buttons.forEach(b=>b.disabled=true);try{return await api(base+'/'+action,body);}catch(error){if(error.code==='SOURCE_CHANGED')location.reload();else report(error);throw error;}finally{busy=false;buttons.forEach(b=>b.disabled=false);}}
+async function showFailedFlow(action) {
+  if (!['read', 'retry', 'previews', 'picker/selection'].includes(action)) return false;
+  try {
+    const state = await api(base);
+    if (state.status === 'failed') {
+      // Render the server's error and retry action instead of keeping a stale read button.
+      location.reload();
+      return true;
+    }
+  } catch {
+    // Keep the original operation error visible when the state cannot be read.
+  }
+  return false;
+}
+async function run(action,body={}){if(busy)return;busy=true;const buttons=flow?.querySelectorAll('button')||[];buttons.forEach(b=>b.disabled=true);try{return await api(base+'/'+action,body);}catch(error){if(error.code==='SOURCE_CHANGED')location.reload();else if(!await showFailedFlow(action))report(error);throw error;}finally{busy=false;buttons.forEach(b=>b.disabled=false);}}
 async function read(){let result=await run('read');if(result.needs_authorization){result=await run('authorize',{credential_kind:result.needs_authorization});if(result.authorization_url){location.assign(result.authorization_url);return;}}location.reload();}
 document.getElementById('read-source')?.addEventListener('click',()=>read().catch(()=>{}));
 document.getElementById('open-picker')?.addEventListener('click',async()=>{try{const result=await run('authorize',{credential_kind:'picker'});if(result.authorization_url){location.assign(result.authorization_url);return;}const {pick}=await import('./picker.js');const file=await pick(base);if(file){await run('picker/selection',file);location.reload();}}catch(error){report(error);}});

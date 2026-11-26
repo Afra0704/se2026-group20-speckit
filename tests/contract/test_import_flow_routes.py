@@ -96,3 +96,9 @@ def test_read_failure_distinguishes_permissions_from_temporary_error(google_app,
     assert '稍後重試' in response.json['error']['message']
     page = google_teacher.get(path(flow), headers={'Accept': 'text/html'})
     assert '稍後重試' in page.text
+
+    sheets.hook = None
+    response = post(google_teacher, path(flow, 'retry'))
+    assert response.status_code == 200
+    assert response.json['status'] == 'worksheets_ready'
+    assert '選擇一張工作表' in google_teacher.get(path(flow), headers={'Accept': 'text/html'}).text
