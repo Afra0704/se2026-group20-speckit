@@ -1,0 +1,56 @@
+@startuml
+!pragma layout smetana
+title 007 身分首頁與 Google 登入 — 實作組件
+actor 教師
+actor 學生
+component 身分首頁 as Home
+component "Google 登入路由\nlogin / sheets purposes" as Routes
+component "Google Flow / OIDC Provider" as Provider
+component "server attempt / browser epoch\n教師映射與原 grants" as Identity
+component "Google Sheets 本人授權\nrefresh lease / revision" as SheetsAuth
+component "Fernet 加解密\nrepo 外持久 keyfile" as Crypto
+component "課程與活動\n既有 TeacherContext" as Courses
+component "notes gateway\n既有 SheetsGateway" as Notes
+component "不可刷新 access-token 快照\nbefore_request 只檢查與 apply" as Snapshot
+component "既有 Sheets SDK 傳輸\n401 不刷新 / 不重送" as Transport
+cloud "Google Sheets API" as SheetAPI
+component 學生課堂加入 as Join
+cloud "Google OIDC / OAuth" as Google
+database "新 SQLite DB\ninstance UUID + encrypted BLOB" as DB
+教師 --> Home
+學生 --> Home
+Home --> Routes : 老師登入
+Home --> Join : 學生課堂碼與組別
+Routes --> Identity : 開始 / claim / finalize / logout
+Routes --> Provider : 固定 Web client / callback
+Provider --> Google : code exchange 與驗證
+Identity --> DB : 短交易 / 無外網鎖
+Identity --> Crypto : attempt nonce / PKCE
+Routes --> SheetsAuth : 已登入教師明確 connect
+SheetsAuth --> Provider : 增量 scope / 同 sub
+SheetsAuth --> Crypto : token envelope 加密
+SheetsAuth --> DB : owner / instance / CAS / 30 秒 lease
+Courses --> Identity : require_teacher
+Notes --> Identity : 重檢教師歸屬
+Notes --> SheetsAuth : 顯式刷新後取本人快照
+SheetsAuth --> Snapshot : access token / 真實 expiry
+Notes --> Transport : 沿用原 Gateway 介面
+Transport --> Snapshot : before_request；refresh 拒絕
+Transport --> SheetAPI : 原請求，無寫入 replay
+Join --> DB : 既有學生資格保持
+note bottom of Notes
+禁用 Desktop / 全域 profile fallback
+保持 Catalog / Display / Result 與回填契約
+Drive 選檔留下一輪
+快照過期先拒絕，不能隱性刷新
+end note
+note bottom of Routes
+callback query 脫敏並轉乾淨 URL
+signed cookie 不放 OAuth 秘密
+end note
+note bottom of SheetsAuth
+refresh 結果接受期限 20 秒
+最多 1 次 token POST / 1 次必要憑證 GET
+逾時只釋放自己 lease，晚回結果丟棄
+end note
+@enduml

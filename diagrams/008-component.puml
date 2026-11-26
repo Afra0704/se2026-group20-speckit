@@ -1,0 +1,73 @@
+@startuml
+!pragma layout smetana
+title 008 教師課程工作區 — Plan 組件圖
+actor 教師
+actor 學生
+component "既有 Google 教師登入\n教師資格與資源權限" as Auth
+component "教師首頁 / 我的課程\n卡片與固定導覽" as Home
+component "課程工作區\n總覽 / 講義 / 課堂" as Workspace
+component "講義清單與 ＋來源選單" as Lectures
+component "匯入流程\n課程 / 來源方式 / 返回位置" as Import
+component "使用時授權\n同教師 Google 身分" as Consent
+component "原 OAuth attempt / claim\n可信 sidecar kind + flow" as OAuth
+component "Picker 窄 cache / ticket\n後端驗 metadata" as PickerAuth
+component "007 本人 Sheets 授權\n原 refresh / gateway" as SheetsAuth
+component "雲端 Sheets 選擇" as Cloud
+component "貼連結" as Link
+component "既有辨識 / 分頁 / 命名\n預覽 / 確認版本" as Notes
+component "講義移除\n保留歷史，禁止新引用" as Remove
+component "課堂清單與課堂控制\n不可刪除，只可結束" as Rooms
+component "既有活動 / 結果 / 回填恢復" as History
+database "既有教學資料與\n講義可見性 / 匯入上下文" as Store
+cloud "Google 授權 / 雲端檔案 / Sheets" as Google
+教師 --> Home
+Home --> Auth
+Home --> Workspace : 選課程
+Workspace --> Lectures : 講義管理
+Workspace --> Rooms : 課堂管理
+Lectures --> Import : 按＋並選來源
+Import --> Consent : 實際操作才檢查權限
+Consent --> Auth : 身分與歸屬重檢
+Consent --> Google : 僅必要時授權
+Consent --> OAuth : 固定 profile / client
+OAuth --> PickerAuth : picker finalize，不覆寫 Sheets
+OAuth --> SheetsAuth : sheets finalize
+PickerAuth --> Google : 窄 token 驗來源
+Cloud --> PickerAuth : CSRF POST 取已驗窄 access token
+Notes --> SheetsAuth : 原後端讀寫憑證
+Import --> Cloud
+Import --> Link
+Cloud --> Google : 選一份 Google Sheets
+Cloud --> Notes : 已選來源
+Link --> Notes : 已驗連結來源
+Notes --> Auth
+Notes --> Google : 既有動態讀取
+Notes --> Store : 確認後保存原課程
+Lectures --> Remove : 二次確認
+Remove --> Auth
+Remove --> Store : 清單移除，不破壞引用
+Rooms --> History : 原單活動 / 全文 / 階段
+Rooms --> Store
+History --> Store : 保留固定版本與歷史
+學生 --> History : 原加入 / 看題 / 結果規則
+note bottom of Consent
+有效且足夠的授權不強迫重登入
+取消 / 錯帳號不切換教師
+Picker 專用 client / online / false
+後端先驗同 sub 與 actual scope
+只有 drive.file + OIDC 窄 token 交 Picker
+不把舊 broad token 直接交前端
+end note
+note bottom of Remove
+不刪課堂，不刪雲端原檔
+已建活動與回填仍依原規則存取
+建立活動與移除須有一致先後結果
+end note
+note bottom of Import
+flow 固定 teacher / grant / course / source
+回呼與保存前再驗，外網不持 write lock
+一般 GET / 開加號不啟動 OAuth
+claim到期明確重試，舊結果不覆蓋
+同輸入才冪等；修改選擇先失效舊預覽
+end note
+@enduml

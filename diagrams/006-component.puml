@@ -1,0 +1,30 @@
+@startuml
+!pragma layout smetana
+title 006 學生題目全文 — 組件（實作對應）
+actor 教師
+actor 學生
+component "Google Sheets 講義" as Sheet
+component "動態辨識與教師預覽" as Import
+component "固定講義版本" as Version
+component "安全文字投影" as Display
+component "活動與安全顯示內容" as Activity
+database "活動文字快照" as Snapshot
+component "學生題目畫面" as UI
+教師 --> Import : 匯入與確認全文
+Import --> Sheet : 讀題目欄與合併結構
+Import --> Version : 確認後保存題目與作答對應
+教師 --> Activity : 選版本建立活動
+Display --> Version : 讀同版不可變文字並核對識別
+Activity --> Display : 授權後取得 DisplayContentDTO v1
+Activity --> Snapshot : 和活動同一交易保存
+Activity --> Snapshot : state 只讀本活動快照
+學生 --> UI
+UI --> Activity : 驗證同堂身分並讀取
+Activity --> UI : 題號、小題、全文與作答狀態
+note bottom of Activity
+不提供來源答案、位置或他組資料
+不即時抓 Sheets 覆蓋既有活動
+沿用 005 開放時機與單活動規則
+CatalogDTO／003 context 維持原樣
+end note
+@enduml

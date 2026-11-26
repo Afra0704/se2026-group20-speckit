@@ -1,5 +1,7 @@
 # Google Sheets 授權準備與本機設定
 
+> 2026-11-25：目前 Web 已改用 007 的教師 Google 登入與本人 Sheets 連接，請先依 [007 設定指南](../specs/007-google-teacher-login/quickstart.md)建立 **Web application client** 與 repo 外加密 key。原 Desktop client/token 不可混用，也不必刪除。以下 Desktop 步驟保留給獨立 CLI／歷史驗證，不能用來授權 007 Web。
+
 本文件對應 001 T005／T019。2026-11-23 已完成獨立 OAuth helper／CLI、準備說明及模擬測試，**尚未操作任何實際 Google 帳號或來源**。
 Google 授權是讓後端存取講義，與 002 的教師登入分開。
 
@@ -89,3 +91,11 @@ set "NOTES_GOOGLE_TOKEN=C:\Users\user\guided-notes-private\token.json"
 | 真實講義辨識、權限與回填 | 未執行 |
 
 來源：[numeric sheetId 讀取](https://developers.google.com/workspace/sheets/api/reference/rest/v4/spreadsheets/getByDataFilter)、[DataFilter 批次寫入](https://developers.google.com/workspace/sheets/api/reference/rest/v4/spreadsheets.values/batchUpdateByDataFilter)、[配額與退避](https://developers.google.com/workspace/sheets/api/limits)。
+
+## 008 選檔與連結入口
+
+教師登入後進課程的「講義管理」，按「＋匯入講義」。貼上Sheets連結沿用007本人讀寫授權，只有明確讀取時才要求；雲端入口另使用專用Picker Web client的openid/email/profile/drive.file窄授權，原main client與持久key保持。
+
+新增環境變數 `GUIDED_NOTES_GOOGLE_PICKER_CLIENT_SECRETS` 指向repo外的專用Web client JSON、`GUIDED_NOTES_PICKER_API_KEY` 為受網站／API限制的瀏覽器key、`GUIDED_NOTES_PICKER_APP_ID` 為同project number。main與Picker client必須不同；缺設定只停用雲端入口，不阻擋貼連結。完整Cloud準備及scope smoke見 `specs/008-teacher-course-workspace/quickstart.md`。本輪未操作真實Google Console，不貼或提交任何憑證。
+
+選檔後單選一張工作表，沿用或自訂名稱，全文預覽確認後保存。要換分頁／名稱按「重新選擇／修改名稱」；要換檔或入口則取消並另開流程。120秒讀取claim到期後可明確重試，30分鐘流程到期需重新開始。講義移除不刪雲端原檔，歷史回填由活動講義歷史入口繼續依原規則進行。

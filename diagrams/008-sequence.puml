@@ -1,0 +1,116 @@
+@startuml
+title 008 分層教師工作區 — Plan 授權 / 匯入 / 移除時序
+actor 教師 as Teacher
+participant "教師工作區 / JS" as UI
+participant "原權限 / Google attempt" as Auth
+participant "flow + sidecar" as Flow
+participant "Picker cache / ticket" as Picker
+participant Google
+participant "原 Sheets 授權 / notes" as Notes
+participant "講義移除" as Remove
+database "原 007 DB + 附加表" as DB
+Teacher -> UI : 歡迎 → 課程卡片 → 課程講義
+UI -> Auth : require_teacher / course ownership
+UI --> Teacher : 原課程列表與＋；GET 不授權
+Teacher -> UI : ＋展開後選 cloud 或 link 明確讀取
+UI -> Flow : 建 flow，固定 teacher/browser/grant/course/source
+Flow -> DB : source_pending / revision / 30分鐘
+alt cloud
+  Flow -> Picker : 檢查本人窄 cache
+  alt 無有效 cache
+    group 短交易：原 purpose=sheets
+      Flow -> Auth : attempt + sidecar kind=picker + flow
+      Auth -> DB : 原 nonce/PKCE/epoch / 300秒
+    end
+    Auth -> Google : 專用 client，online / include_granted_scopes=false
+    Google --> Auth : callback code 或取消
+    Auth -> DB : 原子 claim，結束交易
+    Auth -> Google : 固定 HTTPS code exchange / 官方驗簽
+    Auth -> Auth : 同 sub / 專用 aud / nonce / actual scope allowlist
+    Auth -> Flow : 再驗 current grant / 原flow/course
+    Flow -> Picker : finalize 窄 access 密文，無 refresh
+    Picker -> DB : 新 generation，不覆寫 main Sheets
+    Auth --> UI : 303 乾淨 flow 頁
+  end
+  UI -> Picker : CSRF POST token，重驗 flow/grant/scope/expiry
+  Picker -> DB : ticket 綁 flow / generation，最長300秒
+  Picker --> UI : 只有窄 access token＋ticket
+  UI -> Google : Picker 單選 Google Sheets，JS記憶體持 token
+  Google --> UI : file_id 或取消
+  UI -> Flow : CSRF POST selection(file_id,ticket)
+  Flow -> DB : claim ticket / flow revision
+  Flow -> Google : 交易外用窄 token 驗 metadata MIME / trashed
+  Google --> Flow : metadata / 權限錯誤
+  Flow -> DB : 外網後再驗 ticket / cache generation / grant
+else link
+  Flow -> Flow : 驗已存 Google Sheets URL / gid
+end
+alt 尚未連接本人 Sheets
+  Flow -> Auth : 原attempt + sidecar kind=sheets
+  Auth -> Google : 原main client / 本人Sheets授權
+  Google --> Auth : 驗同sub / 原flow / 目前grant
+  Auth -> Notes : 原sheets_service.connect
+  Auth --> UI : 303 同flow，不丟原課程與來源
+end
+alt 取消 / 錯帳號 / scope不符 / flow失效
+  Flow --> UI : 清楚重試，不半存或換教師
+else 可繼續
+  UI -> Flow : 續接 POST read；claim，不以GET自動OAuth
+  Flow -> Notes : 原gateway讀分頁，外網不持鎖
+  Notes --> Flow : worksheets
+  Flow -> DB : 再驗claim/grant/course/TTL，保存候選
+  note over Flow, DB
+  讀取未到120秒：FLOW_BUSY
+  到期或安全failed：明確retry，以輸入快照CAS取新claim
+  兩retry只有一個接手；舊claim晚回拒絕
+  flow/grant與ticket期限仍有效才執行
+  end note
+  UI --> Teacher : 單選分頁 / 命名
+  Teacher -> UI : 建預覽
+  Flow -> Notes : 原create_preview + 可信flow guard
+  Notes -> DB : 最終短交易重驗，preview→flow
+  UI --> Teacher : 原全文 / 題數 / 填空預覽
+  opt 未完成時明確重新選擇／修改名稱
+    Teacher -> UI : 重新選擇／修改名稱
+    UI -> Flow : POST revise(expected_revision)
+    Flow -> DB : 同交易invalidate舊ready previews，清current_preview
+    Flow -> DB : choice_revision / revision遞增，回worksheets_ready
+    Flow --> UI : 原候選與命名表單，不自動建預覽
+    Teacher -> UI : 改選／改名，明確建立新預覽
+    UI -> Flow : POST previews(目前choice_revision, sheet, name)
+    Flow -> Notes : create_preview + flow guard
+    Notes -> DB : 最終重檢版次與claim，保存新preview
+    UI --> Teacher : 新預覽；舊版請求／舊確認URL拒絕
+  end
+  note over Flow, Notes
+  同動作／版次／canonical輸入才回既有結果
+  不同輸入FLOW_STEP_CONFLICT；completed不可revise
+  end note
+  Teacher -> UI : 確認
+  Flow -> Notes : 原confirm_preview / 來源重檢
+  group 最終出版短交易
+    Notes -> DB : 同grant/course/flow + 指定existing import active
+    Notes -> DB : immutable catalog + flow completed 同commit
+  end
+  Flow --> UI : 原課程講義清單
+end
+== 刪除講義與新引用 ==
+Teacher -> UI : 刪講義 → 閱讀影響 → 確認
+UI -> Remove : CSRF POST owner/course/import
+Remove -> DB : BEGIN IMMEDIATE，重驗後插 tombstone
+DB --> Remove : 保留版本 / 活動 / 回填依賴
+Remove --> UI : 清單及新活動選擇移除
+note over Notes, DB
+新活動 store_activity 與新版本 save_catalog 前
+同 write transaction 再驗 active
+create先commit保留活動；remove先commit拒新引用
+低階owner查詢不全域過濾，歷史讀取另依受權activity/operation
+end note
+note over UI, DB
+課堂／課程無刪除；課堂只可結束
+不刪雲端原檔，不 revoke 整個 Google grant
+ticket TTL 不等於 Google token 提前失效
+attempt 舊清理以 CASCADE / SET NULL 相容
+清 flow 前 invalidate ready previews，防舊 URL 出版
+end note
+@enduml

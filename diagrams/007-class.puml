@@ -1,0 +1,71 @@
+@startuml
+!pragma layout smetana
+title 007 教師身分與授權 — 實作資料關係
+class "teachers（既有）" as Teacher {
+  id / active
+  新 Google 教師無本地帳密
+}
+class "google_identities" as Identity {
+  teacher_id PK/FK
+  canonical issuer + subject UNIQUE
+  name / email 僅顯示
+}
+class "grants（既有）" as Grant {
+  hashed token / teacher_id
+  expires
+}
+class "auth_browsers" as Browser {
+  binding_hash PK
+  epoch
+  current teacher_grant_hash
+}
+class "google_oauth_attempts" as Attempt {
+  state_hash UNIQUE
+  purpose: login / sheets
+  browser_epoch / expected grant
+  nonce + verifier encrypted
+  終態清除 secret_blob
+  status / claim_id / expires_at
+}
+class "auth_instance" as Instance {
+  singleton
+  instance_uuid UNIQUE
+}
+class "google_sheets_credentials" as Credential {
+  teacher_id PK/FK
+  instance / issuer / sub / client
+  encrypted token envelope
+  credential_id / revision
+  refresh lease / status
+}
+class "CredentialSnapshot（記憶體）" as Snapshot {
+  access token / 真實 expiry / scopes
+  valid 與 expired 隨時間核對
+  before_request 只檢查與 apply
+  refresh 拒絕，不含 refresh secret
+}
+class "學生課堂加入資格（既有）" as Student
+Teacher "1" -- "0..1" Identity
+Teacher "1" -- "0..*" Grant
+Browser "0..*" --> "0..1" Grant : server current pointer
+Browser "1" -- "0..*" Attempt : 發起 / epoch 限制
+Attempt --> Instance : 綁定
+Credential --> Instance : 內外 envelope 同值
+Identity "1" -- "0..1" Credential
+Credential ..> Snapshot : 服務驗證後產生，非 DB 關係
+note bottom of Attempt
+pending -> processing -> succeeded / failed
+expired / superseded 不重用
+外網前 claim，外網後再短交易重檢
+end note
+note bottom of Credential
+Fernet key repo 外，錯 key 不重建
+connect / refresh 同 DB CAS
+30 秒 lease / 20 秒結果接受期限
+逾時只釋放自己 lease，不改憑證狀態
+不因 DB 重用數字 ID 繼承舊 token
+end note
+note bottom of Student
+教師登出不刪學生加入或恢復資格
+end note
+@enduml
