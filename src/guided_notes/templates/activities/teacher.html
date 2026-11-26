@@ -5,14 +5,16 @@
 <title>教師活動管理</title>
 <main data-role="teacher" data-csrf="{{ csrf }}">
   <h1>教師活動管理</h1>
-  <a href="{{ url_for('index') }}">學生加入</a>
+  <a href="{{ url_for('student_entry') }}">學生加入</a>
   <a href="/teacher/notes">匯入 Google Sheets 講義</a>
   <a href="/teacher/notes/export-previews">活動回填預覽</a>
+{% if config.TEACHER_AUTH_MODE == 'google' %}{% include 'identity/teacher.html' %}{% else %}
   <form id="login">
     <label>教師帳號 <input name="username" autocomplete="username" required></label>
     <label>密碼 <input name="password" type="password" autocomplete="current-password" required></label>
     <button>登入</button>
   </form>
+{% endif %}
   <form id="create">
     <label>匯入清單識別 <input name="import_id" required></label>
     <label>清單版本 <input name="import_version" type="number" value="1" min="1" required></label>

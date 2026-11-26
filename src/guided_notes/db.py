@@ -56,6 +56,9 @@ def init_app(app):
         db = connection()
         schemas = Path(__file__).parent / "activities"
         tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        if app.config['TEACHER_AUTH_MODE'] == 'google' and tables and 'auth_instance' not in tables:
+            # Metadata is deliberately not retrofitted to an old application DB.
+            raise RuntimeError('007 Google login requires a new empty database; existing data was preserved.')
         if app.config["CLASSROOM_MODE"] and "activities" in tables and "classrooms" not in tables:
             raise RuntimeError("004 classroom mode requires a separate database; the selected database uses 002.")
         if not app.config["CLASSROOM_MODE"] and "classrooms" in tables:
@@ -64,6 +67,9 @@ def init_app(app):
         if app.config["CLASSROOM_MODE"]:
             sql += "\n" + (schemas / "classroom_schema.sql").read_text(encoding="utf-8")
         db.executescript("BEGIN IMMEDIATE;\n" + sql + "\nCOMMIT;")
+        if app.config['TEACHER_AUTH_MODE'] == 'google':
+            from .google_login.repository import initialize
+            initialize(db)
 
     @app.cli.command("init-db")
     def init_db():
@@ -73,4 +79,10 @@ def init_app(app):
             sql += "\n" + (Path(__file__).parent / "activities" / "classroom_schema.sql").read_text(encoding="utf-8")
         connection().executescript("BEGIN IMMEDIATE;\n" + sql + "\nCOMMIT;")
         init_schema()
+        if app.config['TEACHER_AUTH_MODE'] == 'google':
+            from .google_login.repository import initialize
+            initialize(connection())
+        if app.config["TEACHER_AUTH_MODE"] == "google" and app.config["CLASSROOM_MODE"]:
+            from .workspace.repository import initialize as initialize_workspace
+            initialize_workspace()
         click.echo("Database schema is ready; existing records were preserved.")

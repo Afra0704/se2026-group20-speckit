@@ -265,6 +265,7 @@ name = "guided-notes"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "cryptography" },
     { name = "flask" },
     { name = "google-api-python-client" },
     { name = "google-auth" },
@@ -280,6 +281,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "cryptography", specifier = ">=50.0.2,<51" },
     { name = "flask", specifier = ">=3.1,<4" },
     { name = "google-api-python-client", specifier = ">=2.202,<3" },
     { name = "google-auth", specifier = ">=2.63.1,<3" },

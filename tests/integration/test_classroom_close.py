@@ -1,3 +1,4 @@
+from catalog_support import course_import_id
 from concurrent.futures import ThreadPoolExecutor
 from threading import Event
 
@@ -8,20 +9,20 @@ def test_close_waits_for_committed_submission(classroom_app, classroom_teacher, 
     course, room = classroom_setup
     rid = room["classroom_id"]
     path = f"/teacher/classrooms/{rid}"
-    activity_id = post(classroom_teacher, path + "/activities", import_id=course["course_id"],
+    activity_id = post(classroom_teacher, path + "/activities", import_id=course_import_id(course["course_id"]),
                        import_version=1).json["activity_id"]
     student = classroom_app.test_client()
     assert post(student, "/classroom-memberships", code=room["code"], group_name="A").status_code == 201
     assert post(classroom_teacher, f"{path}/activities/{activity_id}/start").status_code == 200
     assert post(classroom_teacher, path + "/close", confirm=False).status_code == 400
     assert student.get(f"/classrooms/{rid}/state").json["activity"]["phase"] == "LIVE"
-    body = {"question_id": "demo-q1", "items": [{"item_id": "demo-item-1-1", "answer_text": " A "}]}
+    body = {"question_id": "fixture-q1", "items": [{"item_id": "fixture-item-1-1", "answer_text": " A "}]}
     entered, release = Event(), Event()
 
     def accept(db, context, answers):
         entered.set()
         assert context["activity_id"] == activity_id
-        assert answers["demo-item-1-1"] == " A "
+        assert answers["fixture-item-1-1"] == " A "
         assert release.wait(2)
 
     classroom_app.config["ACCEPT_SUBMISSION"] = accept

@@ -1,0 +1,1 @@
+{% extends 'workspace/base.html' %}{% block content %}<h1>我的課程</h1><form data-create-course><label>新課程名稱<input name="title" maxlength="128" required></label><button>建立課程</button></form><div class="cards">{% for c in courses %}<a class="card" href="/teacher/workspace/courses/{{ c.course_id }}"><h2>{{ c.title }}</h2></a>{% else %}<p>尚無課程，請先建立課程。</p>{% endfor %}</div>{% endblock %}

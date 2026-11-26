@@ -2,7 +2,7 @@
 {% block content %}
 <h1>匯入雲端講義</h1>
 <p class="muted">選擇工作表，確認題號、小題與答案格後，再保存供活動使用。</p>
-{% if not configured %}<p class="notice">這台電腦尚未設定你的 Google 授權。請先依專題操作說明完成本機設定。</p>{% endif %}
+{% if not configured and config.TEACHER_AUTH_MODE != 'google' %}<p class="notice">這台電腦尚未設定你的 Google 授權。請先依專題操作說明完成本機設定。</p>{% endif %}
 <section class="card">
   <form method="post" action="{{ url_for('notes.worksheets') }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

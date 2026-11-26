@@ -96,7 +96,7 @@ def test_restart_keeps_unknown_and_requires_recovery(app, teacher, writable):
     with pytest.raises(Crash):
         confirm_export(teacher, preview["preview_id"])
     writable.write_hook = None
-    restarted = create_app({"TESTING": True, "SECRET_KEY": app.secret_key, "DATABASE": app.config["DATABASE"],
+    restarted = create_app({"TESTING": True, "TEACHER_AUTH_MODE": "test_password", "SECRET_KEY": app.secret_key, "DATABASE": app.config["DATABASE"],
         "NOTES_GATEWAY": writable, "GET_SETTLED_RESULTS": app.config["GET_SETTLED_RESULTS"]})
     client = restarted.test_client()
     post(client, "/teacher/session", username="teacher", password="test-password")

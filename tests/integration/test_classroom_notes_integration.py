@@ -28,10 +28,12 @@ def test_real_course_catalog_binding_switch_and_writeback_adapter(classroom_app,
     assert post(classroom_teacher, f"/teacher/classrooms/{other_room['classroom_id']}/activities",
                 import_id=catalog["import_id"], import_version=1).status_code == 404
     path = f"/teacher/classrooms/{room['classroom_id']}/activities"
-    ids = [post(classroom_teacher, path, import_id=catalog["import_id"], import_version=1).json["activity_id"] for _ in range(2)]
+    ids = []
     student = classroom_app.test_client()
     joined = post(student, "/classroom-memberships", code=room["code"], group_name="甲組").json
-    for aid in ids:
+    for _ in range(2):
+        aid = post(classroom_teacher, path, import_id=catalog["import_id"], import_version=1).json["activity_id"]
+        ids.append(aid)
         assert post(classroom_teacher, f"{path}/{aid}/start").status_code == 200
         state = student.get(f"/classrooms/{room['classroom_id']}/state").json
         assert state["current_activity_id"] == aid

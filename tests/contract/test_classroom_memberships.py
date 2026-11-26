@@ -1,3 +1,4 @@
+from catalog_support import course_import_id
 from conftest import post
 
 
@@ -16,12 +17,12 @@ def test_classroom_join_isolated_and_switch_preserves_group(classroom_app, class
     assert other.get(state).status_code == 403
     assert classroom_app.test_client().get(state).status_code == 401
     path = f"/teacher/classrooms/{rid}/activities"
-    ids = [post(classroom_teacher, path, import_id=cid, import_version=v).json["activity_id"] for v in (1, 2)]
-    for index, activity_id in enumerate(ids):
+    for index, version in enumerate((1, 2)):
+        activity_id = post(classroom_teacher, path, import_id=course_import_id(cid), import_version=version).json["activity_id"]
         assert post(classroom_teacher, f"{path}/{activity_id}/start").status_code == 200
         for client in (a, b):
             current = client.get(state).json
             assert current["current_activity_id"] == activity_id
-            assert current["state_version"] == 2 * index + 1
+            assert current["state_version"] == 3 * index + 2
         assert a.get(state).json["activity"]["group_id"] == a_join["group_id"]
         assert post(classroom_teacher, f"{path}/{activity_id}/finish").status_code == 200

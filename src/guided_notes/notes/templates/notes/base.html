@@ -19,7 +19,9 @@
   </style>
 </head>
 <body><main>
+  {% if config.TEACHER_AUTH_MODE == 'google' and config.CLASSROOM_MODE %}<p><a href="/teacher/workspace">返回我的課程</a> · 請進入課程的講義管理使用雙入口匯入。</p>{% endif %}
   <nav aria-label="主要導覽"><a href="{{ url_for('teacher.page') }}">教師活動管理</a><a href="{{ url_for('notes.index') }}">講義匯入</a><a href="{{ url_for('notes.export_form') }}">活動回填預覽</a></nav>
+  {% if config.TEACHER_AUTH_MODE == 'google' and google_session.authenticated %}{% include 'identity/teacher.html' %}{% endif %}
   {% block content %}{% endblock %}
 </main><script src="{{ url_for('notes.static', filename='notes.js') }}" defer></script></body>
 </html>

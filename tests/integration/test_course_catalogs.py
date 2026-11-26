@@ -180,7 +180,7 @@ def test_restart_keeps_assignment_and_old_unassigned_data(app, teacher, sheets, 
     from guided_notes import create_app
     first = confirm(teacher, scoped_preview(teacher).json["preview_id"]).json
     old = confirm(teacher, preview(teacher)).json
-    config = {"TESTING": True, "SECRET_KEY": app.secret_key, "DATABASE": app.config["DATABASE"],
+    config = {"TESTING": True, "TEACHER_AUTH_MODE": "test_password", "SECRET_KEY": app.secret_key, "DATABASE": app.config["DATABASE"],
               "GET_OWNED_COURSE": app.config["GET_OWNED_COURSE"], "NOTES_GATEWAY": sheets}
     restarted = create_app(config)
     client = restarted.test_client()

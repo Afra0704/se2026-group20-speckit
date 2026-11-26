@@ -19,7 +19,8 @@ def now():
 
 
 def init_schema():
-    connection().executescript(Path(__file__).with_name("schema.sql").read_text(encoding="utf-8"))
+    from ..workspace.repository import execute_schema
+    execute_schema(connection(), Path(__file__).with_name("schema.sql").read_text(encoding="utf-8"))
 
 
 def unpack_recognition(payload):

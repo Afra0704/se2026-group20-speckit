@@ -239,7 +239,7 @@ def test_published_catalog_survives_app_restart_and_is_immutable(app, teacher, s
     import sqlite3
     from guided_notes import create_app
     catalog = confirm(teacher, preview(teacher)).json
-    restarted = create_app({"TESTING": True, "SECRET_KEY": app.secret_key,
+    restarted = create_app({"TESTING": True, "TEACHER_AUTH_MODE": "test_password", "SECRET_KEY": app.secret_key,
                             "DATABASE": app.config["DATABASE"], "NOTES_GATEWAY": sheets})
     client = restarted.test_client()
     assert post(client, "/teacher/session", username="teacher", password="test-password").status_code == 204

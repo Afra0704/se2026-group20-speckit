@@ -5,14 +5,24 @@ from ..auth import check_teacher_login_limit, csrf_token, issue_grant, record_te
 from ..db import connection, write_transaction
 from ..http import ApiError, payload, string
 from .teacher import fixed_questions, store_activity, transition
+from .display_service import get_display_content, save_display
 
 teacher = Blueprint("teacher", __name__)
 
 
 @teacher.get("/teacher")
 def page():
+    if current_app.config['TEACHER_AUTH_MODE'] == 'google':
+        try:
+            require_teacher()
+        except ApiError as error:
+            if error.status in (401,403):
+                return redirect('/teacher/login',code=303)
+            raise
     if not current_app.config["CLASSROOM_MODE"]:
         return render_template("activities/teacher.html", csrf=csrf_token())
+    if current_app.config["TEACHER_AUTH_MODE"] == "google":
+        return render_template("workspace/welcome.html", csrf=csrf_token())
     courses = []
     logged_in = False
     try:
@@ -32,6 +42,8 @@ def page():
 
 @teacher.post("/teacher/session")
 def login():
+    if current_app.config['TEACHER_AUTH_MODE'] == 'google':
+        raise ApiError(410,'PASSWORD_LOGIN_DISABLED')
     data = payload()
     browser_form = current_app.config["CLASSROOM_MODE"] and not request.is_json
     username, password = string(data, "username", 128), string(data, "password", 1024, strip=False)
@@ -67,8 +79,15 @@ def create():
     if type(version) is not int or not 0 < version <= 2**63 - 1:
         raise ApiError(400, "INVALID_REQUEST")
     questions = fixed_questions(teacher_context, import_id, version)
+    display = get_display_content(teacher_context, import_id, version, questions)
     with write_transaction() as db:
-        result = store_activity(db, require_teacher(db), import_id, version, questions)
+        current_teacher = require_teacher(db)
+        if current_teacher != teacher_context:
+            raise ApiError(403, 'FORBIDDEN')
+        from ..notes.lecture_lifecycle import require_available_for_activity
+        require_available_for_activity(current_teacher, None, import_id, version, db)
+        result = store_activity(db, current_teacher, import_id, version, questions)
+        save_display(db, result['activity_id'], display)
     return result, 201
 
 

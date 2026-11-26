@@ -3,8 +3,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>學生加入活動</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='question-text.css') }}">
 <main data-role="student" data-csrf="{{ csrf }}">
   <h1>學生加入活動</h1>
+  <a href="{{ url_for('index') }}">身分首頁</a>
   <a href="{{ url_for('teacher.page') }}">教師操作</a>
   <form id="join">
     <label>活動碼 <input name="code" required maxlength="32"></label>

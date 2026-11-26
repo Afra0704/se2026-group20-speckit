@@ -12,6 +12,8 @@ def create_app(test_config=None):
         app.config.update(test_config)
     if not app.secret_key:
         raise RuntimeError("Set GUIDED_NOTES_SECRET_KEY before starting the application.")
+    if app.config['TEACHER_AUTH_MODE'] not in ('google','test_password') or (app.config['TEACHER_AUTH_MODE']=='test_password' and not app.testing):
+        raise RuntimeError('Password authentication is only available in explicit TESTING fixtures.')
     db.init_app(app)
     http.init_app(app)
 
@@ -43,9 +45,31 @@ def create_app(test_config=None):
     app.jinja_env.filters["notes_a1"] = a1_range
     app.jinja_env.filters["notes_time"] = taipei_time
     app.jinja_env.globals["csrf_token"] = csrf_token
+    if app.config['TEACHER_AUTH_MODE'] == 'google':
+        from .google_login.routes import google_login, safe_status
+        from .google_login.log_redaction import install
+        install()
+        app.register_blueprint(google_login)
+
+        @app.context_processor
+        def identity_context():
+            return {'google_session': safe_status()}
+
+    if app.config["TEACHER_AUTH_MODE"] == "google" and app.config["CLASSROOM_MODE"]:
+        from .workspace.repository import initialize as initialize_workspace
+        with app.app_context():
+            initialize_workspace()
+        from .workspace.routes import workspace
+        app.register_blueprint(workspace)
 
     @app.get("/")
     def index():
+        if app.config['TEACHER_AUTH_MODE'] == 'google':
+            return render_template('identity/home.html')
+        return student_entry()
+
+    @app.get('/student')
+    def student_entry():
         template = "activities/classroom.html" if app.config["CLASSROOM_MODE"] else "activities/student.html"
         return render_template(template, csrf=csrf_token(), role="student")
 

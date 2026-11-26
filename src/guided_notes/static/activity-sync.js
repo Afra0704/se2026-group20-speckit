@@ -12,6 +12,9 @@ const messages = {
   FORBIDDEN: "此操作需要該活動的授權。請確認已登入正確的教師帳號。",
   INVALID_PHASE: "目前階段不允許此操作。",
   CATALOG_UNAVAILABLE: "尚未連接講義匯入服務。",
+  DISPLAY_CONTENT_UNAVAILABLE: "題目全文服務暫時無法使用，請稍後重試。",
+  DISPLAY_CONTENT_MISMATCH: "題目全文與講義版本不一致，請老師核對版本後重試。",
+  QUESTION_TEXT_UNAVAILABLE: "這份講義版本缺少完整題目，請重新匯入並確認文字。",
   QUIZ_UNAVAILABLE: "尚未連接搶答受理服務。",
   INVALID_CATALOG: "找不到可使用的清單版本。",
   JOIN_DENIED: "無法加入活動，請核對活動碼。",
@@ -86,7 +89,11 @@ function render(data) {
         const form = document.createElement("form");
         for (const item of question.items) {
           const label = document.createElement("label");
-          label.append(item.subitem_label || "答案");
+          if (item.subitem_label) label.append(item.subitem_label);
+          const prompt = document.createElement("p");
+          prompt.className = "question-prompt";
+          prompt.textContent = item.prompt_text ?? "此活動版本未包含完整題目，請老師選擇完整版本並建立新活動；文字仍缺漏時請重新匯入。";
+          label.append(prompt);
           const input = document.createElement("input");
           input.name = item.item_id;
           input.required = true;
@@ -111,7 +118,7 @@ function render(data) {
       byId("questions").append(row);
     }
   }
-  for (const button of byId("questions").querySelectorAll("button")) button.disabled = phase !== "LIVE";
+  for (const button of byId("questions").querySelectorAll("input, button")) button.disabled = phase !== "LIVE";
 }
 
 async function refresh() {
@@ -127,6 +134,7 @@ async function refresh() {
   } catch (error) {
     if (current?.id !== id) return;
     if (error.message === "AUTH_REQUIRED" && byId("recover")) byId("recover").hidden = false;
+    for (const field of byId("questions").querySelectorAll("input, button")) field.disabled = true;
     report(error);
   } finally {
     polling = false;

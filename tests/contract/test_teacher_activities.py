@@ -14,7 +14,7 @@ def test_teacher_controls_lifecycle(app, teacher, activity):
 
 
 def test_csrf_required(teacher):
-    assert teacher.post("/activities", json={"import_id": "demo", "import_version": 1}).status_code == 403
+    assert teacher.post("/activities", json={"import_id": "11111111-1111-4111-8111-111111111111", "import_version": 1}).status_code == 403
 
 
 def test_teacher_login_survives_student_join_in_same_browser(teacher, activity):
