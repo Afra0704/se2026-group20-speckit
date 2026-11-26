@@ -154,3 +154,10 @@ notes移除表與純visibility triggers由notes.schema在各模式初始化，�
 workspace.routes/HTML、import_flows/repository/schema、google_login.flow_context/picker_service及notes.lecture_lifecycle已依本計畫接線；主要組件與三圖責任不變。教師組別另以新workspace限定GET讀原classroom_groups，原JSON不擴欄，契約補於workspace.md。
 
 重送快照只保存輸入與結果識別，題目DTO／分頁清單不重複塞入有界request_state_json。原007測試的合成provider補真實notes來源／版本關聯，沒有正式bypass。實作／測試日期跨2026-11-25至26，真Google、人工與具名互審仍待完成，詳validation.md。
+
+## PR #7 審查補強（2026-11-26）
+
+- 確認的preview_id由伺服器渲染至當前確認表單；前端不得提交前查詢最新ID來替換使用者看到的版本。另一分頁產生新預覽後，舊畫面提交由既有後端guard回PREVIEW_STALE，要求重新整理並核對；SOURCE_CHANGED仍產生新預覽且提示尚未保存。
+- Picker cache快路徑在最終write transaction重驗source_kind、可選檔status、原revision及有效cache；流程已有更新時拒絕而不覆寫狀態。網路OAuth不放入SQLite交易。
+- 首次Google模式的基礎／課堂schema與Google schema／auth_instance視為一個原子初始化段；啟動與init-db共用。notes及workspace附加步驟維持各自可重跑的交易，不宣稱整個app factory跨段全原子。既有007資料與UUID保留，不自動修補不明舊資料庫。
+- 本補強沿用既有Component／Class／Sequence責任與確認／最終交易guard語意，沒有新增圖表節點或資料關係。修正實作細節後以自動回歸及PR複審核對，不自行代填具名人工審圖。

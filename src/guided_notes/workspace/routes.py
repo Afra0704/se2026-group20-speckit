@@ -27,7 +27,7 @@ def error_response(error):
         'SOURCE_READ_UNAVAILABLE':'暫時無法讀取Google Sheets，請稍後重試。',
         'SOURCE_NOT_GOOGLE_SHEETS':'請選擇Google Sheets檔案。',
         'SOURCE_TRASHED':'來源已在垃圾桶，請選擇其他講義。',
-        'PREVIEW_STALE':'這份預覽已失效，請使用目前的新預覽。',
+        'PREVIEW_STALE':'這份預覽已失效，請重新整理並核對最新內容後再確認匯入。',
         'LECTURE_REMOVED':'講義已移除，請選擇其他講義。',
         'INVALID_REQUEST':'輸入內容不完整或格式不正確，請檢查後重試。',
         'INVALID_CSRF':'頁面驗證已過期，請重新整理。',

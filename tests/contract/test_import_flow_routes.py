@@ -2,6 +2,22 @@ from google_support import google_app,google_teacher,post
 from guided_notes.db import connection
 from workspace_support import flow,Sheets,path
 
+def test_two_tabs_confirm_only_the_preview_each_page_displayed(google_app,google_teacher,flow):
+    post(google_teacher,path(flow,'read'))
+    old=post(google_teacher,path(flow,'previews'),choice_revision=1,sheet_id=7,name_mode='source').json['preview_id']
+    page_a=google_teacher.get(path(flow),headers={'Accept':'text/html'})
+    assert f'name="preview_id" value="{old}"' in page_a.text
+    revision=google_teacher.get(path(flow),headers={'Accept':'application/json'}).json['revision']
+    post(google_teacher,path(flow,'revise'),expected_revision=revision)
+    new=post(google_teacher,path(flow,'previews'),choice_revision=2,sheet_id=7,name_mode='custom',custom_title='分頁B的新預覽').json['preview_id']
+    assert new!=old
+    assert f'name="preview_id" value="{new}"' in google_teacher.get(path(flow),headers={'Accept':'text/html'}).text
+    response=post(google_teacher,path(flow,'confirm'),confirm=True,preview_id=old)
+    assert response.status_code==409 and response.json['error']['code']=='PREVIEW_STALE'
+    with google_app.app_context():
+        assert connection().execute('SELECT count(*) FROM notes_catalogs').fetchone()[0]==0
+    assert post(google_teacher,path(flow,'confirm'),confirm=True,preview_id=new).status_code==200
+
 def test_link_preview_revise_confirm(google_app, google_teacher, flow):
     assert post(google_teacher,path(flow,'read')).status_code==200
     body=dict(choice_revision=1,sheet_id=7,name_mode='source')

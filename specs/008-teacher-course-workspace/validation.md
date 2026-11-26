@@ -193,3 +193,9 @@
 - 原10檔Node指令：24 passed、0 failed，退出碼0；`git diff --check`退出碼0，僅既有LF／CRLF提示。
 - 停止本輪由Codex啟動的tmp/qa-browser-server.py合成QA helper（依專用腳本路徑匹配）；未停止使用者5000真實Flask。tmp輔助檢查腳本不納入版本控制。
 - 本輪已知UI改善：直接網址越權目前回JSON，權限阻擋正確；易讀HTML錯誤頁待後續確認，不擅自擴入本輪。課堂碼釋放／重用另列下輪SpecKit需求。
+
+## PR #7 review 6070380173 修正（2026-11-26）
+
+- 審查者itsusername15，review當時遠端head為276ec55。使用者明確授權修正並將本機後續修正與驗收紀錄一起push到原PR，不合併。
+- T074先補回歸：Node 2 failed、HTTP 1 failed／3 passed，重現確認前GET新ID及表單未綁定畫面ID。修正表單hidden preview_id及提交handler，PREVIEW_STALE提示核對新內容，不自動確認。
+- T074重驗：`node --test tests/import-confirm.test.cjs tests/import-menu.test.cjs`，5 passed；`.venv/Scripts/python.exe -m pytest tests/contract/test_import_flow_routes.py tests/integration/test_workspace_failure_acceptance.py -q --tb=short`，17 passed，5.15秒。HTTP證明A舊頁ID被409拒絕且無catalog保存，B新預覽明確確認才成功；不是人工雙分頁畫面驗收。
