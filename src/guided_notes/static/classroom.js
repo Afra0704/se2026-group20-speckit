@@ -255,7 +255,7 @@ function addResultButton(list, activity) {
   const currentActivity = activeId;
   button.onclick = async () => {
     if (context !== selection || currentActivity !== activeId) return;
-    selectedResult = {id: activity.activity_id, context, currentActivity, loading: false};
+    selectedResult = {id: activity.activity_id, title: activity.title, context, currentActivity, loading: false};
     await refreshResult();
   };
   list.append(button);
@@ -263,14 +263,31 @@ function addResultButton(list, activity) {
 
 async function refreshResult() {
   const target = selectedResult;
-  if (!target || target.loading) return;
+  if (!target || target.loading || target.done) return;
   const isCurrent = () => target === selectedResult && target.context === selection &&
     target.currentActivity === activeId;
   target.loading = true;
   try {
     const data = await api(`/activities/${url(target.id)}/results`);
-    if (isCurrent()) note(data.status === "pending" ? "結算中" :
-      data.status === "unavailable" ? "這場活動沒有正式結算資料。" : describeResults(data.results));
+    if (!isCurrent()) return;
+    target.done = data.status === "settled" || data.status === "unavailable";
+    const summary = data.status === "pending" ? "結果結算中" :
+      data.status === "unavailable" ? "這場活動沒有正式結算資料。" : null;
+    const panel = role === "teacher" && byId("results");
+    if (!panel) {
+      note(summary || describeResults(data.results));
+      return;
+    }
+    const title = document.createElement("h3");
+    title.textContent = target.title || "活動結果";
+    panel.replaceChildren(title);
+    for (const text of summary || !data.results?.length ? [summary || "沒有已公布的結果。"] :
+      data.results.map(row => describeResults([row]))) {
+      const card = document.createElement("p");
+      card.className = "classroom-result-card";
+      card.textContent = text;
+      panel.append(card);
+    }
   } catch (error) {
     if (isCurrent()) report(error);
   } finally {
@@ -298,6 +315,7 @@ function showQuestions(activity, classroomOpen) {
   activePhase = classroomOpen ? activity?.phase : null;
   if (activeId !== id && selectedResult) {
     selectedResult = null;
+    if (role === "teacher") byId("results")?.replaceChildren();
     note("");
   }
   if (!list) {
@@ -375,11 +393,29 @@ async function refresh() {
       updateCreateAvailability();
       if (historyNeedsRefresh) await activityList(id);
       if (main.dataset.classroomId && byId("classroom-groups")) {
-        const groups = await api(`/teacher/workspace/courses/${url(main.dataset.courseId)}/classrooms/${url(id)}/groups`);
-        if (context !== selection || room !== id) return;
-        const list = byId("classroom-groups"); list.replaceChildren();
-        for (const group of groups.groups) { const item = document.createElement("li"); item.textContent = group.name; list.append(item); }
-        if (!groups.groups.length) { const item = document.createElement("li"); item.textContent = "尚無學生組別"; list.append(item); }
+        const status = byId("classroom-presence-status");
+        try {
+          const roster = await api(`/teacher/workspace/courses/${url(main.dataset.courseId)}/classrooms/${url(id)}/groups`);
+          if (context !== selection || room !== id) return;
+          const list = byId("classroom-groups");
+          list.replaceChildren();
+          for (const group of roster.groups) {
+            const item = document.createElement("li");
+            item.textContent = Number.isInteger(group.online_count)
+              ? `${group.name}：目前在線 ${group.online_count} 人` : group.name;
+            list.append(item);
+          }
+          if (!roster.groups.length) {
+            const item = document.createElement("li");
+            item.textContent = "尚無學生組別";
+            list.append(item);
+          }
+          if (status) status.textContent = roster.classroom_state === "CLOSED" ? "課堂已關閉" : "";
+        } catch {
+          if (status && context === selection && room === id) {
+            status.textContent = open ? "在線人數更新失敗，顯示的資料可能已過期。" : "課堂已關閉";
+          }
+        }
       }
     } else {
       byId("recover").hidden = true;

@@ -1,0 +1,12 @@
+@startuml
+title A 講義匯入欄位提示
+actor 教師
+component "講義匯入表單" as Form
+component "欄位與操作錯誤提示" as Feedback
+component "既有來源驗證" as Validate
+component "授權、選分頁與預覽" as Flow
+教師 --> Form
+Form --> Feedback
+Form --> Validate
+Validate --> Flow
+@enduml

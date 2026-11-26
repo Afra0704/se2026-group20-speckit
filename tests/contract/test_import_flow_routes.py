@@ -57,3 +57,48 @@ def test_rejects_unknown_fields_and_malformed_choice_before_persist(google_teach
     response=post(google_teacher,path(flow,'previews'),choice_revision=1,sheet_id=7,name_mode='source')
     assert response.status_code==201
     assert post(google_teacher,path(flow,'confirm'),confirm=True,preview_id=response.json['preview_id'],existing_import_id=[]).status_code==400
+
+def test_invalid_link_reports_actionable_error_before_reading(google_app, google_teacher):
+    sheets = Sheets()
+    google_app.config['NOTES_GATEWAY'] = sheets
+    course = post(google_teacher, '/teacher/courses', title='輸入驗證').json['course_id']
+    response = post(
+        google_teacher, f'/teacher/workspace/courses/{course}/imports',
+        source_kind='link', spreadsheet_url='https://example.org/notes',
+    )
+    assert response.status_code == 400
+    assert response.json['error']['code'] == 'INVALID_SHEETS_URL'
+    assert '有效的 Google Sheets 連結' in response.json['error']['message']
+    assert sheets.calls == []
+
+
+def test_read_failure_distinguishes_permissions_from_temporary_error(google_app, google_teacher, flow):
+    from guided_notes.notes.sheets_gateway import GatewayError
+
+    sheets = google_app.config['NOTES_GATEWAY']
+
+    def forbidden():
+        raise GatewayError('SOURCE_READ_FORBIDDEN', http_status=403)
+
+    sheets.hook = forbidden
+    response = post(google_teacher, path(flow, 'read'))
+    assert response.status_code == 403
+    assert '分享權限' in response.json['error']['message']
+    page = google_teacher.get(path(flow), headers={'Accept': 'text/html'})
+    assert '分享權限' in page.text
+
+    def temporarily_unavailable():
+        raise GatewayError('SOURCE_READ_UNAVAILABLE')
+
+    sheets.hook = temporarily_unavailable
+    response = post(google_teacher, path(flow, 'retry'))
+    assert response.status_code == 503
+    assert '稍後重試' in response.json['error']['message']
+    page = google_teacher.get(path(flow), headers={'Accept': 'text/html'})
+    assert '稍後重試' in page.text
+
+    sheets.hook = None
+    response = post(google_teacher, path(flow, 'retry'))
+    assert response.status_code == 200
+    assert response.json['status'] == 'worksheets_ready'
+    assert '選擇一張工作表' in google_teacher.get(path(flow), headers={'Accept': 'text/html'}).text

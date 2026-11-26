@@ -1,0 +1,16 @@
+@startuml
+title B 課堂在線估計
+class 課堂
+class 組別
+class 參與身分
+class 頁面在線狀態 {
+  最後有效訊號
+  到期時間
+}
+課堂 "1" o-- "0..*" 組別
+組別 "1" -- "0..*" 參與身分
+參與身分 "1" o-- "0..*" 頁面在線狀態
+note right of 參與身分
+任一頁有效時計一次
+end note
+@enduml

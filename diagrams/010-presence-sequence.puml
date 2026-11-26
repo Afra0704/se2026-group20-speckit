@@ -1,0 +1,23 @@
+@startuml
+title B 課堂在線估計
+actor 學生
+participant "各學生頁面" as Tabs
+participant "課堂授權與在線狀態" as Presence
+actor 教師
+學生 -> Tabs : 加入、重整或恢復
+Tabs -> Presence : 各頁每 3 秒更新在線訊號
+Presence -> Presence : 驗證固定課堂 ID、OPEN 狀態與參與身分
+教師 -> Presence : 定期讀取
+Presence -> Presence : 查管理權限並按身分去重
+Presence --> 教師 : 組別及在線估計
+alt 同一身分仍有其他有效頁
+  Presence -> Presence : 維持一人
+else 最後一頁逾時 25 秒
+  Presence -> Presence : 減少一人並保留組別
+end
+alt 讀取失敗
+  Presence --> 教師 : 顯示更新失敗或資料過期
+else 課堂已關閉
+  Presence --> 教師 : 顯示已關閉並停止接受在線更新
+end
+@enduml

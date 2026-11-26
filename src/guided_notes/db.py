@@ -117,6 +117,8 @@ def _initialize_application_schema(bootstrap):
         if current_app.config['CLASSROOM_MODE']:
             from .activities.classroom_migration import validate
             validate(db)
+            presence_sql = (schemas / 'classroom_presence_schema.sql').read_text(encoding='utf-8')
+            execute_schema_statements(db, presence_sql)
         quiz_schema = schemas.parent / 'quiz' / 'schema.sql'
         execute_schema_statements(db, quiz_schema.read_text(encoding="utf-8"))
         if current_app.config['TEACHER_AUTH_MODE'] == 'google':
