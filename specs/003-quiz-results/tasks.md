@@ -78,7 +78,7 @@ description: "003 正式搶答與結果的實作、驗證與交付任務"
 - [ ] T037 依 `specs/003-quiz-results/quickstart.md` 執行教師與兩組學生的真人權限、更新計時、重連和歷史驗收。記錄環境、兩秒觀察目標及實際結果至 `specs/003-quiz-results/validation.md`。
 - [X] T038 在 `specs/003-quiz-results/diagram-review.md` 逐一對照成品與 `diagrams/003-component.puml`、`diagrams/003-class.puml`、`diagrams/003-sequence.puml`。如有依確認規則必要的變更，使用 PlantUML CLI 同步重繪三類對應 PNG，記實際命令與核對。
 - [X] T039 依 `README.md` 與 `specs/003-quiz-results/quickstart.md` 核對實際啟動、功能狀態與 Demo 流程，並在 `specs/003-quiz-results/validation.md` 記錄已完成與未測情境及去機敏證據。
-- [ ] T040 依 `.specify/memory/constitution.md` 完成合併前的 Analyze／Converge，將結果寫入 `specs/003-quiz-results/analysis.md` 與 `specs/003-quiz-results/validation.md`。修正交付缺口並保留仍待驗證項目。
+- [X] T040 依 `.specify/memory/constitution.md` 完成合併前的 Analyze／Converge，將結果寫入 `specs/003-quiz-results/analysis.md` 與 `specs/003-quiz-results/validation.md`。修正交付缺口並保留仍待驗證項目。
 - [ ] T041 依 `specs/003-quiz-results/plan.md` 與 `specs/003-quiz-results/validation.md` 備妥分段 commit 的證據與 PR 內容，由成員推功能分支與組員互審。PR 關聯 Issue #8，依實際驗收判斷可否關閉。
 
 ## 相依關係與可並行工作
@@ -100,3 +100,7 @@ description: "003 正式搶答與結果的實作、驗證與交付任務"
 ## 交付策略
 
 MVP 是 US1，先驗證教師能看到兩組進度、學生可正式提交與安全重試。接著交付截止與結算，再完成結果投影和 001 回填的整體驗收。依 T017、T030、T034 分段留下測試與 commit 紀錄，真人與全套驗收完成後彙整為一個 PR。
+
+## Phase 7: Convergence
+
+- [X] T042 在 `src/guided_notes/activities/teacher_routes.py` 與 `src/guided_notes/static/activity-sync.js` 對齊非課堂相容入口的直接結束行為。教師可在 PREPARING 結束活動，沿用共用 CLOSED 與結算待辦交易，公布每題無勝組；已結束仍拒絕重開或重複結束。在 `tests/integration/test_quiz_settlement.py` 和 `tests/activity-sync.test.cjs` 補相容入口的無作答結算與按鈕回歸，對照 US2/AC3、FR-008 與 T022（partial，HIGH）。

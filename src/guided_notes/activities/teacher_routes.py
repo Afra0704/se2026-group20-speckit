@@ -101,7 +101,7 @@ def start(activity_id):
 @teacher.post("/activities/<activity_id>/close")
 def close(activity_id):
     with write_transaction() as db:
-        result = transition(db, activity_id, require_teacher(db), "LIVE", "CLOSED")
+        result = transition(db, activity_id, require_teacher(db), ("PREPARING", "LIVE"), "CLOSED")
     from ..quiz.settlement import try_pending
     try_pending(activity_id)
     return result

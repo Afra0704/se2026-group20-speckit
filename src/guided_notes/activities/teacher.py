@@ -82,7 +82,8 @@ def transition(db, activity_id, teacher, before, after):
     row = db.execute("SELECT * FROM activities WHERE id = ?", (activity_id,)).fetchone()
     if row is None or row["teacher_id"] != teacher.teacher_id:
         raise ApiError(403, "FORBIDDEN")
-    if row["phase"] != before:
+    allowed_phases = (before,) if isinstance(before, str) else before
+    if row["phase"] not in allowed_phases:
         raise ApiError(409, "INVALID_PHASE")
     version = row["phase_version"] + 1
     db.execute("UPDATE activities SET phase = ?, phase_version = ? WHERE id = ?", (after, version, activity_id))

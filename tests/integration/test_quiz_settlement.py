@@ -10,6 +10,25 @@ from guided_notes.db import connection
 from quiz_support import published_quiz, submit_question
 
 
+def test_legacy_preparing_activity_can_close_without_winners(app, teacher):
+    activity, questions = published_quiz(app, teacher)
+    url = f"/activities/{activity['activity_id']}"
+    other = app.test_client()
+    assert post(other, "/teacher/session", username="other", password="test-password").status_code == 204
+    assert post(other, url + "/close").status_code == 403
+
+    response = post(teacher, url + "/close")
+    assert response.status_code == 200
+    assert response.json["phase"] == "CLOSED"
+    result = teacher.get(url + "/results").json
+    assert result["status"] == "settled"
+    assert [row["question_id"] for row in result["results"]] == [q["question_id"] for q in questions]
+    assert all(row["no_winner"] and row["winner_items"] == [] for row in result["results"])
+    for action in ("close", "start"):
+        assert post(teacher, f"{url}/{action}").status_code == 409
+    assert teacher.get(url + "/results").json == result
+
+
 @pytest.mark.parametrize("replace", [False, True])
 def test_effective_order_and_immutable_results(app, teacher, replace):
     activity, questions = published_quiz(app, teacher)

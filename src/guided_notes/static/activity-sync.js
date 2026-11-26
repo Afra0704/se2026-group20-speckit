@@ -90,7 +90,7 @@ function render(data) {
   const phases = {PREPARING: "準備中", LIVE: "搶答中", CLOSED: "已結束"};
   byId("activity-state").textContent = phases[phase] + (data.group_name ? ` · ${data.group_name}` : "");
   if (byId("start")) byId("start").disabled = phase !== "PREPARING";
-  if (byId("close")) byId("close").disabled = phase !== "LIVE";
+  if (byId("close")) byId("close").disabled = phase !== "PREPARING" && phase !== "LIVE";
   if (byId("recover")) byId("recover").hidden = true;
   if (data.questions && !byId("questions").hasChildNodes()) {
     for (const question of data.questions) {
