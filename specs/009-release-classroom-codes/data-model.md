@@ -43,3 +43,5 @@
 ## 相容界線
 
 002 非 CLASSROOM_MODE 路徑保持原 schema／學生結果規則；004／007／008 的既有 ID、API 欄位及教師內容相容。學生關課後恢復 204／結果可讀是本輪刻意變更，舊測試預期必須更新為拒絕，不能同時保留舊學生授權例外。教師歷史 code 仍可回傳，但顯示「已失效，可能重用」，不作加入入口；此為本次教師文案設計，待介面核對。
+
+2026-11-26整合落點：003 quiz_submissions／quiz_effective／quiz_settlements與009課堂及Google schema在私有bootstrap同一交易初始化。舊表重建指紋納入已存在quiz表及sqlite_sequence，不重設AUTOINCREMENT受理序列，不觸碰不可變結算；Google bootstrap失敗時同交易rollback，後續乾淨重啟驗原資料。結果預檢與最終內容讀取分開，中間結算寫入不置於read transaction。實際正式provider／合成Google資料驗證見validation最新整合章節，真人未執行。

@@ -1,0 +1,78 @@
+@startuml
+title 003 正式搶答與結果 — 時序圖（009 整合後權限）
+actor "教師" as Teacher
+actor "學生組別 A / B" as Student
+participant "002 活動與權限" as Activity
+participant "003 提交與結果" as Quiz
+database "持久受理與結算" as Store
+participant "001 回填服務" as Notes
+participant "Google Sheets" as Sheets
+
+Student -> Activity : 用課堂碼與組別加入、讀固定題目
+Activity --> Student : 準備中可讀題
+Student -> Quiz : 準備中嘗試提交
+Quiz --> Student : 拒絕，尚未開始
+Teacher -> Activity : 開啟搶答
+Teacher -> Quiz : 查搶答中的作答狀況
+Quiz --> Teacher : 每題各組是否已提交
+Student -> Quiz : 送主題號及所有小題答案
+Quiz -> Activity : 取得可信組別、目前活動與階段
+Quiz -> Quiz : 核對固定題目及完整小題
+alt 系統先成功受理，再確認結束
+  Quiz -> Store : 保存完整答案、給定唯一受理順序
+  opt 同組同題已有有效提交
+    Quiz -> Store : 同次受理取代前一筆，舊答案與順位退出結算
+  end
+  Teacher -> Activity : 結束活動
+  Quiz --> Student : 回覆已受理
+else 系統先確認結束，提交仍未成功受理
+  Teacher -> Activity : 結束活動
+  Quiz --> Student : 拒絕，本次提交不計入結果
+  note right of Quiz : 原有效提交仍計入
+end
+opt 已受理的送答未收到回覆，重試同一次送答
+  note over Student, Quiz
+    同一分頁重新整理後，核對原活動與原組別；
+    學生手動以原操作識別及答案重試。
+    課堂模式須仍 OPEN；009 關課後不允許重試取回內容。
+  end note
+  Student -> Quiz : 重試同一次送答
+  Quiz -> Activity : 核對原組別與提交查閱權限
+  Quiz -> Store : 取得該次送答的既有受理結果
+  Quiz --> Student : 回覆原受理結果，答案及順位維持原狀
+end
+note over Activity,Store
+  以系統確認先後為準。
+  排序與勝組依雙組確認的 D01、D02 與 D08。
+end note
+
+Quiz -> Activity : 核對已結束與固定題庫
+Quiz -> Store : 讀取每組每題最後一筆有效提交
+alt 尚未完成結算
+  Teacher -> Quiz : 查結果
+  Quiz --> Teacher : 等待結算
+else 結算成功或中斷後恢復完成
+  Quiz -> Store : 依成功受理順序排名，第一名勝出
+  Quiz -> Store : 用活動固定的歷史清單驗證，保存 v1 快照及結果
+  Teacher -> Quiz : 查各組答案、順位與勝組
+  Quiz --> Teacher : 教師結果
+  alt 課堂仍開放（003-D22）
+    Student -> Activity : 使用同堂的有效組別資格（含新加入）
+    Student -> Quiz : 查同堂先前已結算活動
+    Quiz -> Activity : 預檢驗權後結束讀交易；外部重試結算
+    Quiz -> Activity : 新讀交易重新驗 OPEN 與原組別
+    Quiz --> Student : 仍 OPEN 才回勝組與本組結果，否則拒絕
+  else 課堂已關閉
+    Student -> Activity : 以原瀏覽器加入證明驗證
+    Student -> Quiz : 查同堂已結算活動
+    Activity --> Student : 009-D22：拒絕恢復；僅最小結束提示
+    Quiz --> Student : 409 CLASSROOM_CLOSED，無結果內容
+  end
+  Teacher -> Notes : 開啟回填預覽並確認
+  Notes -> Quiz : 核對教師、已結束及已結算
+  Quiz --> Notes : 完整快照（含明確無勝組的題）
+  Notes -> Sheets : 略過無勝組，依既有流程寫入並回讀
+  Sheets --> Notes : 回讀結果
+  Notes --> Teacher : 回填報告
+end
+@enduml

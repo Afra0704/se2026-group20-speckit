@@ -27,6 +27,11 @@ let roomOpen = false;
 let stateUnfinished = true;
 let historyUnfinished = true;
 let creatingActivity = false;
+let verifiedGroup = null;
+let activePhase = null;
+let selectedResult = null;
+let studentHistoryVersion = -1;
+const submissionControls = new Set();
 
 function updateCreateAvailability() {
   const button = byId("create-activity")?.querySelector("button");
@@ -38,17 +43,19 @@ function url(id) {
   return encodeURIComponent(id);
 }
 
-async function api(path, body) {
+async function api(path, body, key) {
   const headers = {"X-Activity-Role": role};
   const options = {headers, cache: "no-store"};
   if (body !== undefined) {
     Object.assign(headers, {"Content-Type": "application/json", "X-CSRF-Token": main.dataset.csrf});
     Object.assign(options, {method: "POST", body: JSON.stringify(body)});
+    if (key) headers["Idempotency-Key"] = key;
   }
   const response = await fetch(path, options);
   const json = response.headers.get("Content-Type")?.includes("application/json") ? await response.json() : null;
   if (!response.ok) {
     const error = new Error(json?.error || "REQUEST_FAILED");
+    error.status = response.status;
     error.retryAfter = json?.retry_after ?? Number(response.headers.get("Retry-After"));
     throw error;
   }
@@ -71,6 +78,7 @@ const errors = {
   CLASSROOM_CLOSED: "課堂已結束。",
   ACTIVITY_IN_PROGRESS: "請先結束目前活動，再建立下一活動。",
   INVALID_PHASE: "活動已切換或已結束，這筆操作未受理。",
+  SUBMISSION_REPLAY_CONFLICT: "這次重試的內容與原送答不同，請核對後重新提交。",
   QUIZ_UNAVAILABLE: "正式搶答受理服務尚未接入。",
 };
 
@@ -178,6 +186,10 @@ function setRoom(id) {
   if (!main.dataset.classroomId) store.set(id);
   version = -1;
   activeId = null;
+  selectedResult = null;
+  studentHistoryVersion = -1;
+  verifiedGroup = null;
+  submissionControls.clear();
   historyRequest++;
   historyNeedsRefresh = true;
   roomOpen = false;
@@ -240,37 +252,62 @@ function addResultButton(list, activity) {
   const button = document.createElement("button");
   button.textContent = activity.phase === "LIVE" ? "查看作答狀況" : `查看 ${activity.title} 結果`;
   const context = selection;
+  const currentActivity = activeId;
   button.onclick = async () => {
-    try {
-      const data = await api(`/activities/${url(activity.activity_id)}/results`);
-      if (context !== selection) return;
-      note(data.status === "pending" ? "結算中" : describeResults(data.results));
-    } catch (error) {
-      report(error);
-    }
+    if (context !== selection || currentActivity !== activeId) return;
+    selectedResult = {id: activity.activity_id, context, currentActivity, loading: false};
+    await refreshResult();
   };
   list.append(button);
 }
 
+async function refreshResult() {
+  const target = selectedResult;
+  if (!target || target.loading) return;
+  const isCurrent = () => target === selectedResult && target.context === selection &&
+    target.currentActivity === activeId;
+  target.loading = true;
+  try {
+    const data = await api(`/activities/${url(target.id)}/results`);
+    if (isCurrent()) note(data.status === "pending" ? "結算中" :
+      data.status === "unavailable" ? "這場活動沒有正式結算資料。" : describeResults(data.results));
+  } catch (error) {
+    if (isCurrent()) report(error);
+  } finally {
+    target.loading = false;
+  }
+}
+
 function describeResults(results = []) {
-  const answer = (value) => typeof value === "string" ? value : Object.values(value || {}).join("、");
+  const answer = (value, items) => items
+    ? items.map(item => [item.subitem_label, item.answer_text].filter(v => v != null).join(" ")).join("、")
+    : typeof value === "string" ? value : Object.values(value || {}).join("、");
   if (!results.length) return "沒有已公布的結果。";
   return results.map((row) => {
     if ("submitted" in row) return `${row.question_id} · ${row.group_name} · ${row.submitted ? "已作答" : "未作答"}`;
     const groups = row.groups || (row.own ? [{...row.own, group_name: "本組"}] : []);
-    const details = groups.map((group) => `${group.group_name}：${answer(group.answer)}（順位 ${group.rank}）`);
-    return [row.question_id, row.winner_name ? `勝組 ${row.winner_name}：${answer(row.winner_answer)}` : "無勝組",
+    const details = groups.map((group) => `${group.group_name}：${answer(group.answer, group.items)}（順位 ${group.rank}）`);
+    return [row.display_number ?? row.question_id, row.winner_name ? `勝組 ${row.winner_name}：${answer(row.winner_answer, row.winner_items)}` : "無勝組",
       ...details].join(" · ");
   }).join(" ｜ ");
 }
 
 function showQuestions(activity, classroomOpen) {
   const list = byId("questions");
-  if (!list) return;
   const id = activity?.activity_id ?? null;
+  activePhase = classroomOpen ? activity?.phase : null;
+  if (activeId !== id && selectedResult) {
+    selectedResult = null;
+    note("");
+  }
+  if (!list) {
+    activeId = id;
+    return;
+  }
   if (activeId !== id) {
     list.replaceChildren();
     activeId = id;
+    submissionControls.clear();
     for (const question of activity?.questions || []) {
       const li = document.createElement("li");
       li.append(`題目 ${question.display_number}`);
@@ -292,17 +329,12 @@ function showQuestions(activity, classroomOpen) {
       button.textContent = "提交";
       inputForm.append(button);
       const context = selection;
-      inputForm.onsubmit = async (event) => {
-        event.preventDefault();
-        if (context !== selection || activeId !== id || button.disabled) return;
-        const items = [...new FormData(inputForm)].map(([item_id, answer_text]) => ({item_id, answer_text}));
-        try {
-          await api(`/activities/${url(id)}/submissions`, {question_id: question.question_id, items});
-          if (activeId === id && context === selection) note("答案已受理");
-        } catch (error) {
-          if (activeId === id && context === selection) report(error);
-        }
-      };
+      const update = globalThis.QuizSubmission?.attach(inputForm, button, question.question_id,
+        () => context === selection && activeId === id && verifiedGroup !== null
+          ? {room, activity: id, group: verifiedGroup, live: activePhase === "LIVE"} : null,
+        (activity, body, key) => api(`/activities/${url(activity)}/submissions`, body, key),
+        () => note("答案已受理"), report);
+      if (update) submissionControls.add(update);
       li.append(inputForm);
       list.append(li);
     }
@@ -310,6 +342,7 @@ function showQuestions(activity, classroomOpen) {
   for (const button of list.querySelectorAll("input, button")) {
     button.disabled = !classroomOpen || activity?.phase !== "LIVE";
   }
+  for (const update of submissionControls) update();
 }
 
 async function refresh() {
@@ -328,6 +361,7 @@ async function refresh() {
       if (!currentCode.includes('已失效')) byId('code').textContent = currentCode + '（已失效，可能重用）';
     }
     const phase = data.activity?.phase;
+    verifiedGroup = data.activity?.group_id ?? null;
     const text = !open ? "課堂已結束" :
       phase === "LIVE" ? "搶答中" : phase === "CLOSED" ? "活動已結束，等候下一活動" :
       phase === "PREPARING" ? "尚未開放搶答" : "等候老師建立活動";
@@ -349,22 +383,26 @@ async function refresh() {
       }
     } else {
       byId("recover").hidden = true;
-      if (!open) {
+      if (byId("results") && studentHistoryVersion !== version) {
         const list = await api(`/classrooms/${url(id)}/results`);
         if (context !== selection) return;
         const results = byId("results");
         results.replaceChildren();
         for (const item of list.activities) addResultButton(results, item);
+        studentHistoryVersion = version;
       }
     }
+    await refreshResult();
   } catch (error) {
     if (context !== selection) return;
+    verifiedGroup = null;
     if (role === "teacher") {
       historyNeedsRefresh = true;
       roomOpen = false;
       updateCreateAvailability();
     }
     for (const button of main.querySelectorAll("#questions input, #questions button, #activities button")) button.disabled = true;
+    for (const update of submissionControls) update();
     if (byId("close-room")) byId("close-room").disabled = true;
     if (byId("recover")) byId("recover").hidden = error.message !== "AUTH_REQUIRED";
     report(error);

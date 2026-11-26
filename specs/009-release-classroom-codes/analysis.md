@@ -226,3 +226,52 @@ C1／C2仍依使用者明確回報有效；姓名／獨立連結未提供不虛�
 - Converge已附3項partial且補完T060；正式003與人工尚未完成，不能輸出clean convergence或宣稱可合併。下一步由T051／T058完成正式接口合流聯測、T052／T059完成教師加兩組與技術圖複核，再完成T055並重跑analyze留檔。
 
 本輪分析不自動改程式／設計、建立PR、commit／push／合併，也不操作真DB／OAuth／key。無新的文件問題需要追加修訂建議；既有未完成任務保持，不重新詢問已確認需求。
+
+## 第6輪 — 正式003＋009合流後分析（2026-11-26）
+
+執行者Codex；分支codex/009-release-classroom-codes，版本added5a＋master7ae7054合流工作樹。來源003最終074b4a9；使用者授權延續T051／T058與本機commit，真人／真Sheets留待後續。本輪依T056／speckit-analyze再次檢查並按使用者要求留檔；分析期間只寫本節，其他文件及任務修改已在implement／converge階段完成。check-prerequisites -Json -RequireSpec -RequireTasks -IncludeTasks成功，前後無extensions.yml及hook。
+
+### 來源指紋
+
+| 產物 | SHA-256 |
+| --- | --- |
+| spec.md | 1352ab6e0b13e66799c39cb929fe3e058de2e1269a4d00ea28bad1b661caa8f6 |
+| plan.md | 0a94986145c1afa84b325ff89a5dffa0efcde437264986ef79c8844673adbeac |
+| tasks.md | dff1894e6011107f2445e881b29cc20e9eebc7a04ad3c2233b413949ae3bd2ba |
+
+### Specification Analysis Report
+
+| ID | Category | Severity | Location(s) | Summary | Recommendation |
+| --- | --- | --- | --- | --- | --- |
+| — | — | — | 009 spec／plan／tasks、003整合覆蓋註記、契約及圖 | 未發現新的文件衝突、未充分定義、零任務覆蓋或未映射任務。 | 保持人工任務未完成；本機自動整合可交使用者驗收，不宣稱完整交付。 |
+
+重新完成重複、歧義、未充分定義、憲章對齊、覆蓋、跨檔一致性六類檢查。19 FR含017a、6 SC、四故事／R1～R8、plan七項架構決策、61個task及憲章I～VI納入。原C1／C2及A1／I1／I2／D1不重新要求確認；本輪整合沒有增加產品需求或重新跑specify／plan／tasks。
+
+### 覆蓋及實作核對
+
+| Requirement Key | Has Task? | Task IDs | 合流後核對 |
+| --- | --- | --- | --- |
+| FR-001～006、014～015／SC-001 | Yes | T005～T021、T033～T039、T060 | OPEN部分索引、永久關閉／固定碼及冪等保留；quiz schema與009／Google同原子bootstrap，sqlite_sequence不重設。 |
+| FR-007～009、016～018、017a／SC-002、006 | Yes | T022～T031、T040～T049、T051～T052、T058～T061 | CLOSED學生內容／proof／原操作重試拒絕，獨立頁與CLOSED終態保持；正式QuizSubmission及網路失敗generation隔離，舊201／409不清新pending或污染畫面。 |
+| FR-010～011／SC-003 | Yes | T005～T012、T024、T028、T032、T051、T058 | 實際003 provider、不可變結果及001快照，原Google身份／密文與unknown報告保持；真Sheets仍未執行。 |
+| FR-012～013／SC-004 | Yes | T033～T039、T048、T051、T058、T060 | 正式提交／整堂關課雙writer兩種順序；結果預檢後關課最終讀重新驗權，結算寫入不在read_view內。 |
+| SC-005及SC-006人工部分 | Yes | T052、T055、T059、T061 | 真人／真Sheets／桌面與窄螢幕／新技術圖複核明確未執行，由使用者後續驗收，不被自動綠燈代替。 |
+
+### 歷史契約／編號一致性
+
+003原D22命名為003-D22（OPEN堂晚加入者的D06結果）；009原D22命名為009-D22（永久關課／碼重用／學生禁讀）。共同需求、003規格與介面契約的置頂整合覆蓋註記、009 quiz-history及003／009 Sequence均一致採此命名；原PR9確認紀錄保留，不偽造新確認。關課後以009最新規則覆蓋原003的D16恢復敘述，活動CLOSED但課堂OPEN的結果保持。
+
+T051／T058完成指正式provider自動接口整合，已記來源作者版本及Codex執行，不擴張為同學同步人工聯測。T061細化合流版本的T052／T059人工鏈；T055仍未勾，避免把程式缺口為0說成憲章人工條件完成。003 T035／T037及008待辦保留，舊模式清理另立迭代。
+
+### 憲章與指標
+
+憲章I確認來源及後續授權有追溯；II先前設計／確認保留，本輪Java CLI全24張exit0及AI開圖檢查不冒稱人工；III正式003快照接001既有辨識／回填，合成Sheets與真來源證據分列；IV後端OPEN／owner、cookie／CSRF／直接入口及兩組投影保持；V／VI人工未做明列，分析／收斂及測試均留檔，不宣稱功能完整完成。
+
+- Requirements25；有任務25／25＝100%；Unmapped Tasks0。
+- Tasks61；57完成／4未完成：T052、T055、T059、T061。
+- Ambiguity0；Duplication0；CRITICAL0；HIGH0；MEDIUM0；LOW0（本表計跨文件問題）。
+- Converge仍有1項MEDIUM partial人工證據缺口；無未建程式缺口，不輸出clean convergence。此與文件本身無衝突是不同維度。
+- 本輪自行完整Python475 passed／98 subtests，86.36秒；Node45 passed／0 failed。與003作者或其他審查的428／427／18／31來源記錄分列。
+- 三張009 PNG及003 Sequence已重渲染、開圖核對；009本機連結、task連號及git diff --check通過，機敏樣式檢查無命中。008外部檔SHA-256與整合前相同。
+
+下一步由使用者按quickstart人工驗收並複核技術圖，保存實際版本／操作者／結果，再完成T055及重新分析留檔。本輪不建立／推送或合併009 PR，不執行真DB／Google操作。無新的文件問題須另提修訂，分析不自動改其他產物。

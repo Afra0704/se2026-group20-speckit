@@ -7,6 +7,7 @@ from guided_notes.quiz.results_gateway import get_ended_snapshot
 
 
 def test_results_are_scoped_and_not_published_early(app, teacher, activity, joined):
+    app.config["GET_SETTLED_RESULTS"] = None
     a, b = joined
     url = f"/activities/{activity['activity_id']}"
     a_id, b_id = [client.get(url + "/state").json["group_id"] for client in joined]
@@ -33,6 +34,7 @@ def test_results_are_scoped_and_not_published_early(app, teacher, activity, join
 
 
 def test_ended_snapshot_requires_settlement_and_management(app, teacher, activity):
+    app.config["GET_SETTLED_RESULTS"] = None
     activity_id = activity["activity_id"]
     url = f"/activities/{activity_id}"
     with teacher:

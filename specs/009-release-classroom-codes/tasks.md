@@ -124,7 +124,7 @@
 **Purpose**: 跨模組、真人、圖文程式一致性與交付證據；全部前階段依賴完成後進行，不代勾008或其他功能任務。
 
 - [X] T050 執行 `specs/009-release-classroom-codes/quickstart.md` 的V01～V09及全Python／Node必要回歸，於 `specs/009-release-classroom-codes/validation.md` 記指令、版本、預期／實際與修正重驗，確認002、005／006全文、007身份、008導覽／匯入／講義移除均相容；受影響檢查通過後才擴大測試，不以舊測試數當本版證據。
-- [ ] T051 與003負責人用正式ACCEPT_SUBMISSION／GET_SETTLED_RESULTS接線驗證受理截止、整組提交、順位／結算、關課重送及學生禁讀／教師原結果，在 `specs/009-release-classroom-codes/contracts/quiz-history.md` 與 `specs/009-release-classroom-codes/validation.md` 記雙方版本／操作者／案例；正式服務未到位則保留未執行，不做假勝組或覆寫同學程式。
+- [X] T051 與003負責人用正式ACCEPT_SUBMISSION／GET_SETTLED_RESULTS接線驗證受理截止、整組提交、順位／結算、關課重送及學生禁讀／教師原結果，在 `specs/009-release-classroom-codes/contracts/quiz-history.md` 與 `specs/009-release-classroom-codes/validation.md` 記雙方版本／操作者／案例；正式服務未到位則保留未執行，不做假勝組或覆寫同學程式。
 - [ ] T052 由教師與至少甲乙兩組依 `specs/009-release-classroom-codes/quickstart.md` 人工驗收獨立頁、加入／失敗、開放恢復、課堂仍OPEN時活動結果、關課5秒目標／禁讀、按鈕返回、舊頁隔離、多分頁、Tab／Enter與390×844／桌面布局，在 `specs/009-release-classroom-codes/validation.md` 記實際計時與去機敏證據；依SC-005分列真人手動加入新堂與T015／T033～T039受控同碼隔離證據，不要求真實隨機抽同碼、不新增正式指定碼開關、不操作未授權真Sheets寫回。
 - [X] T053 依已驗結果更新 `README.md`、`docs/shared-requirements.md`、`specs/009-release-classroom-codes/quickstart.md` 與 `specs/009-release-classroom-codes/plan.md`，列部署前停舊服務／備份／沿用原DB與key、schema失敗停止、無法直接回退永久UNIQUE及新舊學生規則；未驗或跨組未確認清楚標示，不改008任務狀態。
 - [X] T054 核對 `diagrams/009-component.puml`、`diagrams/009-class.puml`、`diagrams/009-sequence.puml` 與實作責任／FK／索引／端點／交易分支，同步必要差異後以既有Java PlantUML CLI重渲染全部puml至同目錄PNG，逐張檢視並在 `specs/009-release-classroom-codes/diagram-review.md` 記命令／退出碼／圖意核對者，不把AI檢視當同學互審。
@@ -210,8 +210,16 @@ flowchart TD
 
 2026-11-26：Codex依speckit-converge核對19個FR／6個SC、四故事與R1～R8、plan七項架構決策及憲章I～VI。發現partial三項：F1 HIGH 正式003接口合流未驗（T058）；F2 MEDIUM 人工及最新技術對圖未驗（T059）；F3 MEDIUM 自動邊界證據仍須補強（T060）。無missing／contradicts／unrequested發現。以下細化既有未完成任務，不重編或宣稱原任務已完成。
 
-- [ ] T058 依FR-010～012、plan結果讀交易及T051，於正式003合流處先執行try_pending再以最終read transaction重新驗OPEN／owner並組DTO，保留PR9 Idempotency-Key／QuizSubmission；用正式provider完成關課／重送／結果／回填快照聯測，在 `specs/009-release-classroom-codes/contracts/quiz-history.md` 與 `validation.md` 記雙方固定版本，統一003-D22／009-D22編號（partial）。
+- [X] T058 依FR-010～012、plan結果讀交易及T051，於正式003合流處先執行try_pending再以最終read transaction重新驗OPEN／owner並組DTO，保留PR9 Idempotency-Key／QuizSubmission；用正式provider完成關課／重送／結果／回填快照聯測，在 `specs/009-release-classroom-codes/contracts/quiz-history.md` 與 `validation.md` 記雙方固定版本，統一003-D22／009-D22編號（partial）。
 - [ ] T059 依SC-005～006、憲章II／V及T052，完成教師加甲乙兩組的桌面／390×844、鍵盤、開放恢復、結束提示及手動新加入人工驗收，另記本輪技術修圖核對者於 `specs/009-release-classroom-codes/diagram-review.md` 與 `validation.md`；不把AI的DOM／開圖當人工互審（partial）。
 - [X] T060 依FR-009、012～014、018及T013／T014／T023／T033～T035／T041，補輸入上限、未授權關課、恢復CSRF／限流、重送A與B配碼及關課先加入的多連線順序、加入重試／防連點測試；在 `tests/contract/`、`tests/integration/` 及 `tests/student-entry-009.test.cjs` 補可重現案例並於 `validation.md` 記結果（partial）。
 
 最新執行狀態（2026-11-26）：使用者已授權implement；本輪本機程式、自動回歸、文件、CLI對圖及分析留檔依validation.md完成，57項原任務加3項收斂細項共60項，55完成／5未完成。T051／T058正式003聯測、T052／T059人工驗收與最新技術複核未完成，故T055整體收斂仍未完成。測試分散於既有契約及009整合檔，實際落點與原指定檔差異依validation.md追溯；不以本輪工作代勾008。
+
+## Phase 9: Convergence
+
+2026-11-26整合延續：19 FR／6 SC、四故事／R1～R8、七項架構決策與憲章I～VI核對；003正式provider缺口已依PR9最終074b4a9／master7ae7054及本輪自動整合證據解決。missing0／contradicts0／unrequested0，partial1（MEDIUM）：合流版人工／真Sheets及技術圖複核尚未執行，細化T052／T059於下項。不重新定義需求，也不重跑已完成的specify／plan／tasks。
+
+- [ ] T061 依SC-005～006、憲章II／V與T052／T059，使用本次003＋009合流版，按 `specs/009-release-classroom-codes/quickstart.md` 由使用者執行教師加兩組及真Sheets人工驗收、複核新交易時序圖，於 `validation.md` 記實際版本／操作者／結果；將T051自動整合與人工證據分列，不回填003 T035／T037或008待辦（partial）。
+
+本次授權範圍與狀態：使用者指定真人／真Sheets後續自行執行，不阻擋本次先行整合。T051／T058以實際正式provider自動接線及PR9作者版本證據完成，操作者Codex，非兩位組員同步人工聯測；詳細授權／案例見validation.md。T055檢查已續跑且僅剩人工門檻，整體未勾；T052／T059／T061維持未完成。原60項加收斂T061共61項，57完成／4未完成；003 T035／T037及008狀態保持。

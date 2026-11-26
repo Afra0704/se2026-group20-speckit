@@ -3,6 +3,35 @@ from conftest import post
 from guided_notes.auth import require_teacher
 from guided_notes.quiz.results_gateway import get_ended_snapshot
 from guided_notes.activities.teacher import get_activity_reference
+from quiz_support import published_quiz, submit_question
+
+
+def test_late_member_can_view_same_room_results_until_room_closes(classroom_app, classroom_teacher, classroom_setup):
+    _, room = classroom_setup
+    rid = room["classroom_id"]
+    paths = f"/teacher/classrooms/{rid}"
+    a, b, late, outsider = [classroom_app.test_client() for _ in range(4)]
+    for client, group in ((a, "A"), (b, "B")):
+        assert post(client, "/classroom-memberships", code=room["code"], group_name=group).status_code == 201
+    activity, questions = published_quiz(classroom_app, classroom_teacher, classroom_setup)
+    aid = activity["activity_id"]
+    assert post(classroom_teacher, f"{paths}/activities/{aid}/start").status_code == 200
+    for client, answer in ((a, "first"), (b, "private second")):
+        assert submit_question(client, aid, questions[0], answer=answer).status_code == 201
+    assert post(classroom_teacher, f"{paths}/activities/{aid}/finish").status_code == 200
+    assert post(late, "/classroom-memberships", code=room["code"], group_name="A").status_code == 201
+    result_url, history = f"/activities/{aid}/results", f"/classrooms/{rid}/results"
+    assert [row["activity_id"] for row in late.get(history).json["activities"]] == [aid]
+    response = late.get(result_url)
+    row = response.json["results"][0]
+    assert row["own"]["rank"] == 1 and row["winner_name"] == "A"
+    assert "groups" not in row and b"private second" not in response.data
+    assert post(classroom_teacher, paths + "/close", confirm=True).status_code == 200
+    assert post(outsider, "/classroom-memberships", code=room["code"], group_name="A").status_code == 403
+    assert outsider.get(result_url).status_code == outsider.get(history).status_code == 401
+    late.delete_cookie("session")
+    assert post(late, f"/classrooms/{rid}/result-access").status_code == 409
+    assert late.get(result_url).status_code == 401
 
 
 def test_open_room_results_remain_private_and_closing_blocks_student(classroom_app, classroom_teacher, classroom_setup):

@@ -134,3 +134,9 @@ D1只整理FR-016／018責任，沒有結構／互動變更，無須變更或重
 實際命令：`& 'C:/Program Files/Java/jdk-24/bin/java.exe' -jar D:/os_final/tmp/tools/plantuml-1.2026.10.jar 'D:/os_final/diagrams/*.puml'`，全24份puml成功重渲染，Java退出碼0。Codex逐張開啟009 PNG核對：Component2220×652、Class1300×922、Sequence1454×2477，中文字／箭頭／分支可讀，無錯誤頁或裁切。既有其他功能圖無新增語意修改。
 
 T054的AI對圖與CLI已完成；組員最新技術圖複核及實際學生頁面排版由T052／T059保留，不能以本節代勾。
+
+## 正式003整合對圖（2026-11-26）
+
+Codex核對版本added5a＋master7ae7054合流工作樹。Component改為正式provider已合流，補結果預檢→讀交易外重試→最終新讀交易授權／DTO，以及QuizSubmission／generation責任；Class保留所有原歸屬與003不可變結果。009 Sequence補同寫交易queue／commit後try_pending與預檢後關課分支；003 Sequence覆蓋原CLOSED學生恢復敘述為009-D22拒絕，保留003-D22的OPEN晚加入結果及教師回填。
+
+實際使用前節同一Java CLI全24份puml至同目錄PNG，exit0。Codex開啟009三張及003 Sequence，新增分支中文字與箭頭可讀，無錯誤頁／裁切；未改其餘003 Component／Class責任。正式provider／schema／交易及前端測試落點見quiz-history契約與validation整合章節。此為AI技術對圖，原C1／C2歷史確認保留，新技術複核由T059／T061追蹤，不冒稱真人完成。

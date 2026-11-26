@@ -1,6 +1,6 @@
 @startuml
 !pragma layout smetana
-title 009 一次性課堂碼釋放與重用｜Component（009 本機實作；003 待正式整合）
+title 009 一次性課堂碼釋放與重用｜Component（003＋009 本機整合）
 skinparam defaultFontName "Microsoft JhengHei"
 left to right direction
 actor 教師 as T
@@ -15,7 +15,7 @@ package "002／004 課堂責任（009 擴充，非新增服務定案）" {
   component "加入／原證明驗證\n固定 classroom_id＋group_id" as Join
   component "原課堂、活動及歷史引用" as History
 }
-component "003 正式受理／順位／結算\nPR9 已核對；合流聯測待完成" as Quiz
+component "003 正式受理／順位／結算\nPR9 074b4a9 已合流，人工待驗" as Quiz
 component "001 固定講義版本\n回填／未知結果恢復" as Notes
 T --> TI
 S --> SI
@@ -48,5 +48,7 @@ note bottom of Join
   /student 加入成功 → /student/classrooms/{id} 固定堂頁。
   原 proof 僅 OPEN 可恢復；CLOSED state 只回最小提示。
   按加入其他課堂才回獨立加入頁，內部 ID 無須操作。
+  結果預檢驗權 → 讀交易外重試結算 → 新讀交易重新驗權／DTO。
+  QuizSubmission 保存原操作重試，斷線重建表單使舊世代失效。
 end note
 @enduml

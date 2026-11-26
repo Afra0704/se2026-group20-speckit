@@ -174,6 +174,9 @@ def change_activity(classroom_id, activity_id, action):
             db.execute("UPDATE classroom_activities SET closed_at = CURRENT_TIMESTAMP WHERE activity_id = ?", (activity_id,))
         db.execute("UPDATE classrooms SET current_activity_id = ?, state_version = state_version + 1 WHERE id = ?",
                    (activity_id, classroom_id))
+    if action == "finish":
+        from ..quiz.settlement import try_pending
+        try_pending(activity_id)
     return result
 
 
@@ -196,6 +199,9 @@ def close(classroom_id):
                        (activity["id"],))
         db.execute("""UPDATE classrooms SET state = 'CLOSED', closed_at = CURRENT_TIMESTAMP,
                       state_version = state_version + 1 WHERE id = ?""", (classroom_id,))
+    from ..quiz.settlement import try_pending
+    for activity in unfinished:
+        try_pending(activity["id"])
     return {"classroom_state": "CLOSED"}
 
 
@@ -255,13 +261,40 @@ def result_access(classroom_id):
 
 
 @rooms.get("/classrooms/<classroom_id>/results")
-@read_view
 def settled_activities(classroom_id):
-    db = connection()
-    group_for(db, classroom_id)
-    rows = db.execute(
+    from ..quiz.settlement import try_pending
+    for activity_id in pending_results(classroom_id):
+        try_pending(activity_id)
+    return read_settled_activities(classroom_id)
+
+
+def result_history(db, classroom_id):
+    if request.headers.get("X-Activity-Role") == "teacher":
+        owned_classroom(db, require_teacher(db), classroom_id)
+    else:
+        group_for(db, classroom_id)
+    return db.execute(
         """SELECT a.id AS activity_id, c.title FROM classroom_activities c
            JOIN activities a ON a.id = c.activity_id
            WHERE c.classroom_id = ? AND a.phase = 'CLOSED' ORDER BY c.rowid""", (classroom_id,)
     ).fetchall()
-    return {"activities": [dict(row) for row in rows if snapshot(db, row["activity_id"]) is not None]}
+
+
+@read_view
+def pending_results(classroom_id):
+    from ..quiz.settlement import settled, status
+    db = connection()
+    rows = result_history(db, classroom_id)
+    if current_app.config.get('GET_SETTLED_RESULTS') is not settled:
+        return []
+    return [row['activity_id'] for row in rows if status(db, row['activity_id']) == 'pending'][:4]
+
+
+@read_view
+def read_settled_activities(classroom_id):
+    from ..quiz.settlement import settled, status
+    db = connection()
+    rows = result_history(db, classroom_id)
+    if current_app.config.get("GET_SETTLED_RESULTS") is not settled:
+        return {"activities": [dict(row) for row in rows if snapshot(db, row["activity_id"]) is not None]}
+    return {"activities": [dict(row, status=status(db, row["activity_id"])) for row in rows]}

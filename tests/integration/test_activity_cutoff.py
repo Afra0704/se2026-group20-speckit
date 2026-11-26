@@ -1,11 +1,61 @@
 import sqlite3
 from concurrent.futures import ThreadPoolExecutor
 from threading import Event
+from contextlib import contextmanager
+
+import pytest
 
 from conftest import post
 from guided_notes.activities import teacher_routes
 from guided_notes.db import connection
 from guided_notes.http import ApiError
+from guided_notes.quiz import submission_gateway
+from quiz_support import published_quiz, submit_question
+
+
+@pytest.mark.parametrize("submit_first", [True, False])
+def test_formal_cutoff_orders_commit_at_the_shared_lock(app, teacher, monkeypatch, submit_first):
+    activity, questions = published_quiz(app, teacher)
+    student = app.test_client()
+    assert post(student, "/activity-memberships", code=activity["code"], group_name="A").status_code == 201
+    aid = activity["activity_id"]
+    url = f"/activities/{aid}"
+    assert post(teacher, url + "/start").status_code == 200
+    locked, contender, release = Event(), Event(), Event()
+    owner, other = (submission_gateway, teacher_routes) if submit_first else (teacher_routes, submission_gateway)
+    owner_transaction, other_transaction = owner.write_transaction, other.write_transaction
+
+    @contextmanager
+    def hold_owner():
+        with owner_transaction() as db:
+            if not locked.is_set():
+                locked.set()
+                assert release.wait(5)
+            yield db
+
+    @contextmanager
+    def track_other():
+        contender.set()
+        with other_transaction() as db:
+            yield db
+
+    monkeypatch.setattr(owner, "write_transaction", hold_owner)
+    monkeypatch.setattr(other, "write_transaction", track_other)
+    with ThreadPoolExecutor(2) as pool:
+        invoke = [(submit_question, student, aid, questions[0]), (post, teacher, url + "/close")]
+        if not submit_first:
+            invoke.reverse()
+        first = pool.submit(*invoke[0])
+        try:
+            assert locked.wait(5)
+            second = pool.submit(*invoke[1])
+            assert contender.wait(5)
+        finally:
+            release.set()
+        assert [first.result().status_code, second.result().status_code] == (
+            [201, 200] if submit_first else [200, 409])
+    row = teacher.get(url + "/results").json["results"][0]
+    assert row["no_winner"] is (not submit_first)
 
 
 def fixture_storage(app):

@@ -1,6 +1,6 @@
 @startuml
 !pragma layout smetana
-title 009 一次性課堂碼釋放與重用｜Class（009 本機實作；003 待正式整合）
+title 009 一次性課堂碼釋放與重用｜Class（003＋009 本機整合）
 skinparam defaultFontName "Microsoft JhengHei"
 class "教師" as Teacher
 class "課程" as Course {

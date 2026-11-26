@@ -1,5 +1,5 @@
 @startuml
-title 009 一次性課堂碼釋放與重用｜Sequence（009 本機實作；003 待正式整合）
+title 009 一次性課堂碼釋放與重用｜Sequence（003＋009 本機整合）
 skinparam defaultFontName "Microsoft JhengHei"
 actor 教師 as T
 actor "原學生／新加入學生" as S
@@ -24,11 +24,13 @@ else A 已結束（含 B 已重用 C）
 else 有權且 A 開放
   group BEGIN IMMEDIATE：活動與課堂同一 commit／rollback
     R -> R : A 永久 CLOSED，一併結束未結束活動
+    R -> Q : 同寫交易登記結算待辦，保留已受理答案
     R -> C : A 的 CLOSED 狀態退出部分唯一索引，有效占用釋放
   end
   alt 操作未成功
     R --> T : 明確失敗，可重試；無半完成成功或雙重有效碼
   else 成功
+    R -> Q : commit 後 try_pending；故障留待重試，不重開課堂
     R --> T : A 已結束，歷史保留，不可重開
   end
 end
@@ -68,6 +70,17 @@ alt A 已結束（即使原證明仍有效）
   S -> S : 按「加入其他課堂」後回獨立加入頁
 else 課堂仍開放且證明有效、歸屬相符
   M --> S : 恢復原堂／原組別；不常駐登入提示
+  S -> Q : 查原堂已結束活動的結果
+  Q -> M : 預檢原堂 OPEN／原組別，結束預檢讀交易
+  Q -> Q : 讀交易外 try_pending，可開寫交易
+  group 新讀交易：重新驗權＋組 DTO
+    Q -> M : 重驗原堂狀態／原組別
+    alt 原堂仍 OPEN
+      Q --> S : D06 結果或 pending／unavailable
+    else 預檢後已關課
+      Q --> S : 409 CLASSROOM_CLOSED，零結果內容
+    end
+  end
   note over S,Q
     活動已結束且結算、課堂仍開放時，學生依 D06 看結果。
     未結算只顯示結算狀態；整堂結束即停止內容存取。
@@ -98,6 +111,6 @@ Q --> N : 不可變結果或 RESULT_NOT_READY
 N --> T : 沿用原固定版本、勝組與回讀規則
 note over R,N
   碼重用不搬移／刪除課堂、組別、答案、順位、結果及回填依賴。
-  此圖不代表正式 003 或產品驗收已完成。
+  正式 003 已合流自動驗證，真人與真 Sheets 尚待驗收。
 end note
 @enduml

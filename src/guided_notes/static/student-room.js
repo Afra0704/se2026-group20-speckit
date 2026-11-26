@@ -35,7 +35,7 @@
     if(error.message==='CLASSROOM_CLOSED'){ended();return;}
     if(['AUTH_REQUIRED','FORBIDDEN','RECOVERY_DENIED'].includes(error.message)){
       state.invalidate();clear();byId('access-notice').hidden=false;byId('state').textContent='請重新驗證本堂資格';
-    }else{clear();byId('state').textContent='連線中斷，正在重新連線…';}
+    }else{state.invalidate();clear();byId('state').textContent='連線中斷，正在重新連線…';}
   }
   function textAnswer(value){return typeof value==='string'?value:Object.values(value||{}).join('、');}
   function describe(rows){return rows.map(row=>{
@@ -61,13 +61,7 @@
         const send=(aid,body,key)=>api(`/activities/${encodeURIComponent(aid)}/submissions`,body,key);
         const accepted=()=>{if(valid(gen,id))byId('message').textContent='答案已受理';};
         const failed=e=>{if(!valid(gen,id))return;if(['CLASSROOM_CLOSED','AUTH_REQUIRED','FORBIDDEN'].includes(e.message))error(e,gen);else byId('message').textContent=e.message==='QUIZ_UNAVAILABLE'?'正式搶答服務尚未接入，請告知老師。':'送答未完成，請確認連線後重試。';};
-        if(globalThis.QuizSubmission)form.quizUpdate=QuizSubmission.attach(form,button,q.question_id,context,send,accepted,failed);
-        else form.onsubmit=async event=>{
-          event.preventDefault();if(!context()?.live||button.disabled)return;
-          button.disabled=true;
-          try{await send(id,{question_id:q.question_id,items:[...new FormData(form)].map(([item_id,answer_text])=>({item_id,answer_text}))},crypto.randomUUID());accepted();}
-          catch(e){failed(e);}finally{if(valid(gen,id))button.disabled=view?.phase!=='LIVE';}
-        };
+        form.quizUpdate=QuizSubmission.attach(form,button,q.question_id,context,send,accepted,failed);
       }
     }
     view=current;

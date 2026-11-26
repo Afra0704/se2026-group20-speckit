@@ -40,3 +40,16 @@
 `test_classroom_results`與`test_classroom_close`舊授權預期已更新，OPEN堂活動結果仍可讀；`test_classroom_notes_integration`保留教師關課後的原快照／回填預覽。受控Google測試不是正式003或真實Sheets結果。
 
 PR9 head31b0e23之接口與責任已按使用者指示檢查，見[pr9-review.md](../pr9-review.md)。正式合流仍待T051：try_pending可開寫交易，必須先重試結算、再開最終read transaction重新驗權並讀取結果，不能直接以本分支read_view包住PR9原view。保留003 Idempotency-Key、QuizSubmission及pending／unavailable語意；本分支僅在該靜態資產存在時掛載，未引入其演算法。003-D22／009-D22編號待整合統一，不代表重新質疑已確認行為。
+
+## 正式003合流落點（2026-11-26；取代前節待整合狀態）
+
+使用者授權延續T051／T058；PR9最終head074b4a9及master merge7ae7054已合入009本機分支。來源作者itsusername15；PR審查由Afra0704核准，review見[PR9審查](https://github.com/Afra0704/se2026-group20-speckit/pull/9#pullrequestreview-6073654519)。本輪操作者Codex，自動聯測正式provider；未宣稱兩位組員同步人工執行。
+
+- app factory接入003原accept／progress／settled及啟動recover_pending；db私有bootstrap同一交易保留009升級驗證及003 quiz schema，不漏quiz表或重設sqlite_sequence。Google初始化仍在同一原子交易。
+- activity results的closed_for_results先讀交易驗權，讀交易外try_pending，再由read_results新讀交易重新驗權／組DTO；room results同樣pending_results→外部try_pending（最多4活動）→read_settled_activities，前後皆驗原堂OPEN或teacher owner。無權／CLOSED學生不能藉結果請求觸發重試。教師get_ended_snapshot保留原歸屬及未就緒錯誤。
+- close的transition／queue在原寫交易內，commit後try_pending；CLOSED重送200不再transition／queue／publish。正式受理／序列／有效提交／不可變結算沿用003；整堂關閉後包括原Idempotency-Key的重放也先被009 OPEN guard拒絕。
+- student_room固定載入正式quiz-submission.js；移除009早期的無正式重試fallback。保留074b4a9的clearOwnOperation比較key及兩個201／409回歸；student-room在網路錯誤清表單時invalidate generation，舊表單晚到不能更新新畫面。正式pending／unavailable及逐小題結果仍以純文字顯示。
+
+編號統一採來源命名空間：**003-D22**＝OPEN堂晚加入結果，**009-D22**＝永久關課／碼重用／學生禁讀。兩者可同時成立；關課後以009最新決策為準，不重新命名或刪改原確認紀錄。003規格／介面契約及Sequence已註記整合覆蓋範圍。
+
+正式自動案例見tests/integration/test_quiz_classroom_009.py及tests/student-room-quiz-009.test.cjs：雙writer截止順序、結果預檢後關課重驗、pending重試交易、兩組順位／冪等、同碼隔離、quiz／sqlite_sequence／Google資料升級及rollback、原教師快照與unknown回填。使用實際003演算法＋001資料結構，Google／Sheets邊界仍為合成替代來源；真人與真Sheets由使用者後續執行。

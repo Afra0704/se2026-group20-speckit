@@ -45,6 +45,9 @@ def test_unknown_export_history_survives_upgrade_close_and_cross_teacher_reuse(c
 
 
 def test_pending_history_is_preserved_without_automatic_writeback(classroom_app, classroom_teacher):
+    # This case deliberately exercises an unready provider. Formal automatic
+    # settlement and retry are covered separately in test_quiz_classroom_009.
+    classroom_app.config['GET_SETTLED_RESULTS'] = lambda db, activity_id: None
     _, catalog, room = prepare_real_course(classroom_app, classroom_teacher)
     rid = room['classroom_id']
     student = classroom_app.test_client()

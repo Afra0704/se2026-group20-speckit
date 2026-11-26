@@ -97,3 +97,40 @@ T056完整跨產物分析已追加至analysis.md第5輪，規格25需求均有�
 T057檢查：git diff --check通過，僅008既有外部檔案有LF／CRLF提示；009 Markdown本機連結通過，任務ID001～060連續、無重號，3張PNG尺寸及讀圖結果一致。對本輪52個來源／測試／文件文字檔作高可信私鑰、Google key／secret及GitHub token樣式檢查，0命中；合成測試值保持明顯test／synthetic，沒有輸出真憑證。此掃描是範圍檢查，不宣稱一般安全稽核。
 
 改動限009規格／圖／文件與必要classroom／db／學生頁接線、結果gateway讀交易及測試；003順位／結算／正式submission演算法沒有導入或覆寫。README及共同需求保存最新本機階段，008validation外部修改與原特殊名稱未追蹤檔保持，008任務未代勾。Git分支仍codex/009-release-classroom-codes、HEAD2d4f421。前後無extensions.yml，before／after implement／converge／analyze無hook可執行。本輪沒有commit／push／合併PR、啟動操作者服務、真DB遷移／清空或key／Google授權更換。
+
+## 003＋009正式整合延續（2026-11-26，Asia/Taipei）
+
+本節取代前節「未導入正式003／不commit」的階段狀態，其餘歷史證據保留。使用者指示延續T051／T058整合003最新master，允許清楚的本機分段commit，人工與真Sheets由使用者之後執行，不以未執行阻擋本次整合。仍不push／合併009 PR、不操作操作者DB／憑證／Google授權；舊獨立活動模式移除另開SpecKit，不混入此輪。
+
+### 來源、可回復性與操作者
+
+- 操作者Codex；分支codex/009-release-classroom-codes。來源003作者itsusername15，PR9最終074b4a9ddba904b841b22371d632eea7a229e8f8，master merge7ae70542c26690193c2db4e97402d89dcd323c90；Afra0704的[核准審查](https://github.com/Afra0704/se2026-group20-speckit/pull/9#pullrequestreview-6073654519)由交接提供，本輪不代替其再核准009。
+- git fetch --no-tags origin master核對FETCH_HEAD=7ae7054；沒有dirty pull或checkout覆寫。先於忽略的tmp/009-integration-checkpoint-20261126保留55個009檔案、原diff及SHA-256清單，另備份008外部檔但不修改；只提交009範圍為**added5a**（feat: checkpoint 009 classroom code reuse and student entry）。
+- 接著git merge --no-commit --no-ff 7ae7054，db.py與workspace/classroom.html兩處文字衝突逐項保留兩邊能力：009專用升級／validate＋003 quiz schema同交易，009失效碼文案＋003腳本。自動合併後的讀交易巢狀寫入由新增測試發現並修正，不將「無文字衝突」當作整合通過。
+- 本節驗證版本為added5a＋7ae7054合流工作樹，包含下列接線修正與正式測試；後續本機merge commit封存相同程式。008外部validation的SHA-256與整合前備份相同，特殊名稱未追蹤檔保留；master帶入的008 validation-followup文件屬上游歷史，不混稱本輪人工驗收。
+
+### 正式接口與自動案例
+
+| 範圍 | 預期／實際與證據 |
+| --- | --- |
+| Factory／schema | 使用003正式accept／progress／settled／recover_pending；db私有bootstrap原子初始化core＋009＋quiz＋Google，不漏quiz表；課堂重建保留已存在quiz_*／sqlite_sequence。新Google＋quiz測試故障rollback、重啟兩次及原密文／身份／結果保持。 |
+| 截止與結算 | test_quiz_classroom_009中Event＋兩writer分別控制正式提交先commit（201且保留1列）／整堂關課先commit（409且0列）；保留正式同組重送與有效提交順位、兩組排名、不可變結果。close同交易queue、commit後try_pending，重送不重新結算。 |
+| 結果讀寫交易 | 活動及課堂結果均先驗權並結束預檢read，再try_pending，最終以新read transaction重新驗權／組DTO。兩路由均有pending重試assert不在讀交易及「預檢後整堂關閉」409案例；CLOSED學生不取得任何結果，教師歷史仍讀原版本。 |
+| 001依賴 | 正式003快照＋實際001儲存結構＋WritableSheets合成來源驗教師關課後回填預覽201、unknown報告保持、碼重用／重送close零自動重寫；甲乙舊資格409，明確加入新堂後亦不能讀舊活動。真Sheets未操作。 |
+| 學生正式腳本 | 固定載入quiz-submission.js，移除早期無正式retry fallback；同學clearOwnOperation比較key及兩個201／409回歸完整保留。新增student-room-quiz-009實際載入兩個來源模組，驗輪詢失敗→清表單→重建→新送答→舊201／409晚回→新回覆遺失→原key／body可明確重試。網路失敗invalidate generation，舊表單不能回報新畫面已受理。 |
+| 版本／來源編號 | 003-D22僅指OPEN晚加入結果，009-D22指永久關課／碼重用／學生禁讀；003原規格／確認紀錄保留，新增整合覆蓋註記，不虛構組員重新確認。 |
+
+### 指令、失敗修正及回歸
+
+1. 新tests/integration/test_quiz_classroom_009.py初次5失敗：4例確認try_pending進讀交易；1例測試直接seed catalog後001正常啟動回填名稱，使基線不完整。前4例拆開預檢／重試／最終讀；最後一例於取得升級指紋基線前先完成正常001 bootstrap，未取消資料保留檢查。相關classroom results／quiz schema／settlement **14 passed、5.48秒**。
+2. 新student-room-quiz-009.test.cjs初次舊201晚回案例失敗、409通過；修正網路錯誤清表單時的generation後，009兩檔＋003原retry測試 **10 passed**；頁面／formal／Google原子性Python **12 passed**。tmp/repro腳本只作背景參考，正式證據來自tests檔案。
+3. 首輪全pytest **1 failed、470 passed、98 subtests、90.29秒**；唯一失敗為舊pending測試把正式provider當成未接入。該受控案例改為明確GET_SETTLED_RESULTS=None結果的替代provider，正式pending／正常settlement另有獨立測試，沒有弱化正式結算斷言。其後補完整Google／quiz rollback、unknown報告及正式writer兩種截止順序，專檔 **9 passed、3.95秒**。
+4. 最終`.venv/Scripts/python.exe -m pytest tests -q --tb=short --maxfail=5`：**475 passed、98 subtests passed，86.36秒，exit0**。全部Node收集tests/*.test.cjs後`node --test $nodeTests`：**45 passed、0 failed，295ms，exit0**。相較上輪452／38是合流版的自行重跑結果；003作者428及其他審查427／18／31保留為來源紀錄，不當作本輪證據。
+
+### 對圖、收斂及未執行驗收
+
+沿用既有Java PlantUML CLI全24份重渲染exit0；Codex開009三張及003 Sequence核對queue／commit後重試／最終讀交易及關課拒絕分支，詳見diagram-review.md。AI檢視不代稱真人新圖複核。
+
+T051／T058依本次使用者授權完成正式provider自動整合，操作者及來源版本如上，不冒稱同學同步操作。converge再核19 FR／6 SC、四故事／R1～R8、七項架構決策、61任務及憲章I～VI；無未完成程式缺口，仍有1項MEDIUM partial人工／真Sheets／技術圖複核，附T061追蹤合流版本。61任務57完成／4未完成（T052／T055／T059／T061），故不能宣稱clean convergence或完整人工驗收。003 T035／T037及008原待辦不改。
+
+啟動方式已追加quickstart整合章節：沿用原私有設定、原DB／key、明確CLASSROOM_MODE=1，操作者停止舊服務／備份後從目前分支啟動。Codex本輪沒有啟動真實服務、真DB遷移、Google網路寫入或人工排版驗收。

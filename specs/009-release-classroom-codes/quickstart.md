@@ -1,6 +1,6 @@
 # 009 實作與驗證指南
 
-009 已在目前工作樹實作 OPEN 有效碼唯一性、非破壞升級、關課學生禁讀與獨立加入／固定課堂頁。自動驗證結果以 [validation.md](validation.md) 最新記錄為準；正式003合流及教師加兩組學生人工驗收尚未完成，不宣稱完整交付。沒有啟動操作者服務、遷移真DB或操作Google。
+009 已實作 OPEN 有效碼唯一性、非破壞升級、關課學生禁讀與獨立加入／固定課堂頁，並合入master7ae7054的正式003 provider。自動驗證結果以 [validation.md](validation.md) 最新記錄為準；教師加兩組人工／真Sheets驗收由使用者後續執行，不宣稱完整交付。沒有啟動操作者服務、遷移真DB或操作Google。
 
 ## 前置條件
 
@@ -67,3 +67,30 @@ node --test D:/os_final/tests/student-entry-009.test.cjs D:/os_final/tests/stude
 ## 證據記錄
 
 每筆記執行者、日期、branch／commit＋dirty檔案摘要、scenario或命令、預期／實際、結果及去機敏截圖／輸出。分成「受控自動」、「正式003整合」、「真人」、「真實Google」四類，未做填未執行。附R1～R8逐項結果、schema故障回復及原資料指紋比對。不得記proof／token／cookie／key；目前全部產品驗收均未執行。
+
+## 003＋009 整合後的啟動與自動檢查（2026-11-26）
+
+前面「尚未正式003／全部產品驗收未執行」為舊階段紀錄；目前正式自動整合已通過，真人與真Sheets仍未執行。舊模式移除另開SpecKit迭代，因此此版仍須明確設定課堂模式。
+
+在**原先已載入私有設定的PowerShell**執行；不要換secret／key／OAuth client，不套用007起步清DB步驟。先停止舊服務並由操作者備份原DB與原私有key，再啟動此版。建立app會自動驗證／升級schema，失敗即停止，不會切換空DB。本輪沒有代替使用者執行以下服務啟動。
+
+```powershell
+Set-Location D:/os_final
+$env:GUIDED_NOTES_CLASSROOM_MODE = '1'
+# GUIDED_NOTES_DATABASE、SECRET_KEY、Google／Picker私有設定沿用原環境。
+$env:FLASK_DEBUG = '0'
+& ./.venv/Scripts/python.exe -m flask --app guided_notes:create_app run --host 127.0.0.1 --port 5000
+```
+
+開啟 `http://127.0.0.1:5000/`，教師走既有Google登入；甲乙兩組建議使用兩個瀏覽器設定檔，從`/student`輸入課堂碼／組別。驗LIVE整題送答／重送、活動結束但堂OPEN時D06結果、整堂結束禁讀、返回加入頁及手動新加入，教師原結果與回填預覽仍可用。真Sheets確認寫回仍由使用者明確操作。
+
+只重跑自動驗證時不需載入真Google設定，測試自行建立臨時DB及合成來源：
+
+```powershell
+& ./.venv/Scripts/python.exe -m pytest tests/integration/test_quiz_classroom_009.py tests/integration/test_classroom_history_009.py tests/contract/test_classroom_results.py -q
+node --test tests/student-room-quiz-009.test.cjs tests/quiz-submission.test.cjs
+# 完整回歸
+& ./.venv/Scripts/python.exe -m pytest tests -q --tb=short
+$nodeTests = Get-ChildItem ./tests -Filter '*.test.cjs' | Select-Object -ExpandProperty FullName
+node --test $nodeTests
+```

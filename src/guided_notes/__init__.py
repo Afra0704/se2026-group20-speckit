@@ -1,5 +1,4 @@
 from flask import Flask, jsonify, render_template, request
-from pathlib import Path
 
 from . import db, http
 from .auth import check_csrf, csrf_token
@@ -23,6 +22,12 @@ def create_app(test_config=None):
     from .activities.student_routes import student
     from .activities.teacher_routes import teacher
     from .quiz.activity_routes import quiz
+    from .quiz.repository import accept, progress
+    from .quiz.settlement import recover_pending, settled
+
+    app.config.setdefault("ACCEPT_SUBMISSION", accept)
+    app.config.setdefault("GET_PROGRESS", progress)
+    app.config.setdefault("GET_SETTLED_RESULTS", settled)
 
     app.cli.add_command(init_teacher)
     if app.config["CLASSROOM_MODE"]:
@@ -41,6 +46,7 @@ def create_app(test_config=None):
         from .notes.routes import notes
     with app.app_context():
         init_schema()
+        recover_pending()
     app.register_blueprint(notes)
     register_flask_cli(app)
     app.jinja_env.filters["notes_a1"] = a1_range
@@ -78,8 +84,7 @@ def create_app(test_config=None):
     def student_room(classroom_id):
         if not app.config['CLASSROOM_MODE']:
             raise http.ApiError(404, 'CLASSROOM_NOT_FOUND')
-        return render_template('activities/student_room.html', classroom_id=classroom_id, csrf=csrf_token(),
-                               quiz_submission_available=(Path(app.static_folder) / 'quiz-submission.js').is_file())
+        return render_template('activities/student_room.html', classroom_id=classroom_id, csrf=csrf_token())
 
     @app.get("/csrf")
     def csrf():
