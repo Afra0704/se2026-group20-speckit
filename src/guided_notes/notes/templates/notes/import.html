@@ -11,8 +11,8 @@
   </form>
   <p class="muted">此步驟只讀取講義，不修改來源內容。</p>
 </section>
-<section class="card"><h2>已確認的講義版本</h2>
-  {% if catalogs %}<ul>{% for c in catalogs %}<li><a href="{{ url_for('notes.view_catalog', import_id=c.import_id, version=c.version) }}">{{ c.display_title }} · 第 {{ c.version }} 版</a> · 來源分頁：{{ c.source_title }} · {{ c.confirmed_at|notes_time }}（台北時間）</li>{% endfor %}</ul>
+<section class="card"><h2>已確認的講義版本</h2><p class="muted">{{ time_zone_notice }}</p>
+  {% if catalogs %}<ul>{% for c in catalogs %}<li><a href="{{ url_for('notes.view_catalog', import_id=c.import_id, version=c.version) }}">{{ c.display_title }} · 第 {{ c.version }} 版</a> · 來源分頁：{{ c.source_title }} · 匯入確認：{{ event_time(c.confirmed_at, event_kind='confirmed').text }}</li>{% endfor %}</ul>
   {% else %}<p>還沒有保存的講義，從上方貼上連結開始。</p>{% endif %}
 </section>
 {% endblock %}

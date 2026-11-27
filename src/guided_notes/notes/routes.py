@@ -1,6 +1,5 @@
 """Teacher-only import UI/API; source coordinates never enter student views."""
 from dataclasses import asdict
-from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from uuid import uuid4
 
@@ -9,6 +8,8 @@ from flask import Blueprint, current_app, jsonify, redirect, render_template, re
 from ..auth import require_teacher
 from ..db import connection
 from ..http import ApiError, payload
+from ..time_display import TIMEZONE_NOTICE
+from ..time_views import notes_time as event_time, readback_time
 from . import course_catalogs as courses, export_service, import_service as service, repository as repo, writeback
 from .google_authorization import AuthError, authorize
 from .models import ContractError, normalize_lecture_name
@@ -33,7 +34,14 @@ def a1_range(area):
 
 
 def taipei_time(value):
-    return datetime.fromisoformat(value).astimezone(timezone(timedelta(hours=8), "Asia/Taipei")).strftime("%Y-%m-%d %H:%M")
+    return event_time(value).text
+
+
+@notes.context_processor
+def time_presenters():
+    # Helpers only format values supplied by already-authorized HTML routes.
+    return {'event_time': event_time, 'readback_time': readback_time,
+            'time_zone_notice': TIMEZONE_NOTICE}
 
 
 def gateway(teacher):

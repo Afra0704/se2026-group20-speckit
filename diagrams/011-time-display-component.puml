@@ -1,0 +1,30 @@
+@startuml
+!pragma layout smetana
+title 011 時間顯示一致性 — Component（原圖已審閱：使用者回報）
+left to right direction
+actor 教師 as Teacher
+actor "有權限的學生" as Student
+component "既有存取權限與關課檢查" as Access
+component "原事件／歷史讀取" as Read
+database "既有活動、講義及回填紀錄\n保留原事件與結果" as Records
+component "事件語意及來源判讀\n有偏移／可信舊 UTC／不明／缺值" as Meaning
+component "時間呈現政策\n台北時間、至分鐘、明確狀態" as Display
+component "教師歷史／匯入／預覽／報告" as TeacherView
+component "學生既有可見結果\n不增加教師資訊" as StudentView
+Teacher --> Access
+Student --> Access
+Access --> Read : 限定既有可見範圍
+Read --> Records : 唯讀原資料
+Read --> Meaning : 事件種類、原值、來源證據
+Meaning --> Display : 同一瞬間或不可確認狀態
+Display --> TeacherView
+Display --> StudentView
+note bottom of Meaning
+缺少獨立結算時刻時不補造。
+來源未知不得按執行電腦時區猜測。
+end note
+note bottom of Records
+本圖不新增資料表或寫入服務。
+受理序列、勝組、版本、授權與期限不變。
+end note
+@enduml

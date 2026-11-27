@@ -214,7 +214,13 @@ async function activityList(id) {
   for (const activity of data.activities) {
     const line = document.createElement("li");
     const phase = {PREPARING: "準備中", LIVE: "搶答中", CLOSED: "已結束"};
-    line.textContent = `${activity.title} · ${phase[activity.phase]} · ${activity.created_at}`;
+    const times = activity.time_display;
+    const labels = {created_at: "建立", started_at: "開始", closed_at: "結束"};
+    const summary = times?.version === 1 && times.timezone === "Asia/Taipei" && times.utc_offset === "+08:00"
+      ? Object.entries(labels).map(([field, label]) =>
+        `${label}：${typeof times[field]?.text === "string" ? times[field].text : "時間資料尚未提供"}`).join(" · ")
+      : "時間資料尚未提供";
+    line.textContent = `${activity.title} · ${phase[activity.phase]} · ${summary}`;
     if (activity.phase !== "CLOSED" && !byId("close-room").disabled) {
       for (const action of activity.phase === "PREPARING" ? ["start", "finish"] : ["finish"]) {
         const button = document.createElement("button");

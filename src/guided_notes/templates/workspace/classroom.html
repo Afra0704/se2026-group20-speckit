@@ -9,6 +9,7 @@
           <button disabled>建立活動</button>
         </form>
         <p class="muted">同堂一次只能有一個準備中或搶答中的活動，請先結束目前活動再建立下一個。</p>
+        <p class="muted">活動時間：台北時間（UTC+08:00）</p>
         <ul id="activities" class="activity-list"></ul>
       </section>
 <p id="state" role="status"></p><section id="results" aria-label="活動結果"></section><dialog id="feedback-dialog"><h2 id="feedback-title"></h2><p id="feedback-message"></p><form method="dialog"><button>確定</button></form></dialog>{% endblock %}{% block scripts %}<script src="{{ url_for('static', filename='quiz-submission.js') }}"></script><script type="module" src="{{ url_for('static',filename='classroom.js') }}"></script>{% endblock %}

@@ -6,6 +6,7 @@ from flask import Blueprint, current_app, flash, jsonify, redirect, request, ses
 from ..auth import limit_attempts, require_teacher
 from ..db import connection, write_transaction, read_view
 from ..http import ApiError, payload, string
+from ..time_views import activity_time_display
 from ..quiz.results_gateway import snapshot
 from .classroom_access import (
     activity_transaction, classroom, owned_classroom, requested_activity, require_no_unfinished,
@@ -105,12 +106,18 @@ def history(classroom_id):
     owned_classroom(db, require_teacher(db), classroom_id)
     rows = db.execute(
         """SELECT a.id AS activity_id, a.phase, a.import_id, a.import_version,
-           ca.title, ca.created_at, ca.started_at, ca.closed_at
+           ca.title, ca.created_at, ca.started_at, ca.closed_at, a.phase_version
            FROM classroom_activities ca JOIN activities a ON a.id = ca.activity_id
            WHERE ca.classroom_id = ? ORDER BY ca.created_at, ca.rowid""",
         (classroom_id,),
     )
-    return {"activities": [dict(row) for row in rows]}
+    activities = []
+    for row in rows:
+        value = dict(row)
+        times = activity_time_display(value, trusted_lifecycle=True)
+        value.pop('phase_version')
+        activities.append(dict(value, time_display=times))
+    return {"activities": activities}
 
 
 @rooms.post("/teacher/classrooms/<classroom_id>/activities")

@@ -8,7 +8,7 @@
   <p>活動識別：<code>{{ preview.activity_id }}</code></p>
   <p>講義版本：{{ preview.import_version }} · 結果版本：{{ preview.result_version }}</p>
   <p>來源分頁：{{ preview.source_title }} · {{ preview.question_count }} 題／{{ preview.answer_item_count }} 個作答格</p>
-  <p>預覽時間：{{ preview.created_at|notes_time }}（台北時間）</p>
+  <p>預覽時間：{{ event_time(preview.created_at, event_kind='preview_created').text }} · {{ time_zone_notice }}</p>
   <p>待寫入 {{ preview.counts.write }} 格 · 已為相同文字 {{ preview.counts.already_matches }} 格 · 無勝組略過 {{ preview.counts.skip }} 格 · 需覆寫確認 {{ preview.counts.requires_overwrite_confirmation }} 格</p>
 </section>
 <section class="card scroll"><table>

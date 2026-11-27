@@ -12,8 +12,8 @@
   </form>
   <p class="notice">先預覽，再明確確認回填。若顯示「結果尚未結算」，需等待結果模組接入正式結算。</p>
 </section>
-<section class="card"><h2>已保存的預覽</h2>
-{% if previews %}<ul>{% for p in previews %}<li><a href="{{ url_for('notes.view_export_preview', preview_id=p.preview_id) }}">活動 {{ p.activity_id }}</a> · {{ p.created_at|notes_time }}（台北時間）</li>{% endfor %}</ul>
+<section class="card"><h2>已保存的預覽</h2><p class="muted">{{ time_zone_notice }}</p>
+{% if previews %}<ul>{% for p in previews %}<li><a href="{{ url_for('notes.view_export_preview', preview_id=p.preview_id) }}">活動 {{ p.activity_id }}</a> · 預覽：{{ event_time(p.created_at, event_kind='preview_created').text }}</li>{% endfor %}</ul>
 {% else %}<p>尚無回填預覽。</p>{% endif %}
 </section>
 {% endblock %}

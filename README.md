@@ -226,3 +226,7 @@ integration 目前僅有離線元件交接測試，尚無 HTTP／登入／DB 的
 貼連結使用原Sheets授權；雲端選檔另需同project專用Picker Web client、受限制API key與project number。沒有Picker設定時可繼續管理課程及貼連結；不把原後端Sheets token交給瀏覽器。設定、CMD啟動與人工矩陣見 [008操作說明](specs/008-teacher-course-workspace/quickstart.md)，實際證據見 [008驗證紀錄](specs/008-teacher-course-workspace/validation.md)。真Google Picker、兩教師與兩組學生人工驗收、具名互審／D21仍待完成；受控測試不代表真雲端通過。
 
 啟動前先在私人位置備份原DB與key；保持原007環境設定，不清空DB或重建key。關掉舊服務後，CMD於repo執行 `.venv\Scripts\python.exe -m flask --app guided_notes:create_app run --host 127.0.0.1 --port 5000`，開啟 `http://127.0.0.1:5000/teacher`。啟動會以可重跑附加schema保留原資料；新增測試只用暫存DB。
+
+## 011 時間顯示一致性（2026-11-27）
+
+教師活動歷史分別顯示建立、開始與結束；notes匯入確認、預覽、報告更新及逐格回讀統一使用台北時間（UTC+08:00）、24小時制、`YYYY-MM-DD HH:mm`。只截取至分鐘，不進位，原秒／微秒、排序、勝組與結果版本保留。可信SQL UTC可解讀，未知naive不猜測，缺值／損壞各有提示，非verified回讀顯示尚未驗證。操作與實際驗證界線見[011 quickstart](specs/011-time-display/quickstart.md)與[驗證紀錄](specs/011-time-display/validation.md)；人工驗收與真POSIX矩陣未完成前不宣稱整體結案。
