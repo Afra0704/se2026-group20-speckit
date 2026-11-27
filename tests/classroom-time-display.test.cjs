@@ -13,6 +13,7 @@ class Element {
 function context(activities, delay) {
   const list=new Element();
   const sandbox={historyRequest:0,selection:1,version:1,room:'room',historyNeedsRefresh:false,
+    returnSelectionPending:false,role:'teacher',
     main:{dataset:{}},document:{createElement:()=>new Element()},url:encodeURIComponent,
     updateCreateAvailability(){},addResultButton(){},byId:id=>id==='activities'?list:{disabled:true},
     api:async()=>{if(delay) await delay;return {activities};}};

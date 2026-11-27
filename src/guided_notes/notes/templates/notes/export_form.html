@@ -4,16 +4,18 @@
 <h1>活動回填預覽</h1>
 <p class="muted">從已結束且完成結算的活動，查看勝組答案與原講義的差異。</p>
 <section class="card">
+  {% if selected %}
+  <p>課程：{{ selected.course_title or '—' }} · 課堂：{{ selected.classroom_title or '非課堂活動' }} · 活動：{{ selected.activity_title }}</p>
   <form method="post" action="{{ url_for('notes.create_export_preview') }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <label>活動識別<input name="activity_id" value="{{ request.args.get('activity_id', '') }}" data-current-activity maxlength="256" required autocomplete="off"></label>
-    <p class="muted">會自動帶入此瀏覽器最近使用的教師活動。這是活動識別，不是學生加入碼。</p>
+    <input type="hidden" name="activity_id" value="{{ selected.activity_id }}">
     <button>讀取來源並建立預覽</button>
   </form>
-  <p class="notice">先預覽，再明確確認回填。若顯示「結果尚未結算」，需等待結果模組接入正式結算。</p>
+  {% else %}<p>請從課堂的目前或歷史活動結果選擇「預覽回填講義」。</p><a href="/teacher">返回教師頁</a>{% endif %}
+  <p class="notice">先預覽，再明確確認回填。結果尚未結算完成時，請稍後再試。</p>
 </section>
 <section class="card"><h2>已保存的預覽</h2><p class="muted">{{ time_zone_notice }}</p>
-{% if previews %}<ul>{% for p in previews %}<li><a href="{{ url_for('notes.view_export_preview', preview_id=p.preview_id) }}">活動 {{ p.activity_id }}</a> · 預覽：{{ event_time(p.created_at, event_kind='preview_created').text }}</li>{% endfor %}</ul>
+{% if previews %}<ul>{% for p in previews %}<li><a href="{{ url_for('notes.view_export_preview', preview_id=p.preview_id) }}">{{ p.activity_context.course_title or '' }} · {{ p.activity_context.classroom_title or '非課堂活動' }} · {{ p.activity_context.activity_title }}</a> · 預覽：{{ event_time(p.created_at, event_kind='preview_created').text }}</li>{% endfor %}</ul>
 {% else %}<p>尚無回填預覽。</p>{% endif %}
 </section>
 {% endblock %}

@@ -30,6 +30,8 @@ let creatingActivity = false;
 let verifiedGroup = null;
 let activePhase = null;
 let selectedResult = null;
+const returnedResultId = byId('selected-activity')?.dataset.selectedActivityId;
+let returnSelectionPending = Boolean(returnedResultId);
 let studentHistoryVersion = -1;
 const submissionControls = new Set();
 
@@ -252,6 +254,16 @@ async function activityList(id) {
   }
   historyNeedsRefresh = false;
   updateCreateAvailability();
+  if (returnSelectionPending && role === 'teacher') {
+    const original = data.activities.find(activity => activity.activity_id === returnedResultId);
+    returnSelectionPending = false;
+    if (original) {
+      selectedResult = {id: original.activity_id, title: original.title, context: selection,
+        currentActivity: activeId, loading: false};
+    } else {
+      note('找不到原活動結果，請重新核對活動。');
+    }
+  }
 }
 
 function addResultButton(list, activity) {
@@ -294,6 +306,20 @@ async function refreshResult() {
       card.textContent = text;
       panel.append(card);
     }
+    const form = document.createElement('form');
+    form.method = 'post';
+    form.action = '/teacher/notes/export-previews';
+    for (const [name, value] of [['activity_id', target.id], ['csrf_token', main.dataset.csrf]]) {
+      const input = document.createElement('input');
+      input.type = 'hidden'; input.name = name; input.value = value;
+      form.append(input);
+    }
+    const preview = document.createElement('button');
+    preview.textContent = data.status === 'active' ? '活動尚未結束' :
+      data.status === 'pending' ? '結果尚未結算完成' : '預覽回填講義';
+    preview.disabled = data.status !== 'settled';
+    form.append(preview);
+    panel.append(form);
   } catch (error) {
     if (isCurrent()) report(error);
   } finally {

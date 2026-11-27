@@ -24,7 +24,8 @@ def test_reconnect_returns_to_original_page_and_is_one_use(google_app, google_te
     with google_app.app_context():
         assert connection().execute('SELECT count(*) FROM notes_write_operations').fetchone()[0] == 0
     if 'activity_id=' in target:
-        assert 'value="activity-1"' in google_teacher.get(target).text
+        # #19 now validates the selected activity before reflecting a retry form.
+        assert google_teacher.get(target).status_code == 404
 
 
 @pytest.mark.parametrize('target', [

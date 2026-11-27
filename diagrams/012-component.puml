@@ -1,0 +1,36 @@
+@startuml
+!pragma layout smetana
+skinparam defaultFontName Microsoft JhengHei
+title 012 活動結果回填｜Component（實作對應，人工驗收待完成）
+actor 教師 as Teacher
+component "目前／歷史活動結果" as Results
+component "回填入口與預覽／報告" as UI
+component "教師權限與活動脈絡\nnotes/export_context.py" as Context
+component "原課堂勝組標籤\nIssue 16 共用格式" as Labels
+component "固定結算／講義版本" as Snapshot
+component "既有預覽／確認／回讀恢復" as Export
+component "Sheets 授權與安全返回\nPR14" as Auth
+component "共同時間呈現\nIssue 20 time_display／time_views" as Time
+cloud "原 Google Sheets" as Sheets
+Teacher --> Results
+Results --> UI : 選定活動
+UI --> Context : 每次驗權／原活動
+Context --> Snapshot
+Context --> Labels : 原課堂＋原勝組 ID
+UI --> Time
+UI --> Export : 固定活動／版本
+Export --> Snapshot
+Export --> Auth
+Export --> Sheets : 確認後寫入／回讀
+note bottom of Context
+  FR-001～008：同名、關課、清單移除不改原歸屬。
+  缺失／跨堂勝組明示錯誤並阻止新增寫入。
+end note
+note bottom of Export
+  FR-009～013：保留既有覆寫同意與恢復。
+  不接受使用者指定勝組或格位。
+  概念責任不代表新增同名模組。
+  全無勝組保留 skip 預覽，UI 停用確認。
+  壞標籤的既有報告保留，阻止新增寫入。
+end note
+@enduml

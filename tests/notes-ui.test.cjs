@@ -92,7 +92,7 @@ function writebackConfirmationScenario() {
 (async () => {
   namingScenario();
   writebackConfirmationScenario();
-  previewActivityScenario('{"id":"last-activity"}', "", "last-activity");
+  previewActivityScenario('{"id":"last-activity"}', "", "");
   previewActivityScenario('{"id":"last-activity"}', "typed-activity", "typed-activity");
   previewActivityScenario("broken-json", "", "");
   previewActivityScenario('{"id":123}', "", "");

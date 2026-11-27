@@ -21,6 +21,7 @@ from .models import ContractError
 from .google_authorization import AuthError
 from .recognition import RecognitionError, recognize
 from .sheets_gateway import GatewayError
+from .export_context import validate as validate_context, decorate, activity_context
 
 _locks = {}
 _locks_guard = threading.Lock()
@@ -52,6 +53,7 @@ def _snapshot(teacher, preview):
         raise ContractError("RESULT_VERSION_CHANGED")
     value = get_ended_snapshot(teacher, aid)
     _check_result(preview, value, aid)
+    validate_context(teacher, value)
     return value
 
 
@@ -121,6 +123,7 @@ def _finish(operation_id, token, *, error=None, aborted=False):
 def get_report(teacher, operation_id, *, refresh=True):
     _auth(teacher)
     row = repo.owned_operation(connection(), teacher.teacher_id, operation_id)
+    activity_context(teacher, row['activity_id'])
     if refresh and row["status"] in {"writing", "queued"}:
         lease = connection().execute("SELECT expires_at FROM notes_source_leases WHERE operation_id=?", (operation_id,)).fetchone()
         if lease is None or lease[0] <= time.time():
@@ -142,11 +145,18 @@ def get_report(teacher, operation_id, *, refresh=True):
         units.append({"question_id": unit["question_id"], "winner_group_id": unit["winner_group_id"],
             "status": "skipped" if statuses == {"skipped"} else "completed" if statuses == {"verified"} else "needs_attention",
             "items": members})
-    return {"operation_id": operation_id, "origin_operation_id": row["origin_operation_id"],
+    result = {"operation_id": operation_id, "origin_operation_id": row["origin_operation_id"],
         "activity_id": row["activity_id"], "import_id": row["import_id"], "import_version": row["import_version"],
         "result_version": row["result_version"], "status": row["status"], "error_code": row["error_code"],
         "units": units, "counts": {status: sum(r["status"] == status for r in records) for status in (
             "not_processed", "verified", "failed", "unknown", "skipped", "conflict")}, "updated_at": row["updated_at"]}
+    decorate(teacher, result, snapshot['units'])
+    if result.get('activity_context'):
+        source = repo.owned_export_preview(connection(), teacher.teacher_id, row['preview_id'])
+        result['activity_context'].update(
+            lecture_title=source['custom_title'] if source['name_mode'] == 'custom' else source['display_title'],
+            source_title=source['display_title'], sheet_id=source['sheet_id'])
+    return result
 
 
 def _observations(preview, current):
@@ -169,6 +179,7 @@ def confirm(teacher, preview_id, key, overwrite_item_ids, gateway_factory):
     found = _existing(teacher, key, request_hash)
     if found is not None:
         return found
+    validate_context(teacher, preview.snapshot)
     required = {item.item_id for item in preview.items if item.action == "requires_overwrite_confirmation"}
     if set(overwrite_item_ids) != required:
         raise ContractError("OVERWRITE_CONFIRMATION_REQUIRED")
@@ -262,6 +273,7 @@ def recovery_preview(teacher, operation_id, gateway_factory):
     _auth(teacher)
     row = repo.owned_operation(connection(), teacher.teacher_id, operation_id)
     _, previous = get_saved_preview(teacher, row["preview_id"])
+    validate_context(teacher, previous.snapshot)
     with _source_mutex(row):
         with write_transaction() as db:
             _auth(teacher)

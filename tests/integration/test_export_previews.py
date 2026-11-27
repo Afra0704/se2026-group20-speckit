@@ -180,7 +180,7 @@ def test_preview_survives_restart_and_html_form_redirects(app, teacher, sheets):
     from guided_notes import create_app
     aid, _, _ = ended_activity(app, teacher)
     token = teacher.get("/csrf").json["csrf"]
-    form = teacher.get("/teacher/notes/export-previews").get_data(as_text=True)
+    form = teacher.get(f"/teacher/notes/export-previews?activity_id={aid}").get_data(as_text=True)
     assert 'name="activity_id"' in form
     response = teacher.post("/teacher/notes/export-previews", data={"csrf_token": token, "activity_id": aid})
     assert response.status_code == 303

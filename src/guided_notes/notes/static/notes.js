@@ -6,14 +6,6 @@ for (const form of document.querySelectorAll("form[data-writeback-confirm]")) {
     button.textContent = "正在回填與回讀，請稍候…";
   });
 }
-for (const input of document.querySelectorAll("[data-current-activity]")) {
-  try {
-    const activity = JSON.parse(localStorage.getItem("guided-notes:teacher") || "null");
-    if (!input.value && typeof activity?.id === "string") input.value = activity.id;
-  } catch (_) {
-    // Storage may be unavailable or malformed; manual activity entry still works.
-  }
-}
 for (const group of document.querySelectorAll("[data-name-options]")) {
   const input = group.querySelector("input[name='custom_title']");
   const wrapper = group.querySelector("[data-custom-name]");

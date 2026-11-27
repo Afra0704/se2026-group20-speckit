@@ -175,6 +175,7 @@ def create_saved_preview(teacher_context, activity_id, gateway_factory):
     from ..quiz.results_gateway import get_ended_snapshot
     from .recognition import recognize
     from . import repository as repo
+    from .export_context import validate as validate_context
 
     reference = get_activity_reference(teacher_context, activity_id)
     if not reference["ended"]:
@@ -184,6 +185,7 @@ def create_saved_preview(teacher_context, activity_id, gateway_factory):
     # Validate result completeness/binding before even constructing Google client.
     snapshot = validate_snapshot(get_ended_snapshot(teacher_context, activity_id), bundle.catalog,
                                  activity_id=activity_id)
+    validate_context(teacher_context, snapshot)
     current = recognize(gateway_factory().read_sheet(source["spreadsheet_id"], source["sheet_id"]))
     preview = build_export_preview(bundle, current, snapshot, activity_id=activity_id)
     if require_teacher() != teacher_context:
@@ -191,6 +193,7 @@ def create_saved_preview(teacher_context, activity_id, gateway_factory):
     if get_activity_reference(teacher_context, activity_id) != reference:
         raise ApiError(409, "RESULT_VERSION_CHANGED")
     _check_result(preview, get_ended_snapshot(teacher_context, activity_id), activity_id)
+    validate_context(teacher_context, snapshot)
     # Provider/source network calls must all end before opening the short transaction.
     with write_transaction() as db:
         if require_teacher(db) != teacher_context:
@@ -208,6 +211,8 @@ def get_saved_preview(teacher_context, preview_id):
         raise ApiError(403, "TEACHER_REQUIRED")
     db = connection()
     row = repo.owned_export_preview(db, teacher_context.teacher_id, preview_id)
+    from .export_context import activity_context
+    activity_context(teacher_context, row['activity_id'])
     _, bundle = _bundle(db, teacher_context.teacher_id, row["import_id"], row["import_version"])
     preview = build_export_preview(bundle, repo.unpack_recognition(row["observed_recognition"]),
                                    json.loads(row["snapshot"]), activity_id=row["activity_id"])

@@ -1,0 +1,65 @@
+@startuml
+!pragma layout smetana
+skinparam defaultFontName Microsoft JhengHei
+title 012 活動結果回填｜Class（實作對應，人工驗收待完成）
+class "教師" as Teacher
+class "課程" as Course
+class "原課堂" as Room
+class "原課堂組別" as Group {
+  group_id
+  name : canonical 組號字串 1..999
+  display_label : 第 N 組
+}
+class "活動脈絡" as Activity {
+  activity_id
+  name
+  semantic_times
+}
+class "固定講義版本" as Catalog {
+  import_id / version
+  source_sheet
+}
+class "結算快照" as Snapshot {
+  result_version
+}
+class "題組結果" as Unit {
+  winner_group_id : optional
+  answers
+}
+class "回填預覽" as Preview {
+  preview_id
+  original_values
+  proposed_values
+}
+class "操作報告" as Report {
+  operation_id
+  readback_status
+  overwrite_consent
+}
+Teacher "1" -- "*" Course
+Course "1" -- "*" Room
+Room "1" -- "*" Group
+Room "1" -- "*" Activity
+Activity "*" --> "1" Catalog : 固定版本
+Activity "1" -- "0..1" Snapshot : 已結算
+Snapshot "1" -- "*" Unit
+Unit "*" --> "0..1" Group : 僅允許原課堂
+Activity "1" -- "*" Preview
+Preview --> Catalog
+Preview --> Snapshot
+Preview "1" -- "0..1" Report
+Report --> Preview : 恢復預覽保留原快照
+note bottom of Group
+  標籤僅供顯示，不代替 group_id。
+  不同課堂的第 1 組各自獨立。
+  實際資料為 classroom_groups.id / classroom_id / name。
+  group_label(name) 由 Issue 16 提供；本功能不新增組號欄位。
+end note
+note bottom of Preview
+  以原活動建立；不依目前活動或名稱重查歸屬。
+  關課／清單移除不刪除歷史依賴。
+  此為概念關係，非新增資料表承諾。
+  label/context 僅作教師投影，不改 snapshot digest。
+  context 錯誤不刪除原報告或改原操作狀態。
+end note
+@enduml

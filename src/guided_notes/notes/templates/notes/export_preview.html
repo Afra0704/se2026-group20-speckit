@@ -2,10 +2,11 @@
 {% block title %}勝組答案回填預覽{% endblock %}
 {% block content %}
 <h1>{{ preview.title }} · 回填預覽</h1>
+{% include 'notes/export_context.html' %}
 <p class="notice">{% if preview.status == 'ready' %}此預覽尚未寫入 Google Sheets。{% else %}這是已使用或失效預覽的歷史觀察，實際處理結果請查看作業報告。{% endif %}以下是建立預覽時的觀察，重新查看不會重新讀取來源；確認時會重新核對來源與結果。外部編輯仍可能發生在檢查與寫入之間，回填報告記錄回讀當下的結果。</p>
 {% if preview.origin_operation_id %}<p>恢復原作業：<a href="{{ url_for('notes.operation_report', operation_id=preview.origin_operation_id) }}">查看原報告</a>。保留原勝組及結果版本。</p><p>原內容未變的覆寫沿用前次同意；內容若已改變，仍須重新確認覆寫。已為相同文字的答案不會再次寫入。</p>{% endif %}
 <section class="card">
-  <p>活動識別：<code>{{ preview.activity_id }}</code></p>
+  <details><summary>診斷資訊</summary><p>活動識別：<code>{{ preview.activity_id }}</code></p></details>
   <p>講義版本：{{ preview.import_version }} · 結果版本：{{ preview.result_version }}</p>
   <p>來源分頁：{{ preview.source_title }} · {{ preview.question_count }} 題／{{ preview.answer_item_count }} 個作答格</p>
   <p>預覽時間：{{ event_time(preview.created_at, event_kind='preview_created').text }} · {{ time_zone_notice }}</p>
@@ -22,7 +23,8 @@
     <td>{% if item.action == 'write' and item.original_user_value and preview.origin_operation_id %}待覆寫（沿用前次同意，原內容未變）{% else %}{{ {'write':'待寫入','already_matches':'已為相同文字（預覽觀察）','skip':'無勝組，略過','requires_overwrite_confirmation':'需要覆寫確認'}[item.action] }}{% endif %}</td></tr>
   {% endfor %}</tbody>
 </table></section>
-{% if preview.status == 'ready' %}
+{% if preview.counts.skip == preview.answer_item_count %}<p role="status">沒有勝組可回填，所有題目均略過。</p>{% endif %}
+{% if preview.status == 'ready' and not preview.context_error and preview.counts.skip != preview.answer_item_count %}
 <section class="card"><form data-writeback-confirm method="post" action="{{ url_for('notes.confirm_export_preview', preview_id=preview.preview_id) }}">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="confirm" value="true">
   <input type="hidden" name="idempotency_key" value="{{ idempotency_key }}">
@@ -32,6 +34,6 @@
   <button>確認回填並回讀核對</button>
 </form></section>
 {% elif operation_id %}<p>此預覽已使用。<a href="{{ url_for('notes.operation_report', operation_id=operation_id) }}">查看回填報告</a></p>
-{% else %}<p role="alert">此預覽已失效，請重新建立預覽。</p>{% endif %}
-<a href="{{ url_for('notes.export_form') }}">返回建立新的預覽</a>
+{% elif preview.status != 'ready' %}<p role="alert">此預覽已失效，請重新建立預覽。</p>{% endif %}
+<a href="{{ url_for('notes.export_form', activity_id=preview.activity_id) }}">返回此活動回填</a>
 {% endblock %}
