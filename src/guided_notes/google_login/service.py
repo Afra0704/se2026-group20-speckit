@@ -32,7 +32,12 @@ def binding(attempt):
     return {key: attempt[key] for key in ('attempt_id','purpose','instance_uuid','browser_hash','browser_epoch','client_id')}
 
 
-def start(purpose='login', *, flow_id=None, credential_kind=None):
+def start(purpose='login', *, flow_id=None, credential_kind=None, return_to=None):
+    if return_to is not None:
+        from .return_targets import sheets_return_target
+        if purpose != 'sheets' or flow_id is not None:
+            raise ApiError(400, 'INVALID_REQUEST')
+        return_to = sheets_return_target(return_to)
     if flow_id is not None:
         from .flow_context import attach
         from .picker_service import configuration as picker_configuration
@@ -54,6 +59,8 @@ def start(purpose='login', *, flow_id=None, credential_kind=None):
             redirect_uri=current_app.config['GOOGLE_REDIRECT_URI'], instance_uuid=repository.instance_id(db),
             created_at=time.time(), expires_at=time.time()+300)
         secret = {'nonce':secrets.token_urlsafe(32), 'verifier':secrets.token_urlsafe(64)}
+        if return_to is not None:
+            secret['return_to'] = return_to
         attempt['secret_blob'] = crypto.encrypt(secret, binding(attempt))
         columns = list(attempt)
         db.execute(f"INSERT INTO google_oauth_attempts({','.join(columns)},status) VALUES({','.join('?' for _ in columns)},'pending')", tuple(attempt.values()))

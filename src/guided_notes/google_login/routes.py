@@ -7,6 +7,15 @@ from .provider import provider
 
 google_login = Blueprint('google_login', __name__)
 
+SHEETS_RECONNECT_CODES = frozenset({'SHEETS_CONNECT_REQUIRED', 'SHEETS_REAUTH_REQUIRED',
+    'GOOGLE_REAUTH_REQUIRED', 'GOOGLE_CREDENTIALS_REFRESH_REQUIRED'})
+
+
+@google_login.app_template_global()
+def sheets_reconnect_required(code):
+    from flask import current_app
+    return current_app.config.get('TEACHER_AUTH_MODE') == 'google' and code in SHEETS_RECONNECT_CODES
+
 MESSAGES = {
     'GOOGLE_NOT_CONFIGURED':'尚未完成 Google 網頁登入設定，請依操作說明設定 Web client。',
     'GOOGLE_FLOW_INVALID':'登入驗證未通過，請重新開始。',
@@ -89,22 +98,23 @@ def callback():
         if flow_context:
             target = '/teacher/workspace/imports/' + flow_context['flow_id']
         elif attempt['purpose'] == 'sheets':
-            target = '/teacher/notes'
+            from .return_targets import sheets_return_target
+            target = sheets_return_target(attempt['secrets'].get('return_to')) or '/teacher/notes'
         if request.args.get('error'):
             raise ApiError(400,'GOOGLE_LOGIN_CANCELLED')
         result = provider().exchange_and_verify(attempt, request.args['code'])
         service.finish(attempt, result)
-        return redirect(target if flow_context else '/teacher/notes' if attempt['purpose']=='sheets' else '/teacher', code=303)
+        return redirect(target if flow_context or attempt['purpose']=='sheets' else '/teacher', code=303)
     except ApiError as error:
         service.fail(attempt)
         if target.startswith('/teacher/workspace/imports/'):
             from flask import flash
             flash(MESSAGES.get(error.code, '授權未完成，請重新嘗試。'), 'error')
             return redirect(target, code=303)
-        return redirect(target+'?error='+error.code, code=303)
+        return redirect(target+('&' if '?' in target else '?')+'error='+error.code, code=303)
     except Exception:
         service.fail(attempt)
-        return redirect(target+'?error=GOOGLE_UNAVAILABLE', code=303)
+        return redirect(target+('&' if '?' in target else '?')+'error=GOOGLE_UNAVAILABLE', code=303)
 
 
 @google_login.get('/teacher/session')
@@ -123,7 +133,12 @@ def logout():
 @google_login.post('/teacher/google/sheets/connect')
 def connect():
     require_teacher()
-    return redirect(service.start('sheets'),code=303)
+    from ..http import payload
+    from .return_targets import sheets_return_target
+    data = payload()
+    if set(data) - {'csrf_token', 'return_to'}:
+        raise ApiError(400, 'INVALID_REQUEST')
+    return redirect(service.start('sheets', return_to=sheets_return_target(data.get('return_to'))),code=303)
 
 
 @google_login.get('/teacher/google/sheets/status')

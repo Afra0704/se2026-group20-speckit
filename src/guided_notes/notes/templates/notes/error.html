@@ -1,6 +1,7 @@
 {% extends "notes/base.html" %}
 {% block content %}
 <h1>操作未完成</h1><p role="alert">{{ error.message }}</p><p class="muted">錯誤代碼：{{ error.code }}</p>
+{% if google_session is defined and sheets_reconnect_required(error.code) %}{% include 'identity/sheets_reconnect.html' %}{% endif %}
 {% if error.context.preview_url %}<p><a href="{{ error.context.preview_url }}">檢查更新後的預覽</a></p>{% endif %}
 {% if error.context.operation_id %}<p><a href="{{ url_for('notes.operation_report', operation_id=error.context.operation_id) }}">查看此次作業報告</a></p>{% endif %}
 {% if error.context.issues %}<ul>{% for issue in error.context.issues %}<li>{{ issue.message }}（{{ issue.code }}）{% if issue.question_number %} · 題號 {{ issue.question_number }}{% endif %}{% if issue.range %} · 列 {{ issue.range.start_row + 1 }}，欄 {{ issue.range.start_column + 1 }}{% endif %}</li>{% endfor %}</ul>{% endif %}
