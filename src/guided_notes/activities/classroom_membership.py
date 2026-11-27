@@ -1,3 +1,4 @@
+import re
 import secrets
 import time
 
@@ -5,6 +6,24 @@ from flask import current_app, session
 
 from ..auth import digest
 from ..http import ApiError
+
+
+GROUP_NUMBER = re.compile(r'[1-9][0-9]{0,2}')
+# Match String.trim() on the student entry form.
+INPUT_WHITESPACE = " \t\n\r\v\f\u00a0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000\ufeff"
+
+
+def group_number(value):
+    value = value.strip(INPUT_WHITESPACE) if isinstance(value, str) else ''
+    if not GROUP_NUMBER.fullmatch(value):
+        raise ApiError(400, 'INVALID_GROUP_NUMBER')
+    return value
+
+
+def group_label(name):
+    if isinstance(name, str) and GROUP_NUMBER.fullmatch(name):
+        return f'第 {name} 組'
+    return name
 
 
 def issue(db, membership_id, *, read_only=False):

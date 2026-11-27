@@ -12,7 +12,7 @@ from .classroom_access import (
 )
 from .classroom_catalog import get_catalog, list_catalogs, get_display_content
 from .display_service import save_display
-from .classroom_membership import group_for, identity_for, join, recover
+from .classroom_membership import group_for, group_label, group_number, identity_for, join, recover
 from .course_service import get_owned_course
 from .state_routes import state_view
 from .teacher import store_activity, transition, validate_catalog
@@ -208,7 +208,8 @@ def close(classroom_id):
 @rooms.post("/classroom-memberships")
 def enroll():
     data = payload()
-    code, group_name = string(data, "code", 32).upper(), string(data, "group_name", 80)
+    group_name = group_number(data.get("group_name"))
+    code = string(data, "code", 32).upper()
     limit_attempts("classroom-join")
     with write_transaction() as db:
         classroom_id, group_id, proof, token = join(db, code, group_name)
@@ -239,9 +240,11 @@ def state(classroom_id):
         view = state_view(db, activity, group) if activity is not None else None
         if view is not None:
             view["title"] = activity["title"]
+            if "group_name" in view:
+                view["group_name"] = group_label(view["group_name"])
         return {
             "classroom_id": room["id"], "classroom_state": room["state"], "state_version": room["state_version"],
-            "current_activity_id": activity_id, "group_name": group["name"] if group else None,
+            "current_activity_id": activity_id, "group_name": group_label(group["name"]) if group else None,
             "activity": view,
         }
     finally:

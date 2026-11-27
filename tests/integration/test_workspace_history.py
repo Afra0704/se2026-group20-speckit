@@ -10,7 +10,7 @@ def test_removed_lecture_keeps_existing_unknown_writeback_recovery(classroom_app
     activity=post(classroom_teacher,root,import_id=catalog['import_id'],import_version=1).json
     aid=activity['activity_id']
     student=classroom_app.test_client()
-    group=post(student,'/classroom-memberships',code=room['code'],group_name='A').json['group_id']
+    group=post(student,'/classroom-memberships',code=room['code'],group_name='1').json['group_id']
     assert post(classroom_teacher,root+'/'+aid+'/start').status_code==200
     for q in catalog['questions']:
         assert submit(student,aid,question_id=q['question_id'],items=[

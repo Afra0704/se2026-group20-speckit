@@ -9,7 +9,7 @@ def test_accept_first_keeps_original_scope_while_close_waits(classroom_app, clas
     course, room = classroom_setup
     rid = room['classroom_id']
     student = classroom_app.test_client()
-    joined = post(student, '/classroom-memberships', code=room['code'], group_name='A').json
+    joined = post(student, '/classroom-memberships', code=room['code'], group_name='1').json
     aid = post(classroom_teacher, f'/teacher/classrooms/{rid}/activities', import_id=course_import_id(course['course_id']), import_version=1).json['activity_id']
     post(classroom_teacher, f'/teacher/classrooms/{rid}/activities/{aid}/start')
     entered, release = Event(), Event()
@@ -36,7 +36,7 @@ def test_close_first_rejects_new_submission_and_new_result_read(classroom_app, c
     course, room = classroom_setup
     rid = room['classroom_id']
     student = classroom_app.test_client()
-    post(student, '/classroom-memberships', code=room['code'], group_name='A')
+    post(student, '/classroom-memberships', code=room['code'], group_name='1')
     aid = post(classroom_teacher, f'/teacher/classrooms/{rid}/activities', import_id=course_import_id(course['course_id']), import_version=1).json['activity_id']
     post(classroom_teacher, f'/teacher/classrooms/{rid}/activities/{aid}/start')
     accepted = []
@@ -51,7 +51,7 @@ def test_authorized_result_snapshot_precedes_close_and_new_read_is_rejected(clas
     course, room = classroom_setup
     rid = room['classroom_id']
     student = classroom_app.test_client()
-    post(student, '/classroom-memberships', code=room['code'], group_name='A')
+    post(student, '/classroom-memberships', code=room['code'], group_name='1')
     aid = post(classroom_teacher, f'/teacher/classrooms/{rid}/activities', import_id=course_import_id(course['course_id']), import_version=1).json['activity_id']
     post(classroom_teacher, f'/teacher/classrooms/{rid}/activities/{aid}/finish')
     entered, release = Event(), Event()

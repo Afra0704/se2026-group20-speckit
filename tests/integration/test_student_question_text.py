@@ -23,7 +23,7 @@ def test_full_text_snapshot_scope_and_core_unchanged(classroom_app, classroom_te
     state_path = f"/classrooms/{room['classroom_id']}/state"
     assert classroom_app.test_client().get(state_path).status_code == 401
     clients = [classroom_app.test_client(), classroom_app.test_client()]
-    for client, name in zip(clients, ('甲', '乙')):
+    for client, name in zip(clients, ('1', '2')):
         assert post(client, '/classroom-memberships', code=room['code'], group_name=name).status_code == 201
     gateway = classroom_app.config['NOTES_GATEWAY']
     before = len(gateway.calls)

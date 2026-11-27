@@ -11,23 +11,27 @@ def test_late_member_can_view_same_room_results_until_room_closes(classroom_app,
     rid = room["classroom_id"]
     paths = f"/teacher/classrooms/{rid}"
     a, b, late, outsider = [classroom_app.test_client() for _ in range(4)]
-    for client, group in ((a, "A"), (b, "B")):
+    for client, group in ((a, "1"), (b, "2")):
         assert post(client, "/classroom-memberships", code=room["code"], group_name=group).status_code == 201
     activity, questions = published_quiz(classroom_app, classroom_teacher, classroom_setup)
     aid = activity["activity_id"]
     assert post(classroom_teacher, f"{paths}/activities/{aid}/start").status_code == 200
+    progress = classroom_teacher.get(f"/activities/{aid}/results", headers={"X-Activity-Role": "teacher"})
+    assert {row["group_name"] for row in progress.json["results"]} == {"第 1 組", "第 2 組"}
     for client, answer in ((a, "first"), (b, "private second")):
         assert submit_question(client, aid, questions[0], answer=answer).status_code == 201
     assert post(classroom_teacher, f"{paths}/activities/{aid}/finish").status_code == 200
-    assert post(late, "/classroom-memberships", code=room["code"], group_name="A").status_code == 201
+    assert post(late, "/classroom-memberships", code=room["code"], group_name="1").status_code == 201
     result_url, history = f"/activities/{aid}/results", f"/classrooms/{rid}/results"
     assert [row["activity_id"] for row in late.get(history).json["activities"]] == [aid]
     response = late.get(result_url)
     row = response.json["results"][0]
-    assert row["own"]["rank"] == 1 and row["winner_name"] == "A"
+    assert row["own"]["rank"] == 1 and row["winner_name"] == "第 1 組"
     assert "groups" not in row and b"private second" not in response.data
+    teacher_row = classroom_teacher.get(result_url, headers={"X-Activity-Role": "teacher"}).json["results"][0]
+    assert [entry["group_name"] for entry in teacher_row["groups"]] == ["第 1 組", "第 2 組"]
     assert post(classroom_teacher, paths + "/close", confirm=True).status_code == 200
-    assert post(outsider, "/classroom-memberships", code=room["code"], group_name="A").status_code == 403
+    assert post(outsider, "/classroom-memberships", code=room["code"], group_name="1").status_code == 403
     assert outsider.get(result_url).status_code == outsider.get(history).status_code == 401
     late.delete_cookie("session")
     assert post(late, f"/classrooms/{rid}/result-access").status_code == 409
@@ -39,7 +43,7 @@ def test_open_room_results_remain_private_and_closing_blocks_student(classroom_a
     cid, rid = course["course_id"], room["classroom_id"]
     path = f"/teacher/classrooms/{rid}"
     student = classroom_app.test_client()
-    gid = post(student, "/classroom-memberships", code=room["code"], group_name="A").json["group_id"]
+    gid = post(student, "/classroom-memberships", code=room["code"], group_name="1").json["group_id"]
     ids = []
     for _ in range(3):
         activity = post(classroom_teacher, path + "/activities", import_id=course_import_id(cid), import_version=1).json

@@ -21,7 +21,7 @@ def test_close_writer_first_prevents_waiting_join_from_using_old_mapping(classro
     with ThreadPoolExecutor(2) as pool:
         closing = pool.submit(post, classroom_teacher, f"/teacher/classrooms/{room['classroom_id']}/close", confirm=True)
         assert entered.wait(3)
-        joining = pool.submit(post, student, '/classroom-memberships', code=room['code'], group_name='A')
+        joining = pool.submit(post, student, '/classroom-memberships', code=room['code'], group_name='1')
         release.set()
         assert closing.result().status_code == 200
         result = joining.result()
@@ -42,7 +42,7 @@ def test_join_resolves_one_target_before_close_can_commit(classroom_app, classro
     monkeypatch.setattr(classroom_routes, 'join', held)
     student = classroom_app.test_client()
     with ThreadPoolExecutor(2) as pool:
-        joining = pool.submit(post, student, '/classroom-memberships', code=room['code'], group_name='A')
+        joining = pool.submit(post, student, '/classroom-memberships', code=room['code'], group_name='1')
         assert entered.wait(3)
         closing = pool.submit(post, classroom_teacher, f"/teacher/classrooms/{room['classroom_id']}/close", confirm=True)
         release.set()
@@ -67,4 +67,4 @@ def test_failure_during_close_rolls_back_activity_and_code(classroom_app, classr
     with classroom_app.app_context():
         assert connection().execute('SELECT state FROM classrooms WHERE id=?', (room['classroom_id'],)).fetchone()[0] == 'OPEN'
         assert connection().execute('SELECT phase FROM activities WHERE id=?', (aid,)).fetchone()[0] == 'PREPARING'
-    assert post(classroom_app.test_client(), '/classroom-memberships', code=room['code'], group_name='B').status_code == 201
+    assert post(classroom_app.test_client(), '/classroom-memberships', code=room['code'], group_name='2').status_code == 201

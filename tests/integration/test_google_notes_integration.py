@@ -37,7 +37,7 @@ def test_google_mode_import_to_student_frozen_full_text(google_app,google_teache
     activity=post(google_teacher,f"/teacher/classrooms/{room['classroom_id']}/activities",import_id=catalog['import_id'],import_version=1,title='Lecture')
     assert activity.status_code==201,activity.json
     student=google_app.test_client()
-    joined=post(student,'/classroom-memberships',code=room['code'],group_name='甲組')
+    joined=post(student,'/classroom-memberships',code=room['code'],group_name='1')
     assert joined.status_code==201,joined.json
     state=student.get(f"/classrooms/{room['classroom_id']}/state").json['activity']
     assert state['phase']=='PREPARING' and state['question_text_status']=='complete'

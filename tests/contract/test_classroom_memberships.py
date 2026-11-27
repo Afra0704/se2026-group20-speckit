@@ -18,10 +18,10 @@ def test_classroom_join_isolated_and_switch_preserves_group(classroom_app, class
     second = post(classroom_teacher, f"/teacher/courses/{cid}/classrooms", title="下午班").json
     a, b, other = [classroom_app.test_client() for _ in range(3)]
     assert post(a, "/classroom-memberships", code=room["code"], group_name=" ").status_code == 400
-    a_join = post(a, "/classroom-memberships", code=room["code"], group_name=" A ").json
-    assert post(b, "/classroom-memberships", code=room["code"], group_name="A").json["group_id"] == a_join["group_id"]
-    assert post(b, "/classroom-memberships", code=room["code"], group_name="B").json["group_id"] != a_join["group_id"]
-    assert post(other, "/classroom-memberships", code=second["code"], group_name="A").json["group_id"] != a_join["group_id"]
+    a_join = post(a, "/classroom-memberships", code=room["code"], group_name=" 1 ").json
+    assert post(b, "/classroom-memberships", code=room["code"], group_name="1").json["group_id"] == a_join["group_id"]
+    assert post(b, "/classroom-memberships", code=room["code"], group_name="2").json["group_id"] != a_join["group_id"]
+    assert post(other, "/classroom-memberships", code=second["code"], group_name="1").json["group_id"] != a_join["group_id"]
     state = f"/classrooms/{rid}/state"
     assert a.get(state).json["current_activity_id"] is None
     assert other.get(state).status_code == 403
@@ -36,3 +36,20 @@ def test_classroom_join_isolated_and_switch_preserves_group(classroom_app, class
             assert current["state_version"] == 3 * index + 2
         assert a.get(state).json["activity"]["group_id"] == a_join["group_id"]
         assert post(classroom_teacher, f"{path}/{activity_id}/finish").status_code == 200
+
+
+def test_numeric_join_rejects_invalid_group_without_replacing_grant(classroom_app, classroom_setup):
+    _, room = classroom_setup
+    student = classroom_app.test_client()
+    endpoint = '/classroom-memberships'
+    assert post(student, endpoint, code=room['code'], group_name=' 42 ').status_code == 201
+    with student.session_transaction() as session:
+        grant = session['classroom_grant']
+    for value in ('0', '01', '１', '1000', '1.0', '1e2', '', '  ', 42):
+        reply = post(student, endpoint, code=room['code'], group_name=value)
+        assert reply.status_code == 400
+        assert reply.json['error'] == 'INVALID_GROUP_NUMBER'
+    with student.session_transaction() as session:
+        assert session['classroom_grant'] == grant
+    state = student.get(f"/classrooms/{room['classroom_id']}/state")
+    assert state.json['group_name'] == '第 42 組'

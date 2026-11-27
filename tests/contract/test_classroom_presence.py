@@ -15,7 +15,7 @@ def test_online_counts_use_live_browser_identities(google_app, google_teacher, m
     second = google_app.test_client()
 
     def join(student):
-        assert post(student, '/classroom-memberships', code=room['code'], group_name='A').status_code == 201
+        assert post(student, '/classroom-memberships', code=room['code'], group_name='1').status_code == 201
 
     outsider = login(google_app.test_client(), google_app, 'B')
     assert outsider.get(groups, headers={'Accept': 'application/json'}).status_code == 404
@@ -61,7 +61,7 @@ def test_page_departure_is_immediate_deduplicated_and_ignores_late_heartbeat(goo
     student = google_app.test_client()
     stranger = google_app.test_client()
     for client in (student, stranger):
-        assert post(client, '/classroom-memberships', code=room['code'], group_name='A').status_code == 201
+        assert post(client, '/classroom-memberships', code=room['code'], group_name='1').status_code == 201
 
     def online():
         return google_teacher.get(groups).json['groups'][0]['online_count']
@@ -91,7 +91,7 @@ def test_form_beacons_require_csrf_and_preserve_same_browser_other_pages(google_
     room = post(google_teacher, f'/teacher/courses/{course}/classrooms', title='One').json
     rid = room['classroom_id']
     student = google_app.test_client()
-    assert post(student, '/classroom-memberships', code=room['code'], group_name='A').status_code == 201
+    assert post(student, '/classroom-memberships', code=room['code'], group_name='1').status_code == 201
     csrf = student.get('/csrf').json['csrf']
     path = f'/classrooms/{rid}/presence'
 

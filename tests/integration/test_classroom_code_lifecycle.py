@@ -7,13 +7,13 @@ def test_reuse_keeps_old_membership_and_close_is_idempotent(classroom_app, class
     course, room = classroom_setup
     rid = room['classroom_id']
     student = classroom_app.test_client()
-    original = post(student, '/classroom-memberships', code=room['code'].lower(), group_name=' A ')
+    original = post(student, '/classroom-memberships', code=room['code'].lower(), group_name=' 1 ')
     assert original.status_code == 201
     path = f'/teacher/classrooms/{rid}/close'
     assert post(classroom_teacher, path, confirm=True).status_code == 200
     closed_state = student.get(f'/classrooms/{rid}/state')
     assert set(closed_state.json) == {'classroom_id', 'classroom_state', 'state_version'}
-    assert post(classroom_app.test_client(), '/classroom-memberships', code=room['code'], group_name='B').status_code == 403
+    assert post(classroom_app.test_client(), '/classroom-memberships', code=room['code'], group_name='2').status_code == 403
     monkeypatch.setattr(classroom_routes, 'make_room_code', lambda: room['code'])
     new = post(classroom_teacher, f"/teacher/courses/{course['course_id']}/classrooms", title='new')
     assert new.status_code == 201 and new.json['classroom_id'] != rid
@@ -25,7 +25,7 @@ def test_reuse_keeps_old_membership_and_close_is_idempotent(classroom_app, class
     assert student.get(f"/classrooms/{new.json['classroom_id']}/state").status_code == 403
     assert student.get(f'/classrooms/{rid}/state').json == closed_state.json
     assert post(student, f'/classrooms/{rid}/result-access').status_code == 409
-    joined = post(student, '/classroom-memberships', code=room['code'], group_name='A')
+    joined = post(student, '/classroom-memberships', code=room['code'], group_name='1')
     assert joined.json['classroom_id'] == new.json['classroom_id']
     assert joined.json['group_id'] != original.json['group_id']
 
@@ -34,10 +34,10 @@ def test_input_normalization_and_collision_failure(classroom_app, classroom_teac
     from guided_notes.activities import classroom_routes
     course, room = classroom_setup
     client = classroom_app.test_client()
-    assert post(client, '/classroom-memberships', code=' '+room['code'].lower()+' ', group_name='A').status_code == 201
+    assert post(client, '/classroom-memberships', code=' '+room['code'].lower()+' ', group_name='1').status_code == 201
     for invalid in (' ', 12, 'A'*33):
-        assert post(client, '/classroom-memberships', code=invalid, group_name='A').status_code == 400
-    assert post(client, '/classroom-memberships', code=room['code'][:2]+' '+room['code'][2:], group_name='A').status_code == 403
+        assert post(client, '/classroom-memberships', code=invalid, group_name='1').status_code == 400
+    assert post(client, '/classroom-memberships', code=room['code'][:2]+' '+room['code'][2:], group_name='1').status_code == 403
     monkeypatch.setattr(classroom_routes, 'make_room_code', lambda: room['code'])
     assert post(classroom_teacher, f"/teacher/courses/{course['course_id']}/classrooms", title='collision').status_code == 503
 
@@ -47,7 +47,7 @@ def test_closed_room_blocks_results_and_teacher_ownership_is_preserved(classroom
     course, room = classroom_setup
     rid = room['classroom_id']
     client = classroom_app.test_client()
-    post(client, '/classroom-memberships', code=room['code'], group_name='A')
+    post(client, '/classroom-memberships', code=room['code'], group_name='1')
     aid = post(classroom_teacher, f'/teacher/classrooms/{rid}/activities', import_id=course_import_id(course['course_id']), import_version=1).json['activity_id']
     post(classroom_teacher, f'/teacher/classrooms/{rid}/close', confirm=True)
     for url in (f'/classrooms/{rid}/results', f'/activities/{aid}/results'):

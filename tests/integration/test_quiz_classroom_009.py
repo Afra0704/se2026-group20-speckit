@@ -20,7 +20,7 @@ def test_formal_acceptance_and_classroom_close_share_the_write_boundary(classroo
     activity, questions = published_quiz(classroom_app, classroom_teacher, classroom_setup)
     aid, rid = activity['activity_id'], classroom_setup[1]['classroom_id']
     student = classroom_app.test_client()
-    post(student, '/classroom-memberships', code=classroom_setup[1]['code'], group_name='A')
+    post(student, '/classroom-memberships', code=classroom_setup[1]['code'], group_name='1')
     post(classroom_teacher, f'/teacher/classrooms/{rid}/activities/{aid}/start')
     entered, release = Event(), Event()
     if first == 'submission':
@@ -61,7 +61,7 @@ def pending_quiz(app, teacher, setup, monkeypatch):
     activity, questions = published_quiz(app, teacher, setup)
     aid, rid = activity['activity_id'], room['classroom_id']
     student = app.test_client()
-    post(student, '/classroom-memberships', code=room['code'], group_name='A')
+    post(student, '/classroom-memberships', code=room['code'], group_name='1')
     post(teacher, f'/teacher/classrooms/{rid}/activities/{aid}/start')
     assert submit_question(student, aid, questions[0]).status_code == 201
     with monkeypatch.context() as patch:
@@ -123,7 +123,7 @@ def test_formal_settlement_and_sequence_survive_legacy_upgrade_and_reuse(classro
     activity, questions = published_quiz(classroom_app, classroom_teacher, classroom_setup)
     aid, rid = activity['activity_id'], room['classroom_id']
     a, b = classroom_app.test_client(), classroom_app.test_client()
-    for client, name in ((a,'A'),(b,'B')):
+    for client, name in ((a,'1'),(b,'2')):
         post(client, '/classroom-memberships', code=room['code'], group_name=name)
     post(classroom_teacher, f'/teacher/classrooms/{rid}/activities/{aid}/start')
     key = str(uuid4())
@@ -132,7 +132,7 @@ def test_formal_settlement_and_sequence_survive_legacy_upgrade_and_reuse(classro
     assert submit_question(a, aid, questions[0], key=key, answer='first').status_code == 201
     post(classroom_teacher, f'/teacher/classrooms/{rid}/close', confirm=True)
     teacher_result = classroom_teacher.get(f'/activities/{aid}/results', headers={'X-Activity-Role':'teacher'}).json
-    assert teacher_result['results'][0]['winner_name'] == 'A'
+    assert teacher_result['results'][0]['winner_name'] == '第 1 組'
     assert [g['rank'] for g in teacher_result['results'][0]['groups']] == [1,2]
     target = classroom_app.config['DATABASE']
     # The published_quiz fixture seeds the catalog directly; complete the normal
@@ -168,7 +168,7 @@ def test_google_upgrade_failure_preserves_formal_quiz_and_encrypted_identity(goo
     room = post(google_teacher, f"/teacher/courses/{course['course_id']}/classrooms", title='saved').json
     activity, questions = published_quiz(google_app, google_teacher, (course,room))
     student = google_app.test_client()
-    post(student, '/classroom-memberships', code=room['code'], group_name='A')
+    post(student, '/classroom-memberships', code=room['code'], group_name='1')
     aid, rid = activity['activity_id'], room['classroom_id']
     post(google_teacher, f'/teacher/classrooms/{rid}/activities/{aid}/start')
     assert submit_question(student, aid, questions[0]).status_code == 201
@@ -206,7 +206,7 @@ def test_formal_closed_classroom_keeps_teacher_snapshot_and_unknown_writeback(cl
     activity = post(classroom_teacher, f'/teacher/classrooms/{rid}/activities', import_id=catalog['import_id'], import_version=1).json
     aid = activity['activity_id']
     a, b = classroom_app.test_client(), classroom_app.test_client()
-    for client, name in ((a,'A'),(b,'B')):
+    for client, name in ((a,'1'),(b,'2')):
         post(client, '/classroom-memberships', code=room['code'], group_name=name)
     post(classroom_teacher, f'/teacher/classrooms/{rid}/activities/{aid}/start')
     for question in catalog['questions']:
@@ -215,7 +215,7 @@ def test_formal_closed_classroom_keeps_teacher_snapshot_and_unknown_writeback(cl
     assert post(classroom_teacher, f'/teacher/classrooms/{rid}/close', confirm=True).status_code == 200
     result = classroom_teacher.get(f'/activities/{aid}/results', headers={'X-Activity-Role':'teacher'}).json
     assert result['status'] == 'settled'
-    assert all(row['winner_name']=='A' for row in result['results'])
+    assert all(row['winner_name']=='第 1 組' for row in result['results'])
     preview = post(classroom_teacher, '/teacher/notes/export-previews', activity_id=aid)
     assert preview.status_code == 201
     gateway = classroom_app.config['NOTES_GATEWAY']
@@ -232,5 +232,5 @@ def test_formal_closed_classroom_keeps_teacher_snapshot_and_unknown_writeback(cl
     for client in (a,b):
         assert client.get(f'/activities/{aid}/results').status_code == 409
         assert post(client, f'/classrooms/{rid}/result-access').status_code == 409
-    post(a, '/classroom-memberships', code=new_room['code'], group_name='A')
+    post(a, '/classroom-memberships', code=new_room['code'], group_name='1')
     assert a.get(f'/activities/{aid}/results').status_code == 403

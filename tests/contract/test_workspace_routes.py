@@ -40,8 +40,8 @@ def test_teacher_group_list_is_private_and_live(google_app,google_teacher):
     room=post(google_teacher,f'/teacher/courses/{c}/classrooms',title='今日').json
     route=f"/teacher/workspace/courses/{c}/classrooms/{room['classroom_id']}/groups"
     student=google_app.test_client()
-    assert post(student,'/classroom-memberships',code=room['code'],group_name='<script>甲</script>').status_code==201
+    assert post(student,'/classroom-memberships',code=room['code'],group_name='1').status_code==201
     assert student.get(route,headers={'Accept':'application/json'}).status_code==401
     result=google_teacher.get(route).json
-    assert result['groups'][0]['name']=='<script>甲</script>'
+    assert result['groups'][0]['name']=='第 1 組'
     assert set(result['groups'][0])=={'group_id','name','online_count'}

@@ -8,10 +8,10 @@
 {% if report.error_code %}<p role="alert">處理代碼：{{ report.error_code }}</p>{% endif %}
 {% if google_session is defined and sheets_reconnect_required(report.error_code) %}{% set sheets_return_to = url_for('notes.operation_report', operation_id=report.operation_id) %}{% include 'identity/sheets_reconnect.html' %}{% endif %}
 <p>已驗證 {{ report.counts.verified }} · 略過 {{ report.counts.skipped }} · 未處理 {{ report.counts.not_processed }} · 失敗 {{ report.counts.failed }} · 未知 {{ report.counts.unknown }} · 衝突 {{ report.counts.conflict }}</p>
-<section class="card scroll"><table><thead><tr><th>題號／小題</th><th>勝組識別</th><th>狀態</th><th>處理代碼</th><th>回讀時間</th></tr></thead><tbody>
+<section class="card scroll"><table><thead><tr><th>題號／小題</th><th>勝組</th><th>狀態</th><th>處理代碼</th><th>回讀時間</th></tr></thead><tbody>
 {% for unit in report.units %}{% for item in unit['items'] %}
 {% set label = labels[item.item_id] %}
-<tr><td>{{ label.display_number }} {{ label.subitem_label or '' }}</td><td>{{ unit.winner_group_id or '無勝組' }}</td>
+<tr><td>{{ label.display_number }} {{ label.subitem_label or '' }}</td><td>{{ group_labels.get(item.item_id, unit.winner_group_id) if unit.winner_group_id is not none else '無勝組' }}</td>
 <td>{{ {'not_processed':'尚未處理','verified':'回讀一致','failed':'明確失敗','unknown':'結果未知','skipped':'無勝組略過','conflict':'內容衝突'}[item.status] }}</td><td>{{ item.error_code or '—' }}</td><td>{{ item.verified_at|notes_time if item.verified_at else '—' }}</td></tr>
 {% endfor %}{% endfor %}
 </tbody></table></section>

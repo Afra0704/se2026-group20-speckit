@@ -17,7 +17,7 @@ def test_concurrent_start_and_stale_submission(classroom_app, classroom_teacher,
     assert sorted(statuses) == [200, 409]
     winner = first
     student = classroom_app.test_client()
-    assert post(student, "/classroom-memberships", code=room["code"], group_name="A").status_code == 201
+    assert post(student, "/classroom-memberships", code=room["code"], group_name="1").status_code == 201
     accepted = []
     classroom_app.config["ACCEPT_SUBMISSION"] = lambda db, context, answers: accepted.append(context["activity_id"])
     body = {"question_id": "fixture-q1", "items": [{"item_id": "fixture-item-1-1", "answer_text": "答"}]}

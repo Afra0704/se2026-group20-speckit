@@ -30,7 +30,7 @@ def test_real_course_catalog_binding_switch_and_writeback_adapter(classroom_app,
     path = f"/teacher/classrooms/{room['classroom_id']}/activities"
     ids = []
     student = classroom_app.test_client()
-    joined = post(student, "/classroom-memberships", code=room["code"], group_name="甲組").json
+    joined = post(student, "/classroom-memberships", code=room["code"], group_name="1").json
     for _ in range(2):
         aid = post(classroom_teacher, path, import_id=catalog["import_id"], import_version=1).json["activity_id"]
         ids.append(aid)
@@ -47,8 +47,14 @@ def test_real_course_catalog_binding_switch_and_writeback_adapter(classroom_app,
     classroom_app.config["GET_SETTLED_RESULTS"] = lambda db, activity_id: {"snapshot":snapshot,"results":[]} if activity_id==aid else None
     preview = post(classroom_teacher, "/teacher/notes/export-previews", activity_id=aid)
     assert preview.status_code == 201
+    assert {item["winner_group_id"] for item in preview.json["items"]} == {str(joined["group_id"])}
+    page = classroom_teacher.get(preview.json["preview_url"], headers={"Accept": "text/html"})
+    assert "第 1 組" in page.text
     report = confirm_export(classroom_teacher, preview.json["preview_id"], key="integration").json
     assert report["status"] == "completed" and report["counts"]["verified"] == 3
+    page = classroom_teacher.get(f"/teacher/notes/operations/{report['operation_id']}",
+                                 headers={"Accept": "text/html"})
+    assert "第 1 組" in page.text
     assert [len(batch) for batch in classroom_app.config["NOTES_GATEWAY"].writes] == [2,1]
     assert student.get(f"/classrooms/{room['classroom_id']}/results").json["activities"][0]["activity_id"] == aid
     assert post(classroom_teacher, f"/teacher/classrooms/{room['classroom_id']}/close", confirm=True).status_code == 200
