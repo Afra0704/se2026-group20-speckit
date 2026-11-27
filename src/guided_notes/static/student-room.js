@@ -34,7 +34,16 @@
   const authErrors=['AUTH_REQUIRED','FORBIDDEN','RECOVERY_DENIED','CLASSROOM_TAB_REQUIRED','CLASSROOM_REJOIN_REQUIRED'];
   const phaseText={PREPARING:'尚未開放搶答',LIVE:'搶答中',CLOSED:'活動已結束'};
   function clear(){content.hidden=true;byId('questions').replaceChildren();byId('results').replaceChildren();activity=null;view=null;historyKey=null;selectedResult=null;resultOutput=null;historyFailed=false;historyNotice=null;}
-  function ended(){if(!state.closed)state.close();controller.abort();if(tabProtocol)clearStoredTab();pageToken=null;clear();byId('access-notice').hidden=true;byId('closed-notice').hidden=false;byId('state').textContent='課堂已結束';byId('message').textContent='';}
+  function ended(){
+    if(!state.closed)state.close();
+    controller.abort();
+    if(tabProtocol){
+      // This is only a display marker for this fixed classroom ID, never authority.
+      // Replace the recovery index rather than retaining credentials after closure.
+      try{sessionStorage.setItem(storageKey,JSON.stringify({closed:true}));}catch{}
+    }
+    pageToken=null;activation=null;operationScope=null;clear();byId('access-notice').hidden=true;byId('closed-notice').hidden=false;byId('state').textContent='課堂已結束';byId('message').textContent='';
+  }
   async function api(path,body,key){
     const options={cache:'no-store',signal:controller.signal,headers:{'X-Activity-Role':'student'}};
     if(tabProtocol){
@@ -337,5 +346,6 @@
     document.addEventListener('visibilitychange',()=>{void heartbeat();});
     void heartbeat();
   }
-  refresh();
+  if(tabProtocol&&storedTab()?.closed===true)ended();
+  else refresh();
 })();

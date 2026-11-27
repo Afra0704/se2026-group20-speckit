@@ -20,6 +20,7 @@ async function screen(beaconAccepted, holdFirstHeartbeat = false, tab = null) {
   let firstHeartbeat = true, releaseHeartbeat;
   let accessCount = 0;
   const saved = new Map(tab ? [['classroom-tab:room', JSON.stringify(tab.stored)]] : []);
+  if (tab?.otherRoomClosed) saved.set('classroom-tab:other-room', JSON.stringify({closed: true}));
   const assigned = [], prompts = [];
   const context = {document, AbortController, Uint8Array, URLSearchParams,
     crypto: {getRandomValues(bytes) { bytes.fill(++nonce); return bytes; }},
@@ -116,11 +117,33 @@ test('closing the classroom clears this tab and stops further protected polling'
   await page.poll();
   await page.flush();
   assert.equal(page.nodes['closed-notice'].hidden, false);
-  assert.equal(page.saved.has('classroom-tab:room'), false);
+  assert.deepEqual(JSON.parse(page.saved.get('classroom-tab:room')), {closed: true});
   const calls = page.calls.length;
   await page.poll();
   await page.heartbeat();
   assert.equal(page.calls.length, calls);
+});
+
+test('reload of an observed closed classroom keeps only a terminal marker and makes no protected requests', async () => {
+  const original = await screen(true, false, {stored: {resume: 'original'}, closed: true});
+  const stored = JSON.parse(original.saved.get('classroom-tab:room'));
+  assert.deepEqual(stored, {closed: true});
+  const reloaded = await screen(true, false, {stored, navigation: 'reload'});
+  assert.equal(reloaded.nodes['closed-notice'].hidden, false);
+  assert.equal(reloaded.nodes['access-notice'].hidden, true);
+  assert.equal(reloaded.nodes['room-content'].hidden, true);
+  assert.equal(reloaded.nodes.state.textContent, '課堂已結束');
+  reloaded.listeners.pageshow();
+  await reloaded.poll();
+  await reloaded.heartbeat();
+  assert.equal(reloaded.calls.length, 0);
+});
+
+test('terminal marker for another fixed classroom does not prevent this classroom from authenticating', async () => {
+  const page = await screen(true, false, {stored: {resume: 'original'}, otherRoomClosed: true});
+  assert.ok(page.calls.some(call => call.path.endsWith('/tab-access')));
+  assert.ok(page.calls.some(call => call.path.endsWith('/state')));
+  assert.deepEqual(JSON.parse(page.saved.get('classroom-tab:other-room')), {closed: true});
 });
 
 test('canceling rejoin keeps pending work and confirmation clears this tab after revocation', async () => {

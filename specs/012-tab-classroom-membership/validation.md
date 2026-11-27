@@ -55,3 +55,6 @@ python -m pytest tests/contract/test_classroom_memberships.py tests/contract/tes
 此為Codex自動操作真Chrome，並非真人Google驗收；opener複製不是瀏覽器選單「複製分頁」，亦未量測關最後頁的5秒目標。早期測試腳本曾在載入前送表單或在背景操作輸入框，修正為等待頁面腳本就緒及先切前景後，本輪完整通過，沒有因此修改產品程式。原生複製、真Google、真人兩組、最後頁離線延遲仍待M01～M12。
 
 人工啟動器已以--check核對憑證檔路徑存在及獨立DB初始化，未啟動Google授權或修改原DB；未執行的人工項目仍保持未完成。
+
+
+2026-11-28 真人發現關課後F5顯示缺資格，已補最小終態標記修正及回歸；完整Node90項通過。前述自動88項為整合基線；關課F5尚待真人重驗。M12回填預覽使用者已明確回報通過，其他逐步回報與3組待驗工作見docs/pr24-issue17-integration-review.md，T018／T019保持未完成。
