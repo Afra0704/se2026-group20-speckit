@@ -19,3 +19,14 @@
 ## 2026-11-27 交付補證據核對
 
 原F1與F2已依docs/issues-19-20-manual-acceptance.md的逐段真人回報、兩份真副本與受控補充證據解決。原F3仍由T049追蹤另一組員本輪技術互審，未冒稱converged或新增已存在的重複工作；待PR真實review後再做最終收斂。這是獲授權交付文件更新，未重新執行append-only指令來改寫先前任務。
+
+
+## 2026-11-27 合併後最終收斂
+
+PR #23 已由 itsusername15 核准並合併（2708ebe757c1c4dc3e7cf16783c1ab3b21d008d3），#19／#20 已 Completed。此為合併後核對，不冒稱在同學合併前完成。實際 review 與日期見 docs/issues-19-20-delivery-review.md 最新補記。
+
+本次對照 011 的14 FR／5 SC、14驗收情境與012的13 FR／6 SC、11驗收情境，以及兩份計畫既有決策、51／49任務與六項憲章原則。沿用已記錄的程式對照、自動回歸、真POSIX、真人與真Sheets證據；組員審查補齊最後治理缺口。missing／partial／contradicts／unrequested 均為0，沒有追加新任務。converge核對本身未改寫tasks；後續T047狀態更新為獲授權交付文件收尾。無extensions.yml，沒有前後hook。
+
+✅ Converged — the implementation satisfies the spec, plan, and tasks.
+
+本次只更新文件，未重新執行產品測試、修改程式、操作DB或Google授權；不擴張為其他Issue或尚未列入本輪的改善項目已完成。

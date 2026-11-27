@@ -35,3 +35,22 @@
 - 012 Converge原F1／F2（真人／真來源）及011原F1／F2（POSIX／真人）已補證據；012 T049與011 T047的最終交付收斂仍等待另一位組員技術互審，保持未勾。
 - 本次沒有把AI自查或使用者功能驗收當作組員程式／三圖互審。收到真實PR review後補審查者、結論及必要修正重驗，再收斂、合併並關閉Issue。
 - PR關聯Closes #19／Closes #20，待合併後自動結案；目前先不提前關閉。兩組需求確認依各規格既有使用者回報，不補造具名OpenSpec紀錄。
+
+## 2026-11-27 正式組員審查與合併補記
+
+GitHub唯讀API已核對：[PR #23組員審查](https://github.com/Afra0704/se2026-group20-speckit/pull/23#pullrequestreview-6089360085)，審查者itsusername15，狀態APPROVED，針對提交c5e1fb2b6e12b61d506bf0ef0d60b1860a510328，時間2026-11-27 22:07:34（台北）。審查原文：「完成 #19／#20 技術審查。已核對原課堂回填、台北時間顯示及驗收紀錄，相關 Python 95 項、Node 8 項通過。舊非數字組名僅為可捨棄的開發測試資料，依已確認範圍通過。」95／8為審查者回報，非Codex新執行；未另外取得逐圖意見，不補造獨立審圖文件。
+
+itsusername15於2026-11-27 22:07:36合併，merge commit為2708ebe757c1c4dc3e7cf16783c1ab3b21d008d3；#19於22:07:37、#20於22:07:40自動Closed／Completed。PR該head的CI run46007121360為success，沒有行內待修意見。
+
+本次只補已發生的審查／結案證據。合併樹已確認與被核准head相同；沒有因可捨棄開發資料的說明而刪DB、改舊組名或重寫答案／歷史。前文「待同學審查／未合併」為當時狀態，以本段為最新事實。
+
+
+## 2026-11-27 合併後最終收斂
+
+PR #23 已由 itsusername15 核准並合併（2708ebe757c1c4dc3e7cf16783c1ab3b21d008d3），#19／#20 已 Completed。此為合併後核對，不冒稱在同學合併前完成。實際 review 與日期見 docs/issues-19-20-delivery-review.md 最新補記。
+
+本次對照 011 的14 FR／5 SC、14驗收情境與012的13 FR／6 SC、11驗收情境，以及兩份計畫既有決策、51／49任務與六項憲章原則。沿用已記錄的程式對照、自動回歸、真POSIX、真人與真Sheets證據；組員審查補齊最後治理缺口。missing／partial／contradicts／unrequested 均為0，沒有追加新任務。converge核對本身未改寫tasks；後續T047狀態更新為獲授權交付文件收尾。無extensions.yml，沒有前後hook。
+
+✅ Converged — the implementation satisfies the spec, plan, and tasks.
+
+本次只更新文件，未重新執行產品測試、修改程式、操作DB或Google授權；不擴張為其他Issue或尚未列入本輪的改善項目已完成。

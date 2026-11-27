@@ -2,15 +2,15 @@
 
 ## Issue #19／#20 統一開發版本
 
-人工驗收、兩份真Google Sheets副本回填／回讀、Chrome及Linux POSIX三時區驗證已完成；執行者與證據限制見[交付檢核](docs/issues-19-20-delivery-review.md)。待另一位組員審查PR後再合併，Issue #19／#20不因AI自查提前關閉。
+人工驗收、兩份真Google Sheets副本回填／回讀、Chrome及Linux POSIX三時區驗證已完成；執行者與證據限制見[交付檢核](docs/issues-19-20-delivery-review.md)。PR #23 已由 itsusername15 核准並合併至 master（2708ebe），Issue #19／#20 已 Completed；正式審查與最終收斂見交付檢核。
 
-目前整合分支為 `codex/integrate-issues-19-20`，工作目錄為 `D:\os_final`。以最新master `80510a6`為基底，保留#20時間顯示與#19結果直達回填全部提交；不再從舊 `tmp/011-time-display-implementation` 啟動本次驗收。整合驗證、版本與啟動方式見[統一版本紀錄](docs/issues-19-20-integration.md)。
+目前正式版本位於 `master`，工作目錄為 `D:\os_final`。原整合分支為 `codex/integrate-issues-19-20`。以最新master `80510a6`為基底，保留#20時間顯示與#19結果直達回填全部提交；不再從舊 `tmp/011-time-display-implementation` 啟動本次驗收。整合驗證、版本與啟動方式見[統一版本紀錄](docs/issues-19-20-integration.md)。
 
-## Issue #19：從活動結果預覽回填（本機實作，待真人驗收）
+## Issue #19：從活動結果預覽回填（已驗收、合併）
 
 教師可從目前／歷史活動結果按「預覽回填講義」，不必手輸活動識別。預覽與報告顯示原課程、課堂、活動、講義版本／來源分頁及原堂「第 N 組」，時間沿用 #20 台北至分鐘。返回原結果與刷新保持選定活動；關課及已移除講義仍沿原歷史對應。
 
-原堂勝組資料異常會明確報錯並阻止新寫入，既有報告仍保留。沿用覆寫同意、重新授權、冪等與先回讀恢復；全無勝組顯示略過，確認前不寫來源。實際自動測試與待辦見 [012 驗證](specs/012-result-writeback/validation.md)，操作與真人矩陣見 [012 指南](specs/012-result-writeback/quickstart.md)。尚未完成真人教師加兩組、兩份真 Sheets 與同學互審，不代表 Issue 可結案。
+原堂勝組資料異常會明確報錯並阻止新寫入，既有報告仍保留。沿用覆寫同意、重新授權、冪等與先回讀恢復；全無勝組顯示略過，確認前不寫來源。實際自動測試與待辦見 [012 驗證](specs/012-result-writeback/validation.md)，操作與真人矩陣見 [012 指南](specs/012-result-writeback/quickstart.md)。真人教師加兩組、兩份真 Sheets 與組員技術互審均已完成，Issue 已結案；證據來源與限制保留於驗證紀錄。
 
 ## 010 人工驗收完成（2026-11-27）
 

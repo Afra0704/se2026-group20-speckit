@@ -70,3 +70,11 @@ Q01～Q06／Q08～Q13相應真人流程完成，Q07與直接POST／無副作用�
 #20的真正Linux POSIX矩陣另已通過[run46005787175](https://github.com/Afra0704/se2026-group20-speckit/actions/runs/46005787175)，1passed、0skip，不再把Windows唯一skip當未補證據。組員本輪技術互審T049仍待PR審查，不以本節取代。
 
 最終交付彙整見[整合交付檢核](../../docs/issues-19-20-delivery-review.md)。人工、兩份真副本、受控異常、真Chrome及真POSIX證據分開列示；同學本輪技術互審依PR真實回覆補記。
+
+## 2026-11-27 正式組員審查與合併補記
+
+GitHub唯讀API已核對：[PR #23組員審查](https://github.com/Afra0704/se2026-group20-speckit/pull/23#pullrequestreview-6089360085)，審查者itsusername15，狀態APPROVED，針對提交c5e1fb2b6e12b61d506bf0ef0d60b1860a510328，時間2026-11-27 22:07:34（台北）。審查原文：「完成 #19／#20 技術審查。已核對原課堂回填、台北時間顯示及驗收紀錄，相關 Python 95 項、Node 8 項通過。舊非數字組名僅為可捨棄的開發測試資料，依已確認範圍通過。」95／8為審查者回報，非Codex新執行；未另外取得逐圖意見，不補造獨立審圖文件。
+
+itsusername15於2026-11-27 22:07:36合併，merge commit為2708ebe757c1c4dc3e7cf16783c1ab3b21d008d3；#19於22:07:37、#20於22:07:40自動Closed／Completed。PR該head的CI run46007121360為success，沒有行內待修意見。
+
+本次只補已發生的審查／結案證據。合併樹已確認與被核准head相同；沒有因可捨棄開發資料的說明而刪DB、改舊組名或重寫答案／歷史。前文「待同學審查／未合併」為當時狀態，以本段為最新事實。

@@ -47,3 +47,11 @@ Component 的權限／脈絡對應 notes/export_context.py 的 activity_context�
 Sequence 只補返回原結果的技術註記；以既有 Java／PlantUML CLI 重渲染該 PNG，退出碼 0，Codex 已開圖確認文字可讀且無裁切。46 個任務仍全部未勾選，9 個 [P]；連號、依賴圖、文件連結及行尾空白檢查通過，`git diff --check` 通過。未重新呼叫 analyze，未改產品程式、執行產品測試或操作真實來源。
 
 10 份本功能 Markdown 的本機連結、範本殘留、行尾空白，以及三份 PNG 格式／更新時間檢查通過；`git diff --check` 通過。原 `.specify/extensions.yml` 不存在，before_plan／after_plan 無 hook 可執行。setup-plan JSON 的 BRANCH 為工具正規化值 `012-result-writeback`；實際 Git 分支以 `git branch --show-current` 核對為 `codex/012-result-writeback`。本輪僅 plan 文件與圖表檢查，未跑產品測試，未 commit／push。
+
+## 2026-11-27 正式組員審查與合併補記
+
+GitHub唯讀API已核對：[PR #23組員審查](https://github.com/Afra0704/se2026-group20-speckit/pull/23#pullrequestreview-6089360085)，審查者itsusername15，狀態APPROVED，針對提交c5e1fb2b6e12b61d506bf0ef0d60b1860a510328，時間2026-11-27 22:07:34（台北）。審查原文：「完成 #19／#20 技術審查。已核對原課堂回填、台北時間顯示及驗收紀錄，相關 Python 95 項、Node 8 項通過。舊非數字組名僅為可捨棄的開發測試資料，依已確認範圍通過。」95／8為審查者回報，非Codex新執行；未另外取得逐圖意見，不補造獨立審圖文件。
+
+itsusername15於2026-11-27 22:07:36合併，merge commit為2708ebe757c1c4dc3e7cf16783c1ab3b21d008d3；#19於22:07:37、#20於22:07:40自動Closed／Completed。PR該head的CI run46007121360為success，沒有行內待修意見。
+
+本次只補已發生的審查／結案證據。合併樹已確認與被核准head相同；沒有因可捨棄開發資料的說明而刪DB、改舊組名或重寫答案／歷史。前文「待同學審查／未合併」為當時狀態，以本段為最新事實。

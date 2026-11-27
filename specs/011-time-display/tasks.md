@@ -113,7 +113,7 @@ description: "011 時間顯示一致性的依賴順序任務"
 - [X] T044 [P] 對照成品與 `diagrams/011-time-display-component.puml`、`diagrams/011-time-display-class.puml`、`diagrams/011-time-display-sequence.puml`，將mapping與差異寫至 `specs/011-time-display/diagram-review.md`；必要時修圖、CLI重渲染同目錄PNG及檢查，圖意改變保留同學複核，不擴張原審圖範圍。
 - [X] T045 在 `specs/011-time-display/validation.md` 彙總M01～M06、V01～V07及SC001～005，核對操作者／日期／版本、Windows與真POSIX／瀏覽器、時計同步及分鐘截取核對前提；缺環境、人工未做、失敗或未確認保持待辦，原問題未重現如實記錄。
 - [X] T046 在 `specs/011-time-display/analysis.md` 做實作後spec／plan／tasks／contracts／三圖與憲章分析，檢查全部FR／SC、#19接線與#16／#17界線，修正本輪缺口並同步文件，不在未核對時標完成。
-- [ ] T047 在 `specs/011-time-display/analysis.md` 記錄converge，剩餘本功能缺口以連續新ID追加 `specs/011-time-display/tasks.md`，不抹原紀錄；有缺口時保持未完成直到必要修正重驗，不混入新功能。
+- [x] T047 在 `specs/011-time-display/analysis.md` 記錄converge，剩餘本功能缺口以連續新ID追加 `specs/011-time-display/tasks.md`，不抹原紀錄；有缺口時保持未完成直到必要修正重驗，不混入新功能。
 - [X] T048 依 `specs/011-time-display/validation.md`、`specs/011-time-display/analysis.md`、`specs/011-time-display/diagram-review.md` 準備分段commit／PR與同學互審材料，只列實際完成／測試，核對011範圍、無012／私有資料／ignored工具；準備不等於已推送或合併。
 - [X] T049 對照 `specs/011-time-display/validation.md` 必要驗收、待辦及同學PR審查，記Issue #20是否可結案；必要項未完成不可宣稱完整或提前關Issue，本任務不代替外部審查或另行授權的GitHub操作。
 
@@ -212,3 +212,5 @@ setup-tasks解析正確011絕對目錄、有效tasks-template及research／data-
 原人工及POSIX未執行文字為歷史。A01～A13的逐步使用者回報見docs/issues-19-20-manual-acceptance.md；兩份真測試副本、歷史／同名版本／關課／授權重連／受控恢復均已補證據。真POSIX run46005787175已通過，T025／T050完成。T018等要求的實際操作前後時計數值尚待使用者補三值，不冒認已有精確區間；其他維持待辦者依原任務逐一核對，不能以整體「已測」代勾。
 
 2026-11-27後續：使用者提供21:19:23.22／21:19:43.49，並確認頁面2026-11-27 21:19，精確時計缺口已補，T018／T019／T045／T051完成。T047完整交付收斂仍保留待辦，與012 T049同學本輪技術互審一起於PR審查後收尾；不以AI自查冒認組員審查。
+
+2026-11-27：最終收斂已記入analysis.md；無新增缺口，T047完成。PR23已核准及合併，Issue19／20已Completed；先前待互審文字為歷史狀態。

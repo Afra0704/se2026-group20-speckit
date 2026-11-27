@@ -158,8 +158,10 @@ T001 → T002 → T003 → T004
 
 - [x] T047 完成並記錄教師與至少兩組學生、第二教師的 Q01–Q12 真人驗收於 `specs/012-result-writeback/validation.md`，對照 T043／US1–US3／Constitution V（partial，HIGH）；包含執行者、版本、台北日期、預期／實際及失敗重驗。
 - [x] T048 使用兩份不同配置的真 Sheets 測試副本執行 Q13 並將逐格勝組／無勝組略過及非目標內容、合併、格式核對記入 `specs/012-result-writeback/validation.md`，對照 T044／SC-006／Constitution III、V（partial，HIGH）；受控 gateway 不代替真來源證據。
-- [ ] T049 請另一位組員檢查本輪程式、三圖與相依接線，將實際具名審查結果及必要修正重驗記入 `specs/012-result-writeback/diagram-review.md`、`specs/012-result-writeback/validation.md`，對照 Constitution II、VI（partial，MEDIUM）；未獲授權不代發訊息，未回報不代勾。
+- [x] T049 請另一位組員檢查本輪程式、三圖與相依接線，將實際具名審查結果及必要修正重驗記入 `specs/012-result-writeback/diagram-review.md`、`specs/012-result-writeback/validation.md`，對照 Constitution II、VI（partial，MEDIUM）；未獲授權不代發訊息，未回報不代勾。
 
 ## 2026-11-27 真人與真來源驗收補證據
 
 T043／T047及T044／T048依docs/issues-19-20-manual-acceptance.md的逐段實際使用者回報完成。故障為明列受控工具／合成回歸，不冒認Google自然逾時；實際副本回填／回讀、非目標格與合併格式由使用者核對。T049另一組員本輪程式／三圖技術互審仍未回報，保持未勾；AI自查或使用者功能操作不代替該審查。
+
+2026-11-27：T049已依itsusername15對PR23的實際APPROVED審查完成，來源https://github.com/Afra0704/se2026-group20-speckit/pull/23#pullrequestreview-6089360085，合併2708ebe，Issue19／20已Completed。未以AI自查代替組員審查；詳validation.md最新補記。
