@@ -60,8 +60,8 @@ description: "011 時間顯示一致性的依賴順序任務"
 - [X] T015 [US1] T002實際約定完成後，在 `src/guided_notes/activities/classroom_routes.py` 原history驗權／SELECT後加time_display，內部讀phase_version但不改counter；外層遵守「version=1」「timezone=Asia/Taipei」「utc_offset=+08:00」，三事件各依DisplayTime；raw欄位、ORDER BY、owned_classroom／require_teacher原樣，不額外查DB或擴充學生DTO。
 - [X] T016 [US1] T002完成且T015可用後，在 `src/guided_notes/static/classroom.js` 的activityList及 `src/guided_notes/templates/workspace/classroom.html` 呈現三事件和一次時區說明；用server text及textContent，缺少／未知metadata版本顯示「時間資料尚未提供」，不回退raw到本地Date，不改#16／#17邏輯。
 - [X] T017 [US1] 執行T010～T012核心、教師HTTP及Node回歸，將修正前失敗、命令、版本、實際結果記至 `specs/011-time-display/validation.md`；驗原值與歷史選取保持，失敗先修本輪修改再重驗。
-- [ ] T018 [US1] 依 `specs/011-time-display/quickstart.md` M02／M03由教師與兩組學生人工核對一般活動及準備中直接結束，記操作前後電腦時間區間、台北顯示及直接結束提示；顯示分鐘須落在區間兩端各截取至分鐘的含端點範圍，非任意允許一分鐘誤差至 `specs/011-time-display/validation.md`；時計不同步另記，未做不勾。
-- [ ] T019 [US1] 在 `specs/011-time-display/validation.md` 整理US1獨立驗收及第一段提交範圍，核對FR001／002／003與三圖Access→Read→Meaning→Display；標明US2／US4仍待驗，不把MVP畫面可用當整體完成。
+- [X] T018 [US1] 依 `specs/011-time-display/quickstart.md` M02／M03由教師與兩組學生人工核對一般活動及準備中直接結束，記操作前後電腦時間區間、台北顯示及直接結束提示；顯示分鐘須落在區間兩端各截取至分鐘的含端點範圍，非任意允許一分鐘誤差至 `specs/011-time-display/validation.md`；時計不同步另記，未做不勾。
+- [X] T019 [US1] 在 `specs/011-time-display/validation.md` 整理US1獨立驗收及第一段提交範圍，核對FR001／002／003與三圖Access→Read→Meaning→Display；標明US2／US4仍待驗，不把MVP畫面可用當整體完成。
 
 ## Phase 4: User Story 2 — 新舊歷史的同一時刻一致 (Priority: P1)
 
@@ -74,7 +74,7 @@ description: "011 時間顯示一致性的依賴順序任務"
 - [X] T022 [US2] 在 `src/guided_notes/time_display.py` 依T020補齊完整格式、型別／長度檢查及格式／溢位的安全結果；空值按事件缺值規則處理，非可信但格式合法naive為unknown_timezone，known之外instant_utc全為null；保留aware偏移，不依主機預設或寬鬆parser。
 - [X] T023 [US2] 在 `src/guided_notes/time_views.py` 依T021補齊不明來源與直接結束證據不足的保守回退，created／notes既有對象缺時為missing，不用其他事件補造；query／body不能切換為sqlite_utc。
 - [X] T024 [US2] 在 `tests/integration/test_time_display_routes.py` 的隔離fixture放入損壞、缺值、不明naive及同名活動，驗各格提示、頁面200、原關聯與raw保持；在 `tests/classroom-time-display.test.cjs` 補缺／未知metadata版本回歸，不改日常資料製造錯誤。
-- [ ] T025 [P] [US2] 在 `tests/integration/test_time_display_process_tz.py` 建真正POSIX隔離子程序矩陣，分設UTC／Asia/Taipei／另一TZ並呼叫tzset，跑同一樣本，父程序及系統設定不改；Windows不支援明確skip，但真矩陣未做時本任務仍未完成，不能用mock／單設TZ抵作。
+- [X] T025 [P] [US2] 在 `tests/integration/test_time_display_process_tz.py` 建真正POSIX隔離子程序矩陣，分設UTC／Asia/Taipei／另一TZ並呼叫tzset，跑同一樣本，父程序及系統設定不改；Windows不支援明確skip，但真矩陣未做時本任務仍未完成，不能用mock／單設TZ抵作。
 - [X] T026 [P] [US2] 以可用受控獨立瀏覽器context或既有不同時區環境，依 `specs/011-time-display/quickstart.md` 核對server text不再本地化，將工具／版本、至少UTC／台北／另一時區結果記至 `specs/011-time-display/validation.md`；不改操作電腦時區，缺環境不勾。
 - [X] T027 [US2] 執行T020／T021／T024本機回歸，將T025真POSIX、T026瀏覽器及M01原偏差定位分開記至 `specs/011-time-display/validation.md`，核對SC001～003；找不到原畫面保持未重現，不用受控樣本冒認自然根因。
 
@@ -88,8 +88,8 @@ description: "011 時間顯示一致性的依賴順序任務"
 - [X] T029 [P] [US4] 在 `tests/contract/test_time_display_contract.py` 加匿名、第二教師、跨堂、關課學生拒絕，以及CatalogDTO／snapshot嚴格驗證和原JSON欄位不變回歸；metadata不可含raw_value、來源診斷、憑證或其他組資訊，phase_version／顯示文字不進結果。
 - [X] T030 [US4] 執行T028／T029，檢查 `src/guided_notes/activities/classroom_routes.py`、`src/guided_notes/time_views.py`、`src/guided_notes/time_display.py` 的唯讀及驗權；失敗只修本輪呈現／接線，不以改schema、writer、受理／結算provider或放寬權限通過，紅綠結果記至 `specs/011-time-display/validation.md`。
 - [X] T031 [US4] 在 `tests/integration/test_time_display_preservation.py` 追加並執行不同客戶端時鐘／時區、重複結束、關課一併結束及刷新回歸，驗deadline、原結束時間、排序、授權expires、lease、presence TTL與網路預算不變，ORDER BY不改按text；記至 `specs/011-time-display/validation.md`。
-- [ ] T032 [US4] 依 `specs/011-time-display/quickstart.md` M04／M06由教師與兩組學生核對歷史、重連、同名活動、關課禁讀及原順位／勝組，將實際版本、原／後結果及未做案例記至 `specs/011-time-display/validation.md`，不新增學生時間欄位。
-- [ ] T033 [US4] 在 `specs/011-time-display/validation.md` 整理FR009／010／011／014及SC004保護checkpoint，核對data-model的「不新增表、欄位或遷移；不更動既有 writer／order by」；US4未通過不可宣稱可交付，不用重建Google授權解決。
+- [X] T032 [US4] 依 `specs/011-time-display/quickstart.md` M04／M06由教師與兩組學生核對歷史、重連、同名活動、關課禁讀及原順位／勝組，將實際版本、原／後結果及未做案例記至 `specs/011-time-display/validation.md`，不新增學生時間欄位。
+- [X] T033 [US4] 在 `specs/011-time-display/validation.md` 整理FR009／010／011／014及SC004保護checkpoint，核對data-model的「不新增表、欄位或遷移；不更動既有 writer／order by」；US4未通過不可宣稱可交付，不用重建Google授權解決。
 
 ## Phase 6: User Story 3 — 回填相關時間與活動保持一致 (Priority: P2)
 
@@ -103,7 +103,7 @@ description: "011 時間顯示一致性的依賴順序任務"
 - [X] T037 [US3] T002共用約定完成後，在 `src/guided_notes/notes/routes.py` 保留notes_time名稱作安全presenter橋接，裸filter預設offset_required，為原驗權HTML組合事件view；不改export_preview_data／writeback.get_report的JSON，不把view放進指紋、覆寫或恢復判斷。
 - [X] T038 [US3] T037完成且與012約定區塊後，更新 `src/guided_notes/notes/templates/notes/import.html`、`src/guided_notes/notes/templates/notes/export_form.html`、`src/guided_notes/notes/templates/notes/export_preview.html`、`src/guided_notes/notes/templates/notes/report.html` 的事件、至分鐘與區塊時區；Jinja escaping顯示，不重複加8小時，不覆蓋012名稱／入口工作。
 - [X] T039 [US3] 執行T034／T035及 `tests/integration/test_export_routes.py`、`tests/integration/test_writeback_restart.py`、`tests/integration/test_workspace_history.py` 相關回歸，將命令／結果記至 `specs/011-time-display/validation.md`，驗刷新不重寫講義、不改勝組、部分／未知恢復與PR14重連仍正常。
-- [ ] T040 [US3] 依 `specs/011-time-display/quickstart.md` M05由教師與兩組學生核對原活動／結果範圍，教師查看確認、預覽、報告及回讀時間，記至 `specs/011-time-display/validation.md`；既有報告不需再寫Sheets，需要新回填時由人用副本走原確認，未做不勾。
+- [X] T040 [US3] 依 `specs/011-time-display/quickstart.md` M05由教師與兩組學生核對原活動／結果範圍，教師查看確認、預覽、報告及回讀時間，記至 `specs/011-time-display/validation.md`；既有報告不需再寫Sheets，需要新回填時由人用副本走原確認，未做不勾。
 - [X] T041 [US3] 在 `specs/011-time-display/contracts/teacher-time-metadata.md` 與 `specs/011-time-display/validation.md` 整理交#19／012的最終簽名、活動／notes view用法、實際共同核對來源與待確認，不冒稱另一對話同意、不修改012文件或另建格式器。
 
 ## Phase 7: Polish & Cross-Cutting Concerns
@@ -111,7 +111,7 @@ description: "011 時間顯示一致性的依賴順序任務"
 - [X] T042 將已實作範圍、台北政策、可重現操作及證據界線同步至 `README.md`、`docs/shared-requirements.md`、`specs/011-time-display/source-inventory.md`、`specs/011-time-display/quickstart.md`，只更新本功能段落並保留他人歷史；OpenSpec時間政策依使用者回報已確認；具名紀錄待補，其他未確認事項保持。
 - [X] T043 在011獨立checkout執行當時全套pytest、Node與git diff --check，命令、完整SHA／dirty狀態、實際次數、失敗與重驗寫至 `specs/011-time-display/validation.md`；不沿用PR14數字、不把平台skip算通過、不刪測試或放寬驗證。
 - [X] T044 [P] 對照成品與 `diagrams/011-time-display-component.puml`、`diagrams/011-time-display-class.puml`、`diagrams/011-time-display-sequence.puml`，將mapping與差異寫至 `specs/011-time-display/diagram-review.md`；必要時修圖、CLI重渲染同目錄PNG及檢查，圖意改變保留同學複核，不擴張原審圖範圍。
-- [ ] T045 在 `specs/011-time-display/validation.md` 彙總M01～M06、V01～V07及SC001～005，核對操作者／日期／版本、Windows與真POSIX／瀏覽器、時計同步及分鐘截取核對前提；缺環境、人工未做、失敗或未確認保持待辦，原問題未重現如實記錄。
+- [X] T045 在 `specs/011-time-display/validation.md` 彙總M01～M06、V01～V07及SC001～005，核對操作者／日期／版本、Windows與真POSIX／瀏覽器、時計同步及分鐘截取核對前提；缺環境、人工未做、失敗或未確認保持待辦，原問題未重現如實記錄。
 - [X] T046 在 `specs/011-time-display/analysis.md` 做實作後spec／plan／tasks／contracts／三圖與憲章分析，檢查全部FR／SC、#19接線與#16／#17界線，修正本輪缺口並同步文件，不在未核對時標完成。
 - [ ] T047 在 `specs/011-time-display/analysis.md` 記錄converge，剩餘本功能缺口以連續新ID追加 `specs/011-time-display/tasks.md`，不抹原紀錄；有缺口時保持未完成直到必要修正重驗，不混入新功能。
 - [X] T048 依 `specs/011-time-display/validation.md`、`specs/011-time-display/analysis.md`、`specs/011-time-display/diagram-review.md` 準備分段commit／PR與同學互審材料，只列實際完成／測試，核對011範圍、無012／私有資料／ignored工具；準備不等於已推送或合併。
@@ -204,5 +204,11 @@ setup-tasks解析正確011絕對目錄、有效tasks-template及research／data-
 
 以下為既有驗證缺口的收斂追蹤，不新增產品範圍；原T025及人工任務仍未完成，不以重複列出當完成。
 
-- [ ] T050 在可用POSIX Python3.13隔離環境執行 `tests/integration/test_time_display_process_tz.py` 的UTC／Asia/Taipei／America/New_York子程序矩陣，於 `specs/011-time-display/validation.md` 記錄環境、完整SHA、真實TZ回讀與結果，完成後同步T025與SC-002；不能把Windows skip或Chrome證據當伺服器驗證 per SC-002 / T025 (partial)。
-- [ ] T051 依 `specs/011-time-display/quickstart.md` 由教師與至少兩組學生完成M01～M06，記錄日期、操作者、版本、頁面、時計前提與預期／實際，更新 `specs/011-time-display/validation.md` 及相關原任務；自然偏差找不到仍誠實未重現，其他人工案例須實際完成才可評估交付 per SC-005 / T018 / T032 / T040 / T045 (partial)。
+- [X] T050 在可用POSIX Python3.13隔離環境執行 `tests/integration/test_time_display_process_tz.py` 的UTC／Asia/Taipei／America/New_York子程序矩陣，於 `specs/011-time-display/validation.md` 記錄環境、完整SHA、真實TZ回讀與結果，完成後同步T025與SC-002；不能把Windows skip或Chrome證據當伺服器驗證 per SC-002 / T025 (partial)。
+- [X] T051 依 `specs/011-time-display/quickstart.md` 由教師與至少兩組學生完成M01～M06，記錄日期、操作者、版本、頁面、時計前提與預期／實際，更新 `specs/011-time-display/validation.md` 及相關原任務；自然偏差找不到仍誠實未重現，其他人工案例須實際完成才可評估交付 per SC-005 / T018 / T032 / T040 / T045 (partial)。
+
+## 2026-11-27 驗收補證據
+
+原人工及POSIX未執行文字為歷史。A01～A13的逐步使用者回報見docs/issues-19-20-manual-acceptance.md；兩份真測試副本、歷史／同名版本／關課／授權重連／受控恢復均已補證據。真POSIX run46005787175已通過，T025／T050完成。T018等要求的實際操作前後時計數值尚待使用者補三值，不冒認已有精確區間；其他維持待辦者依原任務逐一核對，不能以整體「已測」代勾。
+
+2026-11-27後續：使用者提供21:19:23.22／21:19:43.49，並確認頁面2026-11-27 21:19，精確時計缺口已補，T018／T019／T045／T051完成。T047完整交付收斂仍保留待辦，與012 T049同學本輪技術互審一起於PR審查後收尾；不以AI自查冒認組員審查。

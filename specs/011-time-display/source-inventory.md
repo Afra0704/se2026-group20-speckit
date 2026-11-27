@@ -54,3 +54,7 @@ OAuth／學生資格到期、寫入 lease、網路逾時、presence TTL 等使�
 ## 2026-11-27 實作核對
 
 基底更新至 80510a6bbf6310bf4634052a7a56066f8f1e8baf；PR #22 numeric-group-labels已有notes group_labels，接線完整保留。已實作history讀取a.phase_version並在原驗權後投影；原created_at／started_at／closed_at與ORDER BY未改。notes不再直接對naive呼叫astimezone，而由offset_required規則安全顯示。純核心不讀現在時間／DB／Google，無schema或writer差異。Windows有tzset平台限制；wsl --list --quiet回報未安裝可用WSL，未為本輪安裝Linux。真Chrome三context已執行，不能抵作POSIX server矩陣。原使用者小時差仍未定位到特定頁面／舊值，不宣稱自然根因已重現。
+
+## 2026-11-27 真人回查與跨環境補證據
+
+使用者回報找到原偏差頁且目前時間已正常；未提供原頁名稱／原先數值／精確時差，不能宣稱Codex獨立重現八小時偏差。精確新操作時計與頁面21:19已依validation.md補齊。真Linux server三時區矩陣run46005787175已1passed、0skip；先前缺WSL／未重現為當時歷史，保留以利區分證據來源。

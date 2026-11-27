@@ -33,3 +33,15 @@ PR描述建議：教師活動歷史原本直接顯示無時區建立字串，not
 不包含012的功能或私有資料。實際commit之後仍須以SHA／dirty狀態核對驗收版本。Issue #20目前不可關閉；必要跨環境及人工證據、同學review完成後才評估。
 
 收斂結果為 `tasks_appended`，已於Phase8追加T050／T051；沒有改寫原task次序。after_converge／after_implement的extensions.yml不存在，無hook需派送。T047整體仍待剩餘驗證完成，不宣稱converged。
+
+## 2026-11-27 真POSIX驗證完成
+
+先前Windows skip／缺WSL為當時真實限制。已在GitHub Actions ubuntu-24.04、Python 3.13.18執行原time_display_process_tz測試，來源SHA `912db43121061c449d9afa74b6ecd37cdfb8f207`。run 46005787175、job 140528469547已核對success，日誌為1 passed（0.55s），JUnit檢查tests=1／failures=0／errors=0／skipped=0。
+
+[CI實際執行](https://github.com/Afra0704/se2026-group20-speckit/actions/runs/46005787175)；可稽核輸出見[posix-ci-evidence.json](posix-ci-evidence.json)。子程序各自TZ＋tzset後回報UTC／CST／EST、EDT三種環境，可信SQL UTC及帶offset皆顯示2026-11-27 00:03，未知naive仍unknown_timezone，精確instant_utc保留。這不是mock、Windows單設TZ或瀏覽器證據。
+
+CI只安裝Flask／pytest，以--noconftest執行純時間測試，避免載入與本矩陣無關的app／Google fixture；不需要任何Google或應用密鑰，沒有create_app／DB初始化。action用法已核對官方actions/checkout及actions/setup-python README（v7）；workflow只讀contents，checkout不保留憑證。
+
+## 2026-11-27 最終交付前對照
+
+原F1 POSIX由run46005787175補齊，原F2真人由A01～A13及精確時計21:19:23.22／21:19:43.49→頁面21:19補齊。沒有發現產品實作或跨文件新的衝突；T047最終交付收斂與012 T049技術互審待PRreview後補結論，不提前宣稱所有治理門檻已完成。詳docs/issues-19-20-delivery-review.md。

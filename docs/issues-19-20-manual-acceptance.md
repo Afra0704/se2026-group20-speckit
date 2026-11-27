@@ -212,3 +212,11 @@ A01～A13的真人操作步驟已依使用者逐段回報完成；權限直接PO
 補充受控回歸：`.venv/Scripts/python.exe -m pytest tests/integration/test_export_context_history.py tests/integration/test_sheets_reconnect_ui.py tests/integration/test_writeback_restart.py -q --tb=short`，50 passed（14.96s），包含Q07原堂勝組／保存前重驗、Q08原頁成功／取消／失敗返回、Q10／Q11恢復與原版本保留。QA故障工具以不含憑證的程式及合成自測保存於specs/012-result-writeback/acceptance-tools，交付位置自測2 passed（1.08s）；本地啟動器、session key、QA DB及Google設定不提交。
 
 真POSIX server矩陣尚待GitHub Linux CI，不能勾SC-002／T025；同學本輪技術互審尚未回報，不代勾。這些須在交付檢核／PR中明列；Issue不在審查合併前冒稱全部交付完成。
+
+真POSIX後續已完成：GitHub Linux CI run46005787175／來源912db43，1 passed、0skip；原文待環境為當時狀態。證據見specs/011-time-display/posix-ci-evidence.json。最後的精確操作前後時計三值另待補，組員技術互審仍須PR紀錄。
+
+## 2026-11-27 精確操作時計補證據
+
+使用者在B堂以第二份講義建立並開始最後時間核對活動，提供Windows CMD輸出：按結束前為週五2026/11/27 21:19:23.22，收到成功後為21:19:43.49；接著明確確認頁面結束時間為2026-11-27 21:19。參考時計與本機localhost服務為同一台操作電腦，沒有改時區／時鐘；僅採使用者回報，不另宣稱做過獨立NTP同步量測。
+
+顯示分鐘21:19落在兩端截取至分鐘的含端點範圍[21:19,21:19]，符合本輪SC-005。保留原秒／微秒，沒有把顯示改為秒或將整分鐘當任意誤差容許。

@@ -105,8 +105,8 @@
 - [X] T040 在 `tests/unit/test_export_context.py` 與 `tests/integration/test_export_context_history.py` 驗批次勝組解析避免逐格查詢、已保存 preview／report GET 不新增 Sheets 呼叫，並比對原資料／答案／受理序列／順位／勝組／版本保持不變；將結果記入 `specs/012-result-writeback/validation.md`。
 - [X] T041 核對程式與 `diagrams/012-component.puml`、`diagrams/012-class.puml`、`diagrams/012-sequence.puml` 的責任／關係／時序，必要修圖後 CLI 重渲染同名 PNG 並檢視；將實際命令、結果及程式對應記入 `specs/012-result-writeback/diagram-review.md`，不代填組員新審查。
 - [X] T042 更新 `specs/012-result-writeback/quickstart.md`、`specs/012-result-writeback/contracts/dependency-boundaries.md`、`docs/shared-requirements.md` 與 `README.md` 的實際介面、啟動／驗收、相依版本及限制；檢查連結、格式及機敏內容，未完成驗收保持原狀態。
-- [ ] T043 依 `specs/012-result-writeback/quickstart.md` Q01–Q12 請教師與至少兩組學生完成人工操作，另核對教師 B 權限；在 `specs/012-result-writeback/validation.md` 記錄執行者、台北日期、SHA、預期／實際及失敗重驗，無回報保持未完成。
-- [ ] T044 使用來源範本副本及另一份題數／欄列不同的真 Sheets 測試副本執行 Q13，逐題核對勝組答案／無勝組略過及非目標值、合併、格式零變動；於 `specs/012-result-writeback/validation.md` 分開保存真來源與受控來源證據，無實測不得勾選。
+- [x] T043 依 `specs/012-result-writeback/quickstart.md` Q01–Q12 請教師與至少兩組學生完成人工操作，另核對教師 B 權限；在 `specs/012-result-writeback/validation.md` 記錄執行者、台北日期、SHA、預期／實際及失敗重驗，無回報保持未完成。
+- [x] T044 使用來源範本副本及另一份題數／欄列不同的真 Sheets 測試副本執行 Q13，逐題核對勝組答案／無勝組略過及非目標值、合併、格式零變動；於 `specs/012-result-writeback/validation.md` 分開保存真來源與受控來源證據，無實測不得勾選。
 - [X] T045 完成實作後先執行唯讀 speckit-analyze，在對話呈現結果；只有另獲明確授權的後續編輯步驟才可保存至 `specs/012-result-writeback/analysis.md` 或修正產物。再依 speckit-converge 的寫入權限處理缺漏並記錄 `specs/012-result-writeback/convergence.md`，將新工作追加到 `specs/012-result-writeback/tasks.md` 並補齊；人工未做仍保留未完成。
 - [X] T046 核對差異與必要分段 commit，將 #16／#20 合流、共同確認、具名互審及剩餘限制彙入 `specs/012-result-writeback/validation.md`；依 `.github/pull_request_template.md` 準備 PR 內容，實際模板路徑若不同先核對，未獲授權不代發訊息，未審查不自行合併。
 
@@ -156,6 +156,10 @@ T001 → T002 → T003 → T004
 
 2026-11-27 程式對照 13 FR、6 SC、11 個故事驗收情境、六項憲章原則與既有 46 任務。未發現新增未建程式範圍；以下為缺少的交付證據，與原 T043／T044 及技術互審保持追溯，不以自動結果代勾。
 
-- [ ] T047 完成並記錄教師與至少兩組學生、第二教師的 Q01–Q12 真人驗收於 `specs/012-result-writeback/validation.md`，對照 T043／US1–US3／Constitution V（partial，HIGH）；包含執行者、版本、台北日期、預期／實際及失敗重驗。
-- [ ] T048 使用兩份不同配置的真 Sheets 測試副本執行 Q13 並將逐格勝組／無勝組略過及非目標內容、合併、格式核對記入 `specs/012-result-writeback/validation.md`，對照 T044／SC-006／Constitution III、V（partial，HIGH）；受控 gateway 不代替真來源證據。
+- [x] T047 完成並記錄教師與至少兩組學生、第二教師的 Q01–Q12 真人驗收於 `specs/012-result-writeback/validation.md`，對照 T043／US1–US3／Constitution V（partial，HIGH）；包含執行者、版本、台北日期、預期／實際及失敗重驗。
+- [x] T048 使用兩份不同配置的真 Sheets 測試副本執行 Q13 並將逐格勝組／無勝組略過及非目標內容、合併、格式核對記入 `specs/012-result-writeback/validation.md`，對照 T044／SC-006／Constitution III、V（partial，HIGH）；受控 gateway 不代替真來源證據。
 - [ ] T049 請另一位組員檢查本輪程式、三圖與相依接線，將實際具名審查結果及必要修正重驗記入 `specs/012-result-writeback/diagram-review.md`、`specs/012-result-writeback/validation.md`，對照 Constitution II、VI（partial，MEDIUM）；未獲授權不代發訊息，未回報不代勾。
+
+## 2026-11-27 真人與真來源驗收補證據
+
+T043／T047及T044／T048依docs/issues-19-20-manual-acceptance.md的逐段實際使用者回報完成。故障為明列受控工具／合成回歸，不冒認Google自然逾時；實際副本回填／回讀、非目標格與合併格式由使用者核對。T049另一組員本輪程式／三圖技術互審仍未回報，保持未勾；AI自查或使用者功能操作不代替該審查。

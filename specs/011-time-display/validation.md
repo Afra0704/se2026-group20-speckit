@@ -92,3 +92,19 @@ UTC、Asia/Taipei、America/New_York三個context各以Intl回讀實際zone，�
 收斂已追加T050／T051；T047保留未完成，等待必要驗證補齊後重驗收斂。M01～M06、真POSIX及相關checkpoint維持未勾，不能宣稱所有任務完成。
 
 最終stage檢查發現新增preservation及兩份unit測試檔EOF多一空行（未追蹤時的逐行檢查未涵蓋EOF規則）；已移除並重新核對整個功能相對master的diff，產品邏輯與測試內容未改。功能提交為aecb22e及772af09，隨後僅格式／此紀錄另存。
+
+## 2026-11-27 真POSIX驗證完成
+
+先前Windows skip／缺WSL為當時真實限制。已在GitHub Actions ubuntu-24.04、Python 3.13.18執行原time_display_process_tz測試，來源SHA `912db43121061c449d9afa74b6ecd37cdfb8f207`。run 46005787175、job 140528469547已核對success，日誌為1 passed（0.55s），JUnit檢查tests=1／failures=0／errors=0／skipped=0。
+
+[CI實際執行](https://github.com/Afra0704/se2026-group20-speckit/actions/runs/46005787175)；可稽核輸出見[posix-ci-evidence.json](posix-ci-evidence.json)。子程序各自TZ＋tzset後回報UTC／CST／EST、EDT三種環境，可信SQL UTC及帶offset皆顯示2026-11-27 00:03，未知naive仍unknown_timezone，精確instant_utc保留。這不是mock、Windows單設TZ或瀏覽器證據。
+
+CI只安裝Flask／pytest，以--noconftest執行純時間測試，避免載入與本矩陣無關的app／Google fixture；不需要任何Google或應用密鑰，沒有create_app／DB初始化。action用法已核對官方actions/checkout及actions/setup-python README（v7）；workflow只讀contents，checkout不保留憑證。
+
+## 2026-11-27 精確操作時計補證據
+
+使用者在B堂以第二份講義建立並開始最後時間核對活動，提供Windows CMD輸出：按結束前為週五2026/11/27 21:19:23.22，收到成功後為21:19:43.49；接著明確確認頁面結束時間為2026-11-27 21:19。參考時計與本機localhost服務為同一台操作電腦，沒有改時區／時鐘；僅採使用者回報，不另宣稱做過獨立NTP同步量測。
+
+顯示分鐘21:19落在兩端截取至分鐘的含端點範圍[21:19,21:19]，符合本輪SC-005。保留原秒／微秒，沒有把顯示改為秒或將整分鐘當任意誤差容許。
+
+最終交付彙整見[整合交付檢核](../../docs/issues-19-20-delivery-review.md)。人工、兩份真副本、受控異常、真Chrome及真POSIX證據分開列示；同學本輪技術互審依PR真實回覆補記。

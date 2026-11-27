@@ -35,3 +35,7 @@ specs/012-result-writeback 的 spec／plan／tasks／contracts／quickstart／va
 - [ ] 真人及真 Sheets 證據完成，失敗修正有重驗。
 - [ ] #16／#20 相依與 C1-A–C 共同規則對照正確。
 - [ ] 提交及附件不含憑證或真實學生資料。
+
+## 2026-11-27 正式整合交付更新
+
+本檔前文為#19分段草稿。#19與#20已整合並完成真人／真來源及Linux跨時區證據；正式PR內容改用[整合PR草稿](../../docs/issues-19-20-pr.md)，交付檢核見docs/issues-19-20-delivery-review.md。原未完成紀錄作為歷史保留，僅組員本輪技術互審依實際PR回覆補記。

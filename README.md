@@ -2,6 +2,8 @@
 
 ## Issue #19／#20 統一開發版本
 
+人工驗收、兩份真Google Sheets副本回填／回讀、Chrome及Linux POSIX三時區驗證已完成；執行者與證據限制見[交付檢核](docs/issues-19-20-delivery-review.md)。待另一位組員審查PR後再合併，Issue #19／#20不因AI自查提前關閉。
+
 目前整合分支為 `codex/integrate-issues-19-20`，工作目錄為 `D:\os_final`。以最新master `80510a6`為基底，保留#20時間顯示與#19結果直達回填全部提交；不再從舊 `tmp/011-time-display-implementation` 啟動本次驗收。整合驗證、版本與啟動方式見[統一版本紀錄](docs/issues-19-20-integration.md)。
 
 ## Issue #19：從活動結果預覽回填（本機實作，待真人驗收）
