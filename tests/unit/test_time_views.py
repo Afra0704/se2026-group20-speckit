@@ -33,4 +33,3 @@ def test_notes_and_readback_semantics():
     assert readback_time('verified',None).time.status=='missing'
     assert readback_time('verified','bad').time.status=='invalid'
     assert readback_time('verified','2026-11-27T03:04:05Z').text=='2026-11-27 11:04'
-

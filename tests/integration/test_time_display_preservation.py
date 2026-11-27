@@ -90,4 +90,3 @@ def test_real_encryption_fixture_and_google_grant_survive_display_and_init(googl
     assert result.exit_code==0,result.output
     assert google_teacher.get('/teacher/google/sheets/status').json=={'status':'connected'}
     assert dump(google_app)==before
-

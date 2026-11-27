@@ -90,3 +90,5 @@ UTC、Asia/Taipei、America/New_York三個context各以Intl回讀實際zone，�
 依使用者先前「每完成一段可測試功能就commit」的持續偏好，核心已分段提交為 `aecb22e`。後續教師接線與驗證文件另成一個commit；本輪不push、不建立PR、不合併或關Issue。完整測試執行於80510a6加本輪dirty內容，之後只增加勝組斷言／文件，勝組補強已定向重驗2項通過。最終SHA以git log核對，不在此寫入自我參照的commit值。
 
 收斂已追加T050／T051；T047保留未完成，等待必要驗證補齊後重驗收斂。M01～M06、真POSIX及相關checkpoint維持未勾，不能宣稱所有任務完成。
+
+最終stage檢查發現新增preservation及兩份unit測試檔EOF多一空行（未追蹤時的逐行檢查未涵蓋EOF規則）；已移除並重新核對整個功能相對master的diff，產品邏輯與測試內容未改。功能提交為aecb22e及772af09，隨後僅格式／此紀錄另存。

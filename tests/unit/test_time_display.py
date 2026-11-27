@@ -61,4 +61,3 @@ def test_contradictory_value_cannot_be_rendered_as_pending():
     for raw in ('bad', '2026-11-27T03:04:05Z'):
         assert present_time(raw, event_kind='started', occurrence='not_started').status == 'invalid'
     assert present_time('2026-11-27T03:04:05Z', event_kind='created', source_policy='client_override').status == 'invalid'
-
