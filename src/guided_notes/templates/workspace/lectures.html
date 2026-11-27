@@ -1,6 +1,9 @@
 {% extends 'workspace/base.html' %}
 {% block content %}
 <h2>講義管理</h2>
+{% for category, message in get_flashed_messages(with_categories=true) %}
+<p class="import-error" role="alert">{{ message }}</p>
+{% endfor %}
 <button id="import-toggle" aria-expanded="false" aria-controls="import-menu" type="button">＋匯入講義</button>
 <div id="import-menu" hidden><button type="button" data-cloud>從 Google 雲端選擇</button><button type="button" data-link>貼上 Google Sheets 連結</button></div>
 <form id="link-import" {% if link_source %}data-flow-url="{{ link_source.flow_url }}"{% else %}hidden{% endif %}>

@@ -82,8 +82,9 @@ if (linkForm) {
     try {
       await readLink(url);
     } catch (error) {
+      if (input.value !== url) return;
       if (error.code === 'INVALID_SHEETS_URL') {
-        if (input.value === url) showLinkError('請輸入有效的 Google Sheets 連結。');
+        showLinkError('請輸入有效的 Google Sheets 連結。');
       } else {
         operationError.textContent = error.code
           ? error.message

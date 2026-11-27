@@ -90,6 +90,22 @@ def test_failed_link_reconnect_keeps_flow_and_requires_explicit_read(google_app,
         assert connection().execute('SELECT count(*) FROM notes_imports').fetchone()[0] == 0
 
 
+def test_cancel_reconnect_displays_feedback_on_failed_link(google_app, google_teacher, flow):
+    def denied():
+        raise GatewayError('GOOGLE_REAUTH_REQUIRED')
+
+    google_app.config['NOTES_GATEWAY'].hook = denied
+    assert post(google_teacher, path(flow, 'read')).json['error']['code'] == 'GOOGLE_REAUTH_REQUIRED'
+    started = post(google_teacher, '/teacher/google/sheets/connect', return_to=path(flow))
+    state = parse_qs(urlsplit(started.location).query)['state'][0]
+    response = google_teacher.get('/auth/google/callback',
+                                  query_string={'state': state, 'error': 'access_denied'})
+    assert response.location == path(flow)
+    page = google_teacher.get(response.location, headers={'Accept': 'text/html'})
+    assert page.status_code == 200
+    assert '你已取消授權，可以重新嘗試。' in page.text
+
+
 def test_cancel_reconnect_preserves_activity_and_existing_teacher(google_app, google_teacher):
     started = post(google_teacher, '/teacher/google/sheets/connect',
         return_to='/teacher/notes/export-previews?activity_id=original')

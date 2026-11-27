@@ -62,6 +62,18 @@ test('revoked Sheets access exposes explicit reconnect for the same flow without
   assert.equal(page.reconnect.hidden, true, 'editing the URL must hide the previous flow reconnect action');
 });
 
+test('an obsolete read error cannot offer reconnect for the previous link', async () => {
+  const page = screen();
+  page.fail('GOOGLE_REAUTH_REQUIRED');
+  const pending = page.submit();
+  page.input.value = 'https://docs.google.com/spreadsheets/d/other/edit';
+  page.input.events.input();
+  await pending;
+  assert.equal(page.reconnect.hidden, true);
+  assert.equal(page.operation.hidden, true);
+  assert.equal(page.button.disabled, false);
+});
+
 for (const code of ['SOURCE_READ_FORBIDDEN', 'SOURCE_READ_UNAVAILABLE']) {
   test(`${code} stays beside the link; the same Read button retries after recovery`, async () => {
     const page = screen();
