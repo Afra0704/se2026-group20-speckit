@@ -334,6 +334,23 @@ def export_preview_data(row, preview):
         "preview_url": url_for("notes.view_export_preview", preview_id=row["preview_id"])}
 
 
+def export_group_labels(preview):
+    # Preview ownership was verified before rendering. Resolve only its original classroom.
+    from ..activities.classroom_membership import group_label
+
+    if not current_app.config["CLASSROOM_MODE"]:
+        return {}
+    groups = connection().execute(
+        """SELECT g.id, g.name FROM classroom_activities a
+           JOIN classroom_groups g ON g.classroom_id = a.classroom_id
+           WHERE a.activity_id = ?""",
+        (preview["activity_id"],),
+    )
+    labels = {str(group["id"]): group_label(group["name"]) for group in groups}
+    return {item["item_id"]: labels.get(str(item["winner_group_id"]), "組別資料未保留")
+            for item in preview["items"] if item["winner_group_id"] is not None}
+
+
 @notes.get("/export-previews")
 def export_form():
     teacher = require_teacher()
@@ -368,6 +385,7 @@ def view_export_preview(preview_id):
         return jsonify(data)
     operation = connection().execute("SELECT operation_id FROM notes_write_operations WHERE preview_id=?", (preview_id,)).fetchone()
     return render_template("notes/export_preview.html", preview=data, items=preview.items, idempotency_key=str(uuid4()),
+                           group_labels=export_group_labels(data),
                            operation_id=operation[0] if operation else None)
 
 
@@ -403,7 +421,7 @@ def operation_report(operation_id):
     row = repo.owned_operation(connection(), teacher.teacher_id, operation_id)
     preview_row, preview = export_service.get_saved_preview(teacher, row["preview_id"])
     data = export_preview_data(preview_row, preview)
-    return render_template("notes/report.html", report=report, preview=data,
+    return render_template("notes/report.html", report=report, preview=data, group_labels=export_group_labels(data),
                            labels={item["item_id"]: item for item in data["items"]})
 
 

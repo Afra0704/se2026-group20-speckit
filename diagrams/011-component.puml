@@ -1,0 +1,11 @@
+@startuml
+actor 學生
+actor 教師
+component "學生加入欄位" as Join
+component "組號驗證與組別映射" as Group
+component "師生結果與回填的組別標籤" as Label
+學生 --> Join
+Join --> Group
+教師 --> Label
+Label --> Group
+@enduml

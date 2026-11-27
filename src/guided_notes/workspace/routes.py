@@ -206,6 +206,7 @@ def history_lecture(activity_id):
 @workspace.get('/teacher/workspace/courses/<course_id>/classrooms/<classroom_id>/groups')
 @read_view
 def classroom_groups(course_id, classroom_id):
+    from ..activities.classroom_membership import group_label
     from ..activities.classroom_presence import roster
 
     db = connection()
@@ -213,4 +214,6 @@ def classroom_groups(course_id, classroom_id):
     room = owned_classroom(db, teacher, classroom_id)
     if room['course_id'] != course_id:
         raise ApiError(404, 'CLASSROOM_NOT_FOUND')
-    return jsonify(classroom_state=room['state'], groups=[dict(row) for row in roster(db, room)])
+    return jsonify(classroom_state=room['state'], groups=[
+        dict(row, name=group_label(row['name'])) for row in roster(db, room)
+    ])

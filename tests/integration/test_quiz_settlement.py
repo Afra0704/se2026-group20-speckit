@@ -95,7 +95,7 @@ def test_parallel_groups_settle_once_when_the_classroom_closes(classroom_app, cl
     activity, questions = published_quiz(classroom_app, classroom_teacher, classroom_setup)
     aid, rid = activity["activity_id"], room["classroom_id"]
     students = [classroom_app.test_client(), classroom_app.test_client()]
-    for client, group in zip(students, ("A", "B")):
+    for client, group in zip(students, ("1", "2")):
         assert post(client, "/classroom-memberships", code=room["code"], group_name=group).status_code == 201
     base = f"/teacher/classrooms/{rid}"
     assert post(classroom_teacher, f"{base}/activities/{aid}/start").status_code == 200
@@ -115,6 +115,6 @@ def test_parallel_groups_settle_once_when_the_classroom_closes(classroom_app, cl
         ).fetchall()
         winner = next(iter(json.loads(received[0]["answers"]).values()))
     result = classroom_teacher.get(f"/activities/{aid}/results", headers={"X-Activity-Role": "teacher"}).json
-    assert result["results"][0]["winner_name"] == winner
+    assert result["results"][0]["winner_name"] == ("第 1 組" if winner == "A" else "第 2 組")
     assert [g["rank"] for g in result["results"][0]["groups"]] == [1, 2]
     assert submit_question(students[0], aid, questions[0]).status_code == 409

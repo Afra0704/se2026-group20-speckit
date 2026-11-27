@@ -11,7 +11,7 @@ def test_unknown_export_history_survives_upgrade_close_and_cross_teacher_reuse(c
     cid, catalog, room = prepare_real_course(classroom_app, classroom_teacher)
     rid = room['classroom_id']
     students = [classroom_app.test_client() for _ in range(2)]
-    groups = [post(s, '/classroom-memberships', code=room['code'], group_name=name).json for s, name in zip(students, ('A', 'B'))]
+    groups = [post(s, '/classroom-memberships', code=room['code'], group_name=name).json for s, name in zip(students, ('1', '2'))]
     aid = post(classroom_teacher, f'/teacher/classrooms/{rid}/activities', import_id=catalog['import_id'], import_version=1).json['activity_id']
     post(classroom_teacher, f'/teacher/classrooms/{rid}/activities/{aid}/finish')
     snapshot = {'contract_version':1,'activity_id':aid,'import_id':catalog['import_id'],'import_version':1,
@@ -51,7 +51,7 @@ def test_pending_history_is_preserved_without_automatic_writeback(classroom_app,
     _, catalog, room = prepare_real_course(classroom_app, classroom_teacher)
     rid = room['classroom_id']
     student = classroom_app.test_client()
-    post(student, '/classroom-memberships', code=room['code'], group_name='A')
+    post(student, '/classroom-memberships', code=room['code'], group_name='1')
     aid = post(classroom_teacher, f'/teacher/classrooms/{rid}/activities', import_id=catalog['import_id'], import_version=1).json['activity_id']
     post(classroom_teacher, f'/teacher/classrooms/{rid}/close', confirm=True)
     assert classroom_teacher.get(f'/teacher/classrooms/{rid}/activities').json['activities'][0]['activity_id'] == aid

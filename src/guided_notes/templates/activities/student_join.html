@@ -11,7 +11,8 @@
   <p class="muted">輸入老師提供的課堂碼與你的組別，加入這一堂課。</p>
   <section class="card"><form id="join">
     <label for="join-code">課堂碼</label><input id="join-code" name="code" class="code-input" placeholder="例如 AB123" maxlength="32" required autocomplete="off" autocapitalize="characters" spellcheck="false">
-    <label for="join-group">組別</label><input id="join-group" name="group_name" placeholder="例如 甲組" maxlength="80" required autocomplete="off">
+    <label for="join-group">組別</label><input id="join-group" name="group_name" placeholder="例如 1" inputmode="numeric" required autocomplete="off" aria-describedby="join-group-error">
+    <p id="join-group-error" class="student-field-error" role="alert" hidden></p>
     <button type="submit">加入課堂</button>
   </form><p id="message" role="status" tabindex="-1"></p></section>
   <p class="student-footnote">每一堂課都是獨立的。加入其他課堂時，請重新輸入課堂碼與組別。</p>

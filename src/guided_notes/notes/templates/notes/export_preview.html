@@ -12,10 +12,10 @@
   <p>待寫入 {{ preview.counts.write }} 格 · 已為相同文字 {{ preview.counts.already_matches }} 格 · 無勝組略過 {{ preview.counts.skip }} 格 · 需覆寫確認 {{ preview.counts.requires_overwrite_confirmation }} 格</p>
 </section>
 <section class="card scroll"><table>
-  <thead><tr><th>題號／小題</th><th>勝組識別</th><th>答案範圍</th><th>原始內容</th><th>預定答案</th><th>預定動作</th></tr></thead>
+  <thead><tr><th>題號／小題</th><th>勝組</th><th>答案範圍</th><th>原始內容</th><th>預定答案</th><th>預定動作</th></tr></thead>
   <tbody>{% for item in items %}{% set data = preview['items'][loop.index0] %}{% set value = item.original_user_value %}
   <tr><td>{{ data.display_number }} {{ data.subitem_label or '' }}</td>
-    <td>{{ data.winner_group_id if data.winner_group_id is not none else '無勝組' }}</td>
+    <td>{{ group_labels.get(data.item_id, data.winner_group_id) if data.winner_group_id is not none else '無勝組' }}</td>
     <td>{{ item.binding.answer_range|notes_a1 }}</td>
     <td>{% if 'formulaValue' in value %}公式：{{ value.formulaValue }}{% elif 'stringValue' in value %}文字：{{ value.stringValue }}{% elif 'numberValue' in value %}數字：{{ value.numberValue }}{% elif 'boolValue' in value %}布林值：{{ value.boolValue }}{% else %}空白{% endif %}</td>
     <td>{{ item.proposed_text if item.proposed_text is not none else '—' }}</td>

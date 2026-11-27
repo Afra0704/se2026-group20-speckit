@@ -12,7 +12,7 @@ def test_close_waits_for_committed_submission(classroom_app, classroom_teacher, 
     activity_id = post(classroom_teacher, path + "/activities", import_id=course_import_id(course["course_id"]),
                        import_version=1).json["activity_id"]
     student = classroom_app.test_client()
-    assert post(student, "/classroom-memberships", code=room["code"], group_name="A").status_code == 201
+    assert post(student, "/classroom-memberships", code=room["code"], group_name="1").status_code == 201
     assert post(classroom_teacher, f"{path}/activities/{activity_id}/start").status_code == 200
     assert post(classroom_teacher, path + "/close", confirm=False).status_code == 400
     assert student.get(f"/classrooms/{rid}/state").json["activity"]["phase"] == "LIVE"
@@ -37,6 +37,6 @@ def test_close_waits_for_committed_submission(classroom_app, classroom_teacher, 
     assert state["classroom_state"] == "CLOSED"
     assert set(state) == {"classroom_id", "classroom_state", "state_version"}
     assert post(student, f"/activities/{activity_id}/submissions", **body).status_code == 409
-    assert post(student, "/classroom-memberships", code=room["code"], group_name="B").status_code == 403
+    assert post(student, "/classroom-memberships", code=room["code"], group_name="2").status_code == 403
     assert post(classroom_teacher, f"{path}/activities/{activity_id}/start").status_code == 409
     assert classroom_teacher.get(path + "/activities").json["activities"][0]["closed_at"]

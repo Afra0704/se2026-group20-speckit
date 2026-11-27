@@ -21,7 +21,7 @@ def create(client, path, cid, **extra):
 def test_create_publishes_safe_preview_to_two_groups(classroom_app, classroom_teacher, classroom_setup):
     path, cid, room = activity_path(classroom_setup)
     students = [classroom_app.test_client() for _ in range(2)]
-    for client, name in zip(students, ('甲', '乙')):
+    for client, name in zip(students, ('1', '2')):
         assert post(client, '/classroom-memberships', code=room['code'], group_name=name).status_code == 201
     response = create(classroom_teacher, path, cid, title='<img src=x onerror=alert(1)>')
     assert response.status_code == 201
@@ -96,7 +96,7 @@ def test_submission_boundaries_and_close(classroom_app, classroom_teacher, class
     path, cid, room = activity_path(classroom_setup)
     aid = create(classroom_teacher, path, cid).json['activity_id']
     student = classroom_app.test_client()
-    post(student, '/classroom-memberships', code=room['code'], group_name='甲')
+    post(student, '/classroom-memberships', code=room['code'], group_name='1')
     accepted = []
     classroom_app.config['ACCEPT_SUBMISSION'] = lambda db, context, answers: accepted.append(context['activity_id'])
     body = {'question_id': 'fixture-q1', 'items': [{'item_id': 'fixture-item-1-1', 'answer_text': ' answer '}]}
@@ -118,7 +118,7 @@ def test_authorization_and_csrf(classroom_app, classroom_teacher, classroom_setu
     stranger = classroom_app.test_client()
     post(stranger, '/teacher/session', username='other', password='test-password')
     student = classroom_app.test_client()
-    post(student, '/classroom-memberships', code=room['code'], group_name='甲')
+    post(student, '/classroom-memberships', code=room['code'], group_name='1')
     for suffix in (f'/activities/{aid}/start', f'/activities/{aid}/finish', '/close'):
         endpoint = f"/teacher/classrooms/{room['classroom_id']}{suffix}"
         assert post(stranger, endpoint, confirm=True).status_code in (403, 404)

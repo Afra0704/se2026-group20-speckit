@@ -2,7 +2,7 @@ from flask import current_app, request
 
 from ..activities.membership import activity_scope
 from ..activities.classroom_access import owned_classroom, requested_activity
-from ..activities.classroom_membership import group_for
+from ..activities.classroom_membership import group_for, group_label
 from ..auth import require_teacher
 from ..db import connection, read_view
 from ..http import ApiError
@@ -39,18 +39,22 @@ def closed_for_results(activity_id):
 def read_results(activity_id):
     db = connection()
     activity, group = result_scope(db, activity_id)
+    label = group_label if current_app.config["CLASSROOM_MODE"] else lambda name: name
     if activity["phase"] != "CLOSED":
         progress = current_app.config.get("GET_PROGRESS")
         rows = progress(db, activity_id) if group is None and activity["phase"] == "LIVE" and progress else []
-        return {"status": "active", "results": [
-            {key: row[key] for key in ("question_id", "group_name", "submitted") if key in row} for row in rows
-        ]}
+        results = [{key: row[key] for key in ("question_id", "group_name", "submitted") if key in row}
+                   for row in rows]
+        for row in results:
+            if "group_name" in row:
+                row["group_name"] = label(row["group_name"])
+        return {"status": "active", "results": results}
     published = snapshot(db, activity_id)
     if published is None:
         if current_app.config.get("GET_SETTLED_RESULTS") is settled and status(db, activity_id) == "unavailable":
             return {"status": "unavailable"}
         return {"status": "pending"}
-    return {"status": "settled", "results": [project(row, group) for row in published["results"]]}
+    return {"status": "settled", "results": [project(row, group, label) for row in published["results"]]}
 
 
 def snapshot(db, activity_id):
@@ -58,8 +62,8 @@ def snapshot(db, activity_id):
     return read(db, activity_id) if read is not None else None
 
 
-def project(row, group):
-    result = {"question_id": row["question_id"], "winner_name": row["winner_name"],
+def project(row, group, label=lambda name: name):
+    result = {"question_id": row["question_id"], "winner_name": label(row["winner_name"]),
               "winner_answer": row["winner_answer"]}
     entries = row["groups"]
     for key in ("display_number", "no_winner"):
@@ -68,7 +72,7 @@ def project(row, group):
     if "winner_items" in row:
         result["winner_items"] = public_items(row["winner_items"])
     if group is None:
-        result["groups"] = [dict(project_entry(entry), group_name=entry["group_name"]) for entry in entries]
+        result["groups"] = [dict(project_entry(entry), group_name=label(entry["group_name"])) for entry in entries]
     else:
         own = next((entry for entry in entries if entry["group_id"] == group["id"]), None)
         result["own"] = project_entry(own) if own else None
