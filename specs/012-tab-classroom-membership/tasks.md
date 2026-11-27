@@ -42,9 +42,11 @@ Issue #17。依據 [規格](spec.md)、[計畫](plan.md)、[資料模型](data-m
 
 ## 第六階段｜整體交付
 
-- [ ] T018 依 `specs/012-tab-classroom-membership/quickstart.md` 執行 Node、Python 與至少一位教師、兩組學生的真人驗收，測量在線更新與斷線恢復。將版本、執行者、場景、預期及實際結果記入 `specs/012-tab-classroom-membership/validation.md`。
-- [ ] T019 執行 Converge，對照程式及 `diagrams/012-tab-classroom-membership-component.puml`、`diagrams/012-tab-classroom-membership-class.puml`、`diagrams/012-tab-classroom-membership-sequence.puml`，必要時重繪及複核，將差異、證據與組員互審狀態記入 `specs/012-tab-classroom-membership/diagram-review.md`。
+- [x] T018 依 `specs/012-tab-classroom-membership/quickstart.md` 執行 Node、Python 與至少一位教師、兩組學生的真人驗收，測量在線更新與斷線恢復。將版本、執行者、場景、預期及實際結果記入 `specs/012-tab-classroom-membership/validation.md`。
+- [x] T019 執行 Converge，對照程式及 `diagrams/012-tab-classroom-membership-component.puml`、`diagrams/012-tab-classroom-membership-class.puml`、`diagrams/012-tab-classroom-membership-sequence.puml`，必要時重繪及複核，將差異、證據與組員互審狀態記入 `specs/012-tab-classroom-membership/diagram-review.md`。
 
 ## 依賴與交付順序
 
 `T001 → T002／T003 → T004 → T005 → US1 → US2 → US3 → T018 → T019`。T006／T007、T011／T012 分別可並行準備。T015 可在契約確定後獨立準備，接線 T017 須等撤回與恢復完成。多個故事會修改相同的課堂路由與學生頁，依順序整合並逐階段跑回歸。首個開發增量為 US1；公開交付驗收涵蓋三個故事。
+
+2026-11-28：T018自動及真人驗收、T019檢核與三圖實作對照已完成；證據及限制見validation.md與docs/pr24-issue17-integration-review.md。T019完成不代表同學已核准本輪整合／F5修正，互審狀態仍待同學審閱。
