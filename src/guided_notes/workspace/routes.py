@@ -125,6 +125,15 @@ def create_import(course_id):
 def import_page(flow_id):
     row=flows.get(flow_id)
     if request.accept_mimetypes.best=='application/json':return jsonify(flows.safe(row))
+    if row['source_kind'] == 'link' and row['status'] == 'failed' and row['retry_action'] == 'read':
+        teacher = require_teacher()
+        source_url = row['spreadsheet_url']
+        if row['suggested_sheet_id'] is not None:
+            source_url += '#gid=' + str(row['suggested_sheet_id'])
+        return page('lectures', course=get_owned_course(teacher, row['course_id']), section='lectures',
+                    lectures=list_course_catalogs(teacher, row['course_id'])['lectures'],
+                    link_source={'url': source_url, 'flow_url': url_for('workspace.import_page', flow_id=flow_id)},
+                    link_error=workspace_error_message(row['error_code']))
     data=flows.safe(row)
     preview=None
     if row['current_preview_id']:

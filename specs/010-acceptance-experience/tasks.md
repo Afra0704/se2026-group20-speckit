@@ -18,7 +18,7 @@
 - [x] T004 [P] [US1] 在 `tests/import-url-validation.test.cjs` 涵蓋原生驗證、後端 INVALID_SHEETS_URL、原值保留、修正重送和清除狀態。FR-A01／A02。
 - [x] T005 [P] [US1] 在 `tests/contract/test_import_flow_routes.py` 依介面契約核對無效來源、授權／權限、來源不存在與暫時讀取失敗，包含匯入流程狀態回傳的錯誤。FR-A02。
 - [x] T006 [US1] 更新 `src/guided_notes/templates/workspace/lectures.html`、`src/guided_notes/static/import-flow.js`、`src/guided_notes/static/workspace.js` 與 `src/guided_notes/static/workspace.css`，依介面契約將格式錯誤接至欄位提示、其他類別接至操作提示，保留原連結、ARIA 關聯及重送恢復。FR-A01／A02。
-- [ ] T007 [US1] 執行欄位與匯入回歸測試並用 Sheets 副本走完合法匯入，記錄於 `specs/010-acceptance-experience/validation.md`。SC-001。
+- [x] T007 [US1] 執行欄位與匯入回歸測試並用 Sheets 副本走完合法匯入，記錄於 `specs/010-acceptance-experience/validation.md`。SC-001。
 
 ## 第四階段｜US2 活動結束結果（C，P1）
 
@@ -30,7 +30,7 @@
 - [x] T009 [P] [US2] 在 `tests/contract/test_classroom_results.py` 與 `tests/integration/test_classroom_history_009.py` 核對 D06／003-D22／009-D22：OPEN 同堂晚加入、CLOSED 拒絕學生及原瀏覽器恢復、教師歷史／回填、跨組授權。FR-C02／C03。
 - [x] T010 [US2] 在 `src/guided_notes/templates/activities/student_room.html`、`src/guided_notes/templates/workspace/classroom.html`、`src/guided_notes/static/student-classroom.css` 與 `src/guided_notes/static/workspace.css` 提供獨立結果區與狀態。FR-C01／C02。
 - [x] T011 [US2] 在學生 `src/guided_notes/static/student-room.js` 接入 OPEN 階段切換及正式投影，讓手動歷史優先並在下一活動撤銷舊目標，在教師 `src/guided_notes/static/classroom.js` 接入結果區。保留關課終止、獨立輪詢、教師作答進度、歷史入口、送答重試及過期回應檢查。FR-C01–C03。
-- [ ] T012 [US2] 執行結果、課堂、送答及回填相關回歸。以兩組學生實測階段切換與延遲，記錄於 `specs/010-acceptance-experience/validation.md`。SC-003／004。
+- [x] T012 [US2] 執行結果、課堂、送答及回填相關回歸。以兩組學生實測階段切換與延遲，記錄於 `specs/010-acceptance-experience/validation.md`。SC-003／004。
 
 ## 第五階段｜US3 課堂在線統計（B，P2）
 
@@ -41,11 +41,11 @@
 - [x] T015 [US3] 在 `src/guided_notes/activities/classroom_presence_schema.sql`、`src/guided_notes/activities/classroom_presence.py` 與 `src/guided_notes/db.py` 實作定案後的身分與頁面狀態，驗證會保留既有資料的可重跑升級。FR-B02／B03。
 - [x] T016 [US3] 在 `src/guided_notes/activities/classroom_routes.py` 與 `src/guided_notes/workspace/routes.py` 接入授權更新及老師課堂統計。FR-B01／B02。
 - [x] T017 [US3] 在 `src/guided_notes/static/classroom.js`、`src/guided_notes/templates/workspace/classroom.html` 顯示在線人數、過期及關課狀態，在學生 `src/guided_notes/static/student-room.js` 接入定案後的頁面更新。FR-B02。
-- [ ] T018 [US3] 實測加入、重複加入、重整、不同瀏覽器、多頁只關一頁、最後一頁失聯逾時、背景頁、斷線重連、同堂切換、不同課堂及教師查詢失敗後恢復。依定案規則核對計數，記錄實際延遲及在線變動前後的正式結果於 `specs/010-acceptance-experience/validation.md`。SC-002／004。
+- [x] T018 [US3] 實測加入、重複加入、重整、不同瀏覽器、多頁只關一頁、最後一頁失聯逾時、背景頁、斷線重連、同堂切換、不同課堂及教師查詢失敗後恢復。依定案規則核對計數，記錄實際延遲及在線變動前後的正式結果於 `specs/010-acceptance-experience/validation.md`。SC-002／004。
 
 ## 第六階段｜交付檢核
 
-- [ ] T019 依實作範圍執行 Converge、比對 PlantUML 與程式、補足回歸及人工驗收紀錄，並核對憲章 III 的兩份講義端到端證據，缺證據時補驗，更新 `specs/010-acceptance-experience/diagram-review.md` 與 `specs/010-acceptance-experience/validation.md`。SC-004。
+- [x] T019 依實作範圍執行 Converge、比對 PlantUML 與程式、補足回歸及人工驗收紀錄，並核對憲章 III 的兩份講義端到端證據，缺證據時補驗，更新 `specs/010-acceptance-experience/diagram-review.md` 與 `specs/010-acceptance-experience/validation.md`。SC-004。
 
 ## 依賴與增量
 

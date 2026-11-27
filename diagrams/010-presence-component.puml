@@ -7,6 +7,7 @@ component "頁面在線更新與逾時" as Presence
 component "教師組別與在線統計" as Roster
 component "既有正式送答與結算" as Quiz
 學生 --> Presence : 固定課堂頁的在線訊號
+學生 --> Presence : pagehide 主動離開通知
 Presence --> Auth : 驗證參與身分
 教師 --> Roster
 Roster --> Auth : 驗證管理權限

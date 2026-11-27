@@ -22,3 +22,10 @@
 | B 在線 | `activities/classroom_membership.py`、課堂路由及 schema、`workspace/routes.py`、學生 `static/student-room.js`、教師 `static/classroom.js` | 依固定內部課堂 ID 授權，按穩定參與身分與頁心跳彙整；CLOSED 停止更新。以附加式 schema 保留既有資料。 |
 
 先交付 A，再交付 C。A 的人工驗收使用一份可用 Sheets 副本；整體交付另核對憲章 III 的兩份講義匯入與回填證據，缺證據時補做。B 的共同需求、契約與驗收時間依確認回報同步。產物包含 [研究](research.md)、[資料模型](data-model.md)、[介面契約](contracts/acceptance-interfaces.md) 及 [驗收指南](quickstart.md)。
+
+## 2026-11-27 人工驗收修訂落點
+
+- A：貼連結先 read，錯誤保留表單並以同一按鈕明確接續原 flow；權限／暫時錯誤不改為 URL 格式錯誤。授權回來的失敗 flow 由 workspace routes 渲染同一連結表單；換來源另建 flow。
+- B：1 秒心跳、4 秒 TTL，教師每秒輪詢，端到端目標依使用者修訂為 5／5 秒。離頁與背景心跳優先 Beacon，keepalive fetch 備援；路由沿用原 CSRF 與學生授權。附加 departures 表保留 120 秒標記防止晚到心跳復活，pageshow 使用新頁 ID；online 新 generation 立即送心跳。
+- C：單場與歷史清單的暫時失敗均局部顯示重試；課堂狀態繼續輪詢，授權失效與 CLOSED 仍清除內容。未改 003 正式受理、排序、結算與 001 回填規則。
+- 本次前置 Google 登入時鐘誤差修正另由 google_login/provider.py 與 test_google_identity.py 記錄：官方 verifier 的 60 秒容差與既有 iat 規則一致，exp／audience／nonce／簽章驗證仍保留。

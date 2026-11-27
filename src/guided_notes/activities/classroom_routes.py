@@ -252,12 +252,27 @@ def state(classroom_id):
 def update_presence(classroom_id):
     from .classroom_presence import heartbeat
 
-    data = payload()
+    data = dict(payload())
+    data.pop('csrf_token', None)  # Form Beacon; the global CSRF check has already run.
     if set(data) != {'page_id'}:
         raise ApiError(400, 'INVALID_REQUEST')
     page_id = string(data, 'page_id', 64)
     with write_transaction() as db:
         heartbeat(db, classroom_id, page_id)
+    return '', 204
+
+
+@rooms.post("/classrooms/<classroom_id>/presence/leave")
+def leave_presence(classroom_id):
+    from .classroom_presence import leave
+
+    data = dict(payload())
+    data.pop('csrf_token', None)
+    if set(data) != {'page_id'}:
+        raise ApiError(400, 'INVALID_REQUEST')
+    page_id = string(data, 'page_id', 64)
+    with write_transaction() as db:
+        leave(db, classroom_id, page_id)
     return '', 204
 
 

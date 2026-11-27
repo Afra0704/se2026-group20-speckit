@@ -5,14 +5,19 @@ participant "各學生頁面" as Tabs
 participant "課堂授權與在線狀態" as Presence
 actor 教師
 學生 -> Tabs : 加入、重整或恢復
-Tabs -> Presence : 各頁每 3 秒更新在線訊號
+Tabs -> Presence : 各頁每 1 秒更新在線訊號；online 立即更新
 Presence -> Presence : 驗證固定課堂 ID、OPEN 狀態與參與身分
 教師 -> Presence : 定期讀取
 Presence -> Presence : 查管理權限並按身分去重
 Presence --> 教師 : 組別及在線估計
+opt 正常關閉或離開頁面
+  Tabs -> Presence : pagehide Beacon（keepalive 備援，授權＋CSRF）
+  Presence -> Presence : 移除該頁、保留離開標記 120 秒
+  Presence -> Presence : 拒絕舊頁晚到心跳；恢復使用新頁面 ID
+end
 alt 同一身分仍有其他有效頁
   Presence -> Presence : 維持一人
-else 最後一頁逾時 25 秒
+else 最後一頁主動離開或失聯逾時 4 秒
   Presence -> Presence : 減少一人並保留組別
 end
 alt 讀取失敗

@@ -2,6 +2,7 @@ import base64
 import hashlib
 import json
 import time
+from datetime import datetime, timezone
 from urllib.parse import parse_qs,urlsplit
 
 import pytest
@@ -45,14 +46,22 @@ def test_actual_flow_s256_scopes_online(google_app,purpose):
     assert (SHEETS_SCOPE in query['scope'][0]) == (purpose=='sheets')
 
 
-@pytest.mark.parametrize('mutation',['valid','bad_signature','bad_nonce','partial','extra'])
+@pytest.mark.parametrize('mutation',['valid','bad_signature','bad_nonce','partial','extra',
+                                    'future_1','future_60','future_61','expired','bad_audience'])
 def test_real_exchange_and_official_signature_verifier(google_app,monkeypatch,mutation):
+    now = int(time.time())
+    monkeypatch.setattr(time, 'time', lambda: now)
+    monkeypatch.setattr('google.auth._helpers.utcnow',
+                        lambda: datetime.fromtimestamp(now, timezone.utc).replace(tzinfo=None))
     key=rsa.generate_private_key(public_exponent=65537,key_size=2048)
     pem=key.private_bytes(serialization.Encoding.PEM,serialization.PrivateFormat.PKCS8,serialization.NoEncryption())
     public=key.public_key().public_bytes(serialization.Encoding.PEM,serialization.PublicFormat.SubjectPublicKeyInfo).decode()
     signer=RSASigner.from_string(pem,key_id='synthetic-kid')
     values=claims()
     if mutation=='bad_nonce': values['nonce']='wrong'
+    if mutation.startswith('future_'): values['iat'] = now + int(mutation.split('_')[1])
+    if mutation=='expired': values['exp'] = now - 1
+    if mutation=='bad_audience': values['aud'] = 'another-client'
     raw=jwt.encode(signer,values).decode()
     if mutation=='bad_signature': raw=raw[:-8]+'AAAAAAAA'
     scopes='openid email profile'
@@ -75,7 +84,7 @@ def test_real_exchange_and_official_signature_verifier(google_app,monkeypatch,mu
     attempt={'attempt_id':'synthetic-provider-unit-attempt','purpose':'login','state':'one-state','redirect_uri':google_app.config['GOOGLE_REDIRECT_URI'],
              'secrets':{'nonce':'expected-nonce','verifier':'a'*64}}
     with google_app.app_context():
-        if mutation in ('valid','extra'):
+        if mutation in ('valid','extra','future_1','future_60'):
             result=GoogleProvider().exchange_and_verify(attempt,'code')
             assert result['identity']['subject']=='A'
         else:

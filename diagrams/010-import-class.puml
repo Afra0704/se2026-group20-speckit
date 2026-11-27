@@ -3,6 +3,7 @@ title A 講義匯入欄位提示
 class "連結欄位" as Field {
   目前輸入
   驗證狀態
+  待接續流程參考
 }
 class "錯誤提示" as Error {
   原因

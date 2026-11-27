@@ -18,9 +18,10 @@
   let activity=null,group=null,view=null,polling=false,controller=new AbortController(),recovering=false;
   let historyKey=null,selectedResult=null,resultOutput=null;
   let historyRequest=null;
+  let historyFailed=false,historyNotice=null;
   let scopeBlocked=false;
   const phaseText={PREPARING:'尚未開放搶答',LIVE:'搶答中',CLOSED:'活動已結束'};
-  function clear(){content.hidden=true;byId('questions').replaceChildren();byId('results').replaceChildren();activity=null;view=null;historyKey=null;selectedResult=null;resultOutput=null;}
+  function clear(){content.hidden=true;byId('questions').replaceChildren();byId('results').replaceChildren();activity=null;view=null;historyKey=null;selectedResult=null;resultOutput=null;historyFailed=false;historyNotice=null;}
   function ended(){if(!state.closed)state.close();controller.abort();clear();byId('access-notice').hidden=true;byId('closed-notice').hidden=false;byId('state').textContent='課堂已結束';byId('message').textContent='';}
   async function api(path,body,key){
     const options={cache:'no-store',signal:controller.signal,headers:{'X-Activity-Role':'student'}};
@@ -70,11 +71,28 @@
     for(const form of byId('questions').querySelectorAll('form'))form.quizUpdate?.();
   }
   async function results(gen){
-    if(historyRequest?.generation===gen)return;
+    if(historyFailed||historyRequest?.generation===gen)return;
     const request={generation:gen};
     historyRequest=request;
     try{await loadHistory(gen);}
-    catch(e){error(e,gen);}
+    catch(e){
+      if(!valid(gen)||e.name==='AbortError')return;
+      if(['CLASSROOM_CLOSED','AUTH_REQUIRED','FORBIDDEN','RECOVERY_DENIED'].includes(e.message)){
+        error(e,gen);
+      }else{
+        historyFailed=true;
+        if(!historyNotice){
+          historyNotice=document.createElement('div');
+          historyNotice.setAttribute('role','alert');
+          const retry=document.createElement('button');
+          retry.type='button';retry.textContent='歷史結果清單讀取失敗，重試';
+          retry.onclick=()=>{if(valid(gen)){historyFailed=false;void results(gen);}};
+          historyNotice.append(retry);
+          byId('results').append(historyNotice);
+        }
+        historyNotice.hidden=false;
+      }
+    }
     finally{if(historyRequest===request)historyRequest=null;}
   }
   function output(){
@@ -102,7 +120,9 @@
         };container.append(button);
       }
       container.append(panel);
+      if(historyNotice)container.append(historyNotice);
     }
+    if(historyNotice)historyNotice.hidden=true;
     void selected(gen);
   }
   async function selected(gen){
@@ -181,25 +201,52 @@
   };
   function suspend(){state.invalidate();controller.abort();controller=new AbortController();clear();}
   function resume(){suspend();refresh();}
-  window.addEventListener('pagehide',suspend);window.addEventListener('pageshow',resume);window.addEventListener('online',resume);
+  let leavePresence=()=>{},restorePresence=()=>{};
+  window.addEventListener('pagehide',()=>{leavePresence();suspend();});
+  window.addEventListener('pageshow',()=>{resume();restorePresence();});
+  window.addEventListener('online',()=>{resume();restorePresence();});
   document.addEventListener('visibilitychange',()=>{if(document.hidden)suspend();else resume();});
   setInterval(()=>{if(!document.hidden)refresh();},1000);
-  const pageId=globalThis.crypto?.getRandomValues
-    ? Array.from(crypto.getRandomValues(new Uint8Array(16)), value=>value.toString(16).padStart(2,'0')).join('')
-    : null;
+  const newPageId=()=>globalThis.crypto?.getRandomValues
+    ? Array.from(crypto.getRandomValues(new Uint8Array(16)), value=>value.toString(16).padStart(2,'0')).join('') : null;
+  let pageId=newPageId();
   if(pageId){
-    let presencePending=false;
-    const heartbeat=async()=>{
-      if(presencePending||state.closed||scopeBlocked)return;
-      presencePending=true;
-      const generation=state.generation;
-      try{await api(`/classrooms/${encodeURIComponent(room)}/presence`,{page_id:pageId});}
-      catch(e){if(valid(generation)&&e.message==='CLASSROOM_CLOSED')ended();}
-      finally{presencePending=false;}
+    let presencePending=null,departed=false;
+    const beacon=(path)=>{
+      if(typeof globalThis.navigator?.sendBeacon!=='function')return false;
+      try{
+        return navigator.sendBeacon(path,new URLSearchParams({page_id:pageId,csrf_token:main.dataset.csrf}));
+      }catch{return false;}
     };
-    setInterval(heartbeat,3000);
-    window.addEventListener('online',heartbeat);
-    document.addEventListener('visibilitychange',()=>{if(!document.hidden)void heartbeat();});
+    const heartbeat=async()=>{
+      const generation=state.generation;
+      if(presencePending?.generation===generation||departed||state.closed||scopeBlocked)return;
+      const path=`/classrooms/${encodeURIComponent(room)}/presence`;
+      if(document.hidden&&beacon(path))return;
+      const request={generation};
+      presencePending=request;
+      try{await api(path,{page_id:pageId});}
+      catch(e){if(valid(generation)&&e.message==='CLASSROOM_CLOSED')ended();}
+      finally{if(presencePending===request)presencePending=null;}
+    };
+    setInterval(heartbeat,1000);
+    leavePresence=()=>{
+      if(departed||state.closed||scopeBlocked)return;
+      departed=true;
+      const path=`/classrooms/${encodeURIComponent(room)}/presence/leave`;
+      if(beacon(path))return;
+      // Independent of the polling AbortController, which pagehide cancels.
+      void fetch(path,{
+        method:'POST',keepalive:true,cache:'no-store',
+        headers:{'Content-Type':'application/json','X-CSRF-Token':main.dataset.csrf},
+        body:JSON.stringify({page_id:pageId}),
+      }).catch(()=>{});
+    };
+    restorePresence=()=>{
+      if(departed){pageId=newPageId();departed=false;}
+      void heartbeat();
+    };
+    document.addEventListener('visibilitychange',()=>{void heartbeat();});
     void heartbeat();
   }
   refresh();
