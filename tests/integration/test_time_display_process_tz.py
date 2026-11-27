@@ -26,6 +26,7 @@ print(json.dumps({'tz':time.tzname,'values':[
     for zone in ('UTC','Asia/Taipei','America/New_York'):
         env=dict(os.environ,TZ=zone,PYTHONPATH=str(root/'src'))
         results.append(json.loads(subprocess.check_output([sys.executable,'-c',code],env=env,text=True)))
+    print(json.dumps({'platform':sys.platform, 'python':sys.version, 'zones':results}))
     assert results[0]['values']==results[1]['values']==results[2]['values']
     assert results[0]['values'][0]['text']=='2026-11-27 00:03'
     assert results[0]['values'][2]['status']=='unknown_timezone'
