@@ -2,7 +2,7 @@ import re
 import secrets
 import time
 
-from flask import current_app, session
+from flask import current_app, request, session
 
 from ..auth import digest
 from ..http import ApiError
@@ -41,23 +41,36 @@ def join(db, code, name):
         raise ApiError(403, "JOIN_DENIED")
     if room["state"] != "OPEN":
         raise ApiError(409, "CLASSROOM_CLOSED")
-    target = (room["id"], name)
+    proof = secrets.token_urlsafe(32)
+    group_id, membership_id = create_membership(
+        db, room["id"], name, digest(proof),
+        int(time.time()) + current_app.config["RECOVERY_SECONDS"],
+    )
+    return room["id"], group_id, proof, issue(db, membership_id)
+
+
+def create_membership(db, classroom_id, name, proof_hash, expires):
+    target = (classroom_id, name)
     db.execute(
         """INSERT INTO classroom_groups(classroom_id, name) VALUES (?, ?)
            ON CONFLICT(classroom_id, name) DO NOTHING""",
         target,
     )
     group = db.execute("SELECT * FROM classroom_groups WHERE classroom_id = ? AND name = ?", target).fetchone()
-    proof = secrets.token_urlsafe(32)
     result = db.execute(
         """INSERT INTO classroom_memberships(classroom_id, group_id, proof, expires)
            VALUES (?, ?, ?, ?)""",
-        (room["id"], group["id"], digest(proof), int(time.time()) + current_app.config["RECOVERY_SECONDS"]),
+        (classroom_id, group["id"], proof_hash, expires),
     )
-    return room["id"], group["id"], proof, issue(db, result.lastrowid)
+    return group["id"], result.lastrowid
 
 
-def identity_for(db, classroom_id, *, submitting=False):
+def identity_for(db, classroom_id, *, submitting=False, tab_token=None):
+    from .classroom_tabs import browser_key, identity
+
+    tab_token = request.headers.get('X-Classroom-Tab', tab_token)
+    if tab_token is not None or browser_key() or request.headers.get('X-Classroom-Protocol') == '1':
+        return identity(db, classroom_id, tab_token)
     token = session.get("classroom_grant")
     if not token:
         raise ApiError(401, "AUTH_REQUIRED")
@@ -76,8 +89,8 @@ def identity_for(db, classroom_id, *, submitting=False):
     return row
 
 
-def group_for(db, classroom_id, *, submitting=False):
-    row = identity_for(db, classroom_id, submitting=submitting)
+def group_for(db, classroom_id, *, submitting=False, tab_token=None):
+    row = identity_for(db, classroom_id, submitting=submitting, tab_token=tab_token)
     if row['classroom_state'] != 'OPEN':
         raise ApiError(409, 'CLASSROOM_CLOSED')
     return row

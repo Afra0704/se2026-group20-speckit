@@ -1,9 +1,50 @@
 from catalog_support import course_import_id
+from classroom_tab_support import activate_tab, browser_tabs, join_tab
 from conftest import post
 from guided_notes.auth import require_teacher
 from guided_notes.quiz.results_gateway import get_ended_snapshot
 from guided_notes.activities.teacher import get_activity_reference
 from quiz_support import published_quiz, submit_question
+
+
+def test_tab_result_authorization_is_bound_to_browser_room_and_closure(
+        classroom_app, classroom_teacher, classroom_setup):
+    course, room = classroom_setup
+    rid = room['classroom_id']
+    second = post(classroom_teacher, f"/teacher/courses/{course['course_id']}/classrooms",
+                  title='其他課堂').json
+    student, _ = browser_tabs(classroom_app)
+    headers = activate_tab(student, join_tab(student, room, '1'))
+    aid, _ = published_quiz(classroom_app, classroom_teacher, classroom_setup)
+    other, _ = published_quiz(classroom_app, classroom_teacher, (course, second))
+    result = f"/activities/{aid['activity_id']}/results"
+    other_result = f"/activities/{other['activity_id']}/results"
+
+    assert student.get(result, headers=headers).status_code == 200
+    assert student.get(result).status_code == 401
+    legacy = classroom_app.test_client()
+    assert post(legacy, '/classroom-memberships', code=room['code'], group_name='2').status_code == 201
+    with legacy.session_transaction() as session:
+        legacy_grant = session['classroom_grant']
+    with student.session_transaction() as session:
+        session['classroom_grant'] = legacy_grant
+    for no_token in ({}, {'X-Classroom-Protocol': '1'}):
+        missing = student.get(result, headers=no_token)
+        assert missing.status_code == 401 and missing.json['error'] == 'CLASSROOM_TAB_REQUIRED'
+    assert post(student, '/classroom-memberships', code=room['code'], group_name='2').status_code == 401
+    assert student.get(result, headers={'X-Classroom-Tab': 'unknown-test-token'}).status_code == 401
+    assert student.get(other_result, headers=headers).status_code == 403
+    other_browser, _ = browser_tabs(classroom_app)
+    assert other_browser.get(result, headers=headers).status_code == 403
+
+    assert post(classroom_teacher, f'/teacher/classrooms/{rid}/close', confirm=True).status_code == 200
+    closed = student.get(f'/classrooms/{rid}/state', headers=headers)
+    assert closed.json['classroom_state'] == 'CLOSED'
+    assert closed.json.get('activity') is None
+    assert student.get(result, headers=headers).status_code == 409
+    assert student.get(f'/classrooms/{rid}/results', headers=headers).status_code == 409
+    teacher_result = classroom_teacher.get(result, headers={'X-Activity-Role': 'teacher'})
+    assert teacher_result.status_code == 200
 
 
 def test_late_member_can_view_same_room_results_until_room_closes(classroom_app, classroom_teacher, classroom_setup):

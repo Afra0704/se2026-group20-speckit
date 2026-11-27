@@ -3,6 +3,43 @@ const assert = require("node:assert/strict");
 const vm = require("node:vm");
 const fs = require("node:fs");
 
+test("a copied operation scope cannot retry or clear the original document's pending answer", async () => {
+  const storage = new Map();
+  const sent = [];
+  const browser = {
+    crypto: {randomUUID: () => "original-key"},
+    sessionStorage: {getItem: k => storage.get(k), setItem: (k, v) => storage.set(k, v),
+      removeItem: k => storage.delete(k), get length() { return storage.size; },
+      key: i => [...storage.keys()][i]},
+    document: {createElement: () => ({})},
+    FormData: class { *[Symbol.iterator]() { yield ["i", "original answer"]; } },
+  };
+  vm.runInNewContext(fs.readFileSync("src/guided_notes/static/quiz-submission.js", "utf8"), browser);
+  const quiz = browser.QuizSubmission;
+  function attach(operationScope) {
+    const form = {append(node) { this.retry = node; }};
+    const button = {};
+    const update = quiz.attach(form, button, "q", () => ({room: "r", activity: "a", group: 1, operationScope}),
+      async (activity, body, key) => {
+        sent.push({activity, body, key});
+        if (sent.length === 1) throw new Error("unknown outcome");
+      }, () => {}, () => {});
+    update();
+    return {form, button};
+  }
+  const original = attach("original");
+  await original.form.onsubmit({preventDefault() {}});
+  assert.equal(original.button.disabled, true);
+  assert.equal(quiz.hasPending("r", "original"), true);
+  const copy = attach("copy");
+  assert.equal(copy.form.retry.hidden, true);
+  quiz.clearScope("r", "copy");
+  assert.equal(sent.length, 1);
+  await attach("original").form.retry.onclick();
+  assert.deepEqual(sent[1], sent[0]);
+  assert.equal(storage.size, 0);
+});
+
 test("same-tab reload restores an unresolved operation without auto-sending", async () => {
   const storage = new Map();
   const sent = [];

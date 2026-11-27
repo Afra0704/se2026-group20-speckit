@@ -15,10 +15,24 @@ def now():
 
 def heartbeat(db, classroom_id, page_id):
     group = group_for(db, classroom_id, submitting=True)
+    browser_key = presence_key(group, page_id)
+    refresh(db, classroom_id, browser_key, page_id, group['id'], group['membership_id'])
+
+
+def presence_key(group, page_id):
+    from ..http import ApiError
+
+    if 'browser_key' not in group.keys():
+        return digest(session['csrf'])
+    if group['page_id'] != page_id:
+        raise ApiError(403, 'FORBIDDEN')
+    return group['browser_key']
+
+
+def refresh(db, classroom_id, browser_key, page_id, group_id, membership_id):
     current = now()
     db.execute('DELETE FROM classroom_presence WHERE expires_at <= ?', (current,))
     db.execute('DELETE FROM classroom_presence_departures WHERE expires_at <= ?', (current,))
-    browser_key = digest(session['csrf'])
     if db.execute('SELECT 1 FROM classroom_presence_departures WHERE classroom_id=? AND browser_key=? AND page_id=?',
                   (classroom_id, browser_key, page_id)).fetchone():
         return
@@ -28,14 +42,18 @@ def heartbeat(db, classroom_id, page_id):
              group_id=excluded.group_id, membership_id=excluded.membership_id,
              expires_at=excluded.expires_at
            WHERE excluded.membership_id >= classroom_presence.membership_id""",
-        (classroom_id, browser_key, page_id, group['id'],
-         group['membership_id'], current + PRESENCE_TTL_SECONDS),
+        (classroom_id, browser_key, page_id, group_id, membership_id, current + PRESENCE_TTL_SECONDS),
     )
 
 
-def leave(db, classroom_id, page_id):
-    group_for(db, classroom_id, submitting=True)
-    key = (classroom_id, digest(session['csrf']), page_id)
+def leave(db, classroom_id, page_id, tab_token=None):
+    group = group_for(db, classroom_id, submitting=True, tab_token=tab_token)
+    depart(db, classroom_id, presence_key(group, page_id), page_id)
+    return group
+
+
+def depart(db, classroom_id, browser_key, page_id):
+    key = (classroom_id, browser_key, page_id)
     db.execute('DELETE FROM classroom_presence WHERE classroom_id=? AND browser_key=? AND page_id=?', key)
     # A heartbeat already in flight must not restore the page after its departure.
     db.execute('DELETE FROM classroom_presence_departures WHERE expires_at <= ?', (now(),))

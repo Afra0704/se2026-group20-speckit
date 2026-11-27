@@ -6,7 +6,7 @@
 <link rel="stylesheet" href="{{ url_for('static',filename='student-classroom.css') }}">
 <body class="student-page">
 <header class="student-nav"><a href="{{ url_for('index') }}">Guided Notes</a><a href="{{ url_for('teacher.page') }}">教師入口</a></header>
-<main class="student-entry" data-csrf="{{ csrf }}">
+<main class="student-entry" data-csrf="{{ csrf }}" data-page-protocol="1">
   <p class="eyebrow">STUDENT ACCESS</p><h1>準備好一起上課了嗎？</h1>
   <p class="muted">輸入老師提供的課堂碼與你的組別，加入這一堂課。</p>
   <section class="card"><form id="join">
