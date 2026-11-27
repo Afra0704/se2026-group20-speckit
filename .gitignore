@@ -36,6 +36,9 @@ node_modules/
 /playwright-report/
 /test-results/
 
+# Local PR review checkouts and archives
+/.review/
+
 # Runtime data, local databases and logs
 /instance/
 /data/local/
