@@ -70,3 +70,7 @@ node tests/time-display-browser.cjs
 最後一項使用新建暫存Chrome設定檔與UTC／台北／紐約context，只讀合成樣本及實際activityList函式，不連Google、不使用既有cookies；Chrome不在預設位置時設定TIME_DISPLAY_CHROME，Python不在原環境時設定TIME_DISPLAY_PYTHON。此可選腳本沒有新增套件依賴。
 
 人工M01～M06仍未執行。要啟動此版本，先由操作者停止舊服務；沿用原載入私人設定的CMD，將工作目錄改成本worktree、PYTHONPATH改為本worktree的src，呼叫原 `.venv` Python。DATABASE必須明確使用操作者選定的測試DB，不能因工作目錄變更誤建空白DB或自動刪除原DB。此文件不提供猜測的私有DB或key路徑。
+
+## 2026-11-27 統一版本入口
+
+使用者要求#19／#20統一版本；目前請以 `D:/os_final` 的 `codex/integrate-issues-19-20` 為準，最新master基底80510a6，兩項功能均已包含。前文分段worktree／尚未接線說明為歷史，勿再用舊011 worktree驗收此整合版。統一啟動及實際回歸見[整合紀錄](../../docs/issues-19-20-integration.md)，原人工／POSIX／真Sheets狀態不因建立整合分支而代勾。

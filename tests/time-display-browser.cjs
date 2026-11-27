@@ -57,12 +57,16 @@ async function main() {
         const expression=`(async()=>{
           document.body.innerHTML='<ul id="activities"></ul><button id="close-room" disabled></button>';
           let historyRequest=0,selection=1,version=1,room='room',historyNeedsRefresh=false,historyUnfinished=false;
+          let returnSelectionPending=true,selectedResult=null,activeId='a';
+          const role='teacher',returnedResultId='a';
           const main={dataset:{}},url=encodeURIComponent,byId=id=>document.getElementById(id);
           function updateCreateAvailability(){} function addResultButton(){}
+          function note(){throw Error('original activity selection was lost');}
           async function api(){return {activities:[{activity_id:'a',title:'<b>安全純文字</b>',phase:'CLOSED',time_display:${JSON.stringify(metadata)}}]};}
           ${implementation}
           await activityList('room');
           return {timezone:Intl.DateTimeFormat().resolvedOptions().timeZone,text:byId('activities').textContent,
+            selectedActivity: selectedResult?.id,
             unsafeElements:byId('activities').querySelectorAll('b').length};
         })()`;
         const result=await send('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true},sessionId);
@@ -70,6 +74,7 @@ async function main() {
         const value=result.result.value;
         assert.equal(value.timezone,timezoneId);
         assert.equal(value.unsafeElements,0);
+        assert.equal(value.selectedActivity,'a');
         assert.ok(value.text.includes('建立：2026-11-27 00:03'),value.text);
         assert.ok(value.text.includes('開始：未開始即結束'),value.text);
         assert.ok(value.text.includes('結束：2026-11-27 00:04'),value.text);

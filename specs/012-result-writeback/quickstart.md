@@ -61,3 +61,7 @@ Q07、Q10 的故障使用測試 fixture／gateway，不能手改正式 DB。自�
 ## 證據格式
 
 每案記錄執行者、台北日期時間、Git SHA、情境、預期、實際、通過／失敗／未執行及受控或真實來源；截圖及報告需排除憑證與真實學生資料。比較前後 activity/import/result_version、winner、rank、原答案，以及來源非目標格與格式；重試與恢復另外比對來源寫入次數。失敗修正後記錄重驗，不代勾人工案例。
+
+## 2026-11-27 統一版本入口
+
+使用者要求#19／#20統一版本；目前請以 `D:/os_final` 的 `codex/integrate-issues-19-20` 為準，最新master基底80510a6，兩項功能均已包含。前文分段worktree／尚未接線說明為歷史，勿再用舊011 worktree驗收此整合版。統一啟動及實際回歸見[整合紀錄](../../docs/issues-19-20-integration.md)，原人工／POSIX／真Sheets狀態不因建立整合分支而代勾。
