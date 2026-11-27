@@ -6,7 +6,7 @@
 <section class="card">
   <form method="post" action="{{ url_for('notes.create_export_preview') }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <label>活動識別<input name="activity_id" data-current-activity maxlength="256" required autocomplete="off"></label>
+    <label>活動識別<input name="activity_id" value="{{ request.args.get('activity_id', '') }}" data-current-activity maxlength="256" required autocomplete="off"></label>
     <p class="muted">會自動帶入此瀏覽器最近使用的教師活動。這是活動識別，不是學生加入碼。</p>
     <button>讀取來源並建立預覽</button>
   </form>

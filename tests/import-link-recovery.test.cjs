@@ -13,7 +13,10 @@ function screen(resume = false) {
   const button = element(), field = element(), operation = element();
   const form = Object.assign(element(), {dataset: resume ? {flowUrl: '/flow/1'} : {},
     querySelector: name => name === 'input' ? input : button});
-  const nodes = {'link-import': form, 'spreadsheet-url-error': field, 'link-import-error': operation};
+  const returnTo = {value: ''};
+  const reconnect = Object.assign(element(), {querySelector: () => returnTo});
+  const nodes = {'link-import': form, 'spreadsheet-url-error': field, 'link-import-error': operation,
+    'link-import-reconnect': reconnect};
   const calls = [], destinations = [];
   let status = resume ? 'failed' : 'source_pending', failure = null, created = 0, loseResponse = false, authorization = false;
   const context = {
@@ -41,12 +44,35 @@ function screen(resume = false) {
   };
   vm.runInNewContext(fs.readFileSync('src/guided_notes/static/import-flow.js', 'utf8')
     .replace(/^import [^\r\n]*[\r\n]+/, ''), context);
-  return {input, button, field, operation, calls, destinations,
+  return {input, button, field, operation, reconnect, returnTo, calls, destinations,
     fail(code) { failure = code; }, recover() { failure = null; },
     loseResponse() { loseResponse = true; },
     requireAuthorization() { authorization = true; },
     submit: () => form.events.submit({preventDefault() {}})};
 }
+
+test('revoked Sheets access exposes explicit reconnect for the same flow without automatic OAuth', async () => {
+  const page = screen();
+  page.fail('GOOGLE_REAUTH_REQUIRED');
+  await page.submit();
+  assert.equal(page.reconnect.hidden, false);
+  assert.equal(page.returnTo.value, '/flow/1');
+  assert.equal(page.destinations.length, 0);
+  page.input.events.input();
+  assert.equal(page.reconnect.hidden, true, 'editing the URL must hide the previous flow reconnect action');
+});
+
+test('an obsolete read error cannot offer reconnect for the previous link', async () => {
+  const page = screen();
+  page.fail('GOOGLE_REAUTH_REQUIRED');
+  const pending = page.submit();
+  page.input.value = 'https://docs.google.com/spreadsheets/d/other/edit';
+  page.input.events.input();
+  await pending;
+  assert.equal(page.reconnect.hidden, true);
+  assert.equal(page.operation.hidden, true);
+  assert.equal(page.button.disabled, false);
+});
 
 for (const code of ['SOURCE_READ_FORBIDDEN', 'SOURCE_READ_UNAVAILABLE']) {
   test(`${code} stays beside the link; the same Read button retries after recovery`, async () => {

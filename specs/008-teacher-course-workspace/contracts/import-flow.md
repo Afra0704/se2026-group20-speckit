@@ -67,3 +67,7 @@ GET流程狀態不能回source原答案／座標、google sub、grant、nonce、
 | 410 LECTURE_REMOVED | 嘗試更新／重送已移除講義，另行新增才能產生新UUID。 |
 
 原SOURCE_READ_FORBIDDEN、Google refresh busy/timeout Retry-After、recognition issues仍由原notes envelope傳遞；不把可讀不可寫誤報登入失敗。picker popupblocked／cancel在UI為可理解狀態，不假存成功。
+
+## 2026-11-27 驗收補修
+
+已連接的 Sheets 憑證被 Google 拒絕時，失敗流程提供明確重新連接表單，透過原 007 connect POST 的受限 return_to 返回同一 flow GET。這是獨立 Sheets 重連，不改 Picker sidecar、範圍或原 authorize 流程。返回後保留失敗來源連結及 pending flow，使用者須再次明確按讀取／重試；不另建流程或自動保存。單純分享權限不足與網路錯誤仍顯示各自錯誤，不誤導重新授權。

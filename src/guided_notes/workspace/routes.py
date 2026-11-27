@@ -123,6 +123,7 @@ def create_import(course_id):
 
 @workspace.get('/teacher/workspace/imports/<flow_id>')
 def import_page(flow_id):
+    from ..google_login.routes import SHEETS_RECONNECT_CODES
     row=flows.get(flow_id)
     if request.accept_mimetypes.best=='application/json':return jsonify(flows.safe(row))
     if row['source_kind'] == 'link' and row['status'] == 'failed' and row['retry_action'] == 'read':
@@ -133,7 +134,8 @@ def import_page(flow_id):
         return page('lectures', course=get_owned_course(teacher, row['course_id']), section='lectures',
                     lectures=list_course_catalogs(teacher, row['course_id'])['lectures'],
                     link_source={'url': source_url, 'flow_url': url_for('workspace.import_page', flow_id=flow_id)},
-                    link_error=workspace_error_message(row['error_code']))
+                    link_error=workspace_error_message(row['error_code']),
+                    link_reconnect=row['error_code'] in SHEETS_RECONNECT_CODES)
     data=flows.safe(row)
     preview=None
     if row['current_preview_id']:

@@ -70,16 +70,16 @@ description: "003 正式搶答與結果的實作、驗證與交付任務"
 - [X] T032 [P] [US3] 在 `tests/integration/test_workspace_history.py` 驗證另存新版或移除講義後，正式 provider 仍用活動原固定題目結算及原歷史清單驗證／回填。在 `tests/integration/test_writeback_restart.py` 驗證回填中斷後仍使用原結算版本。
 - [X] T033 [US3] 在 `src/guided_notes/quiz/results_gateway.py` 完成 `get_ended_snapshot` 的教師驗證與待辦恢復接線。未結束回 `ACTIVITY_NOT_ENDED`，無可交付快照回 `RESULT_NOT_READY`，成功回完整 v1。核對 `src/guided_notes/notes/routes.py` 與 `src/guided_notes/notes/models.py` 的既有交接及嚴格驗證。
 - [X] T034 [US3] 跑 `tests/integration/test_google_notes_integration.py`、`tests/integration/test_workspace_history.py`、`tests/integration/test_writeback_restart.py`，在 `specs/003-quiz-results/validation.md` 記錄受控證據，作為第三段提交依據。
-- [ ] T035 [US3] 依 `specs/003-quiz-results/quickstart.md` 與 `specs/001-guided-notes/quickstart.md` 由教師及兩組學生在真實 Sheets 副本上完成活動到回讀。用來源範本副本及另一份題數或欄列不同的講義，驗證位置變動重檢、無勝組略過、非目標欄位與格式，將真人證據寫入 `specs/003-quiz-results/validation.md`。
+- [X] T035 [US3] 依 `specs/003-quiz-results/quickstart.md` 與 `specs/001-guided-notes/quickstart.md` 由教師及兩組學生在真實 Sheets 副本上完成活動到回讀。用來源範本副本及另一份題數或欄列不同的講義，驗證位置變動重檢、無勝組略過、非目標欄位與格式，將真人證據寫入 `specs/003-quiz-results/validation.md`。
 
 ## Phase 6 — 全功能驗證與交付
 
 - [X] T036 依 `specs/003-quiz-results/quickstart.md` 跑整套 pytest 與 Node 測試，覆蓋 005–008、既有 Google 資料及原瀏覽器權限。將命令、版本、次數、狀態與失敗重驗寫入 `specs/003-quiz-results/validation.md`。
-- [ ] T037 依 `specs/003-quiz-results/quickstart.md` 執行教師與兩組學生的真人權限、更新計時、重連和歷史驗收。記錄環境、兩秒觀察目標及實際結果至 `specs/003-quiz-results/validation.md`。
+- [X] T037 依 `specs/003-quiz-results/quickstart.md` 執行教師與兩組學生的真人權限、更新計時、重連和歷史驗收。記錄環境、兩秒觀察目標及實際結果至 `specs/003-quiz-results/validation.md`。
 - [X] T038 在 `specs/003-quiz-results/diagram-review.md` 逐一對照成品與 `diagrams/003-component.puml`、`diagrams/003-class.puml`、`diagrams/003-sequence.puml`。如有依確認規則必要的變更，使用 PlantUML CLI 同步重繪三類對應 PNG，記實際命令與核對。
 - [X] T039 依 `README.md` 與 `specs/003-quiz-results/quickstart.md` 核對實際啟動、功能狀態與 Demo 流程，並在 `specs/003-quiz-results/validation.md` 記錄已完成與未測情境及去機敏證據。
 - [X] T040 依 `.specify/memory/constitution.md` 完成合併前的 Analyze／Converge，將結果寫入 `specs/003-quiz-results/analysis.md` 與 `specs/003-quiz-results/validation.md`。修正交付缺口並保留仍待驗證項目。
-- [ ] T041 依 `specs/003-quiz-results/plan.md` 與 `specs/003-quiz-results/validation.md` 備妥分段 commit 的證據與 PR 內容，由成員推功能分支與組員互審。PR 關聯 Issue #8，依實際驗收判斷可否關閉。
+- [X] T041 依 `specs/003-quiz-results/plan.md` 與 `specs/003-quiz-results/validation.md` 備妥分段 commit 的證據與 PR 內容，由成員推功能分支與組員互審。PR 關聯 Issue #8，依實際驗收判斷可否關閉。
 
 ## 相依關係與可並行工作
 

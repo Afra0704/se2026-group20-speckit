@@ -1,1 +1,29 @@
-{% extends 'workspace/base.html' %}{% block content %}<h2>講義管理</h2><button id="import-toggle" aria-expanded="false" aria-controls="import-menu" type="button">＋匯入講義</button><div id="import-menu" hidden><button type="button" data-cloud>從 Google 雲端選擇</button><button type="button" data-link>貼上 Google Sheets 連結</button></div><form id="link-import" {% if link_source %}data-flow-url="{{ link_source.flow_url }}"{% else %}hidden{% endif %}><label>Google Sheets 連結<input type="url" name="spreadsheet_url" value="{{ link_source.url if link_source else '' }}" aria-describedby="spreadsheet-url-error" required></label><p id="spreadsheet-url-error" class="import-error" role="alert" hidden></p><p id="link-import-error" class="import-error" role="alert" {% if not link_error %}hidden{% endif %}>{{ link_error or '' }}</p><button type="submit">讀取講義</button></form><div class="cards">{% for lecture in lectures %}<article class="card"><h3>{{ lecture.versions[0].title }}</h3>{% for v in lecture.versions %}<p><a href="/teacher/notes/catalogs/{{ lecture.import_id }}/versions/{{ v.import_version }}">版本 {{ v.import_version }}</a> · {{ v.question_count }} 題／{{ v.answer_item_count }} 格</p>{% endfor %}<button type="button" data-remove="{{ lecture.import_id }}" data-title="{{ lecture.versions[0].title }}">刪除講義</button></article>{% else %}<p>尚無講義，按「＋匯入講義」加入。</p>{% endfor %}</div>{% endblock %}{% block scripts %}<script type="module" src="{{ url_for('static',filename='import-flow.js') }}"></script>{% endblock %}
+{% extends 'workspace/base.html' %}
+{% block content %}
+<h2>講義管理</h2>
+{% for category, message in get_flashed_messages(with_categories=true) %}
+<p class="import-error" role="alert">{{ message }}</p>
+{% endfor %}
+<button id="import-toggle" aria-expanded="false" aria-controls="import-menu" type="button">＋匯入講義</button>
+<div id="import-menu" hidden><button type="button" data-cloud>從 Google 雲端選擇</button><button type="button" data-link>貼上 Google Sheets 連結</button></div>
+<form id="link-import" {% if link_source %}data-flow-url="{{ link_source.flow_url }}"{% else %}hidden{% endif %}>
+  <label>Google Sheets 連結<input type="url" name="spreadsheet_url" value="{{ link_source.url if link_source else '' }}" aria-describedby="spreadsheet-url-error" required></label>
+  <p id="spreadsheet-url-error" class="import-error" role="alert" hidden></p>
+  <p id="link-import-error" class="import-error" role="alert" {% if not link_error %}hidden{% endif %}>{{ link_error or '' }}</p>
+  <button type="submit">讀取講義</button>
+</form>
+<form id="link-import-reconnect" method="post" action="{{ url_for('google_login.connect') }}" {% if not link_reconnect %}hidden{% endif %}>
+  <input type="hidden" name="csrf_token" value="{{ csrf }}">
+  <input type="hidden" name="return_to" value="{{ link_source.flow_url if link_source else '' }}">
+  <button>重新連接 Google Sheets</button>
+  <p>請使用目前教師的 Google 帳號。授權後回到此匯入流程，再按讀取講義。</p>
+</form>
+<div class="cards">
+{% for lecture in lectures %}
+<article class="card"><h3>{{ lecture.versions[0].title }}</h3>
+{% for v in lecture.versions %}<p><a href="/teacher/notes/catalogs/{{ lecture.import_id }}/versions/{{ v.import_version }}">版本 {{ v.import_version }}</a> · {{ v.question_count }} 題／{{ v.answer_item_count }} 格</p>{% endfor %}
+<button type="button" data-remove="{{ lecture.import_id }}" data-title="{{ lecture.versions[0].title }}">刪除講義</button></article>
+{% else %}<p>尚無講義，按「＋匯入講義」加入。</p>{% endfor %}
+</div>
+{% endblock %}
+{% block scripts %}<script type="module" src="{{ url_for('static',filename='import-flow.js') }}"></script>{% endblock %}

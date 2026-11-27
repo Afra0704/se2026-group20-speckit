@@ -1,0 +1,6 @@
+<form method="post" action="{{ url_for('google_login.connect') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="return_to" value="{{ sheets_return_to }}">
+  <button>重新連接 Google Sheets</button>
+</form>
+<p>請使用目前教師的 Google 帳號重新授權。返回後請重新讀取或建立恢復預覽，不會自動回填。</p>

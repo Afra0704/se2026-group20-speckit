@@ -90,7 +90,17 @@ def error_response(code, status, context=None):
     if (request.is_json or request.accept_mimetypes.best == "application/json"
             or (request.method == "GET" and request.accept_mimetypes.best != "text/html")):
         return jsonify(error=data), status
-    return render_template("notes/error.html", error=data), status
+    return_to = url_for('notes.export_form')
+    if request.view_args and request.view_args.get('operation_id'):
+        return_to = url_for('notes.operation_report', operation_id=request.view_args['operation_id'])
+    elif request.view_args and request.view_args.get('preview_id'):
+        return_to = url_for('notes.view_export_preview', preview_id=request.view_args['preview_id'])
+    elif request.endpoint == 'notes.create_export_preview':
+        aid = request.form.get('activity_id')
+        import re
+        if isinstance(aid, str) and re.fullmatch(r'[A-Za-z0-9_-]{1,256}', aid):
+            return_to = url_for('notes.export_form', activity_id=aid)
+    return render_template("notes/error.html", error=data, sheets_return_to=return_to), status
 
 
 @notes.errorhandler(ApiError)

@@ -65,3 +65,11 @@ build_google_service 只接此快照；保留既有 AuthorizedHttp 的 refresh_s
 登入／connect 的 code exchange 仍用其 300 秒 attempt 期限及有界網路 timeout，不套用 refresh lease；兩種 purpose 均不得重送已消耗的 code。
 
 一般 logout 不呼叫 Google revoke，保留該教師本人已連接資料供下次登入；後續 request 必查新 grant。已送往 Google 的外部寫入不能藉登出取消，沿用寫後回讀／未知狀態恢復，不承諾跨系統原子撤銷。
+
+## 2026-11-27 驗收補修：明確重新連接與返回原操作
+
+Google 拒絕既有授權時，貼連結匯入的欄位錯誤旁、匯入失敗頁、回填錯誤頁及回填報告提供「重新連接 Google Sheets」表單；單純瀏覽不啟動 OAuth。連接仍需有效教師、原 CSRF、同一 Google 身分及原一次性 OAuth 檢查。
+
+既有 connect POST 新增可選 `return_to`，只允許本機唯讀教師頁：notes 首頁、export-previews 表單／指定預覽、operations 報告、workspace/imports 指定流程。只有 export-previews 表單可帶單一合法 activity_id。拒絕外站、協定相對 URL、fragment、控制字元、額外參數及寫入路徑。返回位置加密保存於該次 attempt 的 secret_blob，callback 不讀前端 return_to／next 決定目的地；沒有此欄位時仍回 notes。
+
+成功後只導覽至原頁；不自動讀取、匯入保存、回填或重試。原流程、課程、教師、來源與確認檢查保持。取消授權保留原有效教師，回原頁顯示失敗訊息；帶 activity_id 的返回頁仍保留識別。

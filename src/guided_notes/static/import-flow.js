@@ -18,6 +18,9 @@ if (linkForm) {
   const button = linkForm.querySelector('button');
   const fieldError = document.getElementById('spreadsheet-url-error');
   const operationError = document.getElementById('link-import-error');
+  const reconnect = document.getElementById('link-import-reconnect');
+  const reconnectCodes = new Set(['SHEETS_CONNECT_REQUIRED', 'SHEETS_REAUTH_REQUIRED',
+    'GOOGLE_REAUTH_REQUIRED', 'GOOGLE_CREDENTIALS_REFRESH_REQUIRED']);
   let pendingLink = linkForm.dataset?.flowUrl
     ? {url: input.value, flowUrl: linkForm.dataset.flowUrl} : null;
 
@@ -51,6 +54,7 @@ if (linkForm) {
     operationError.textContent = '';
     operationError.hidden = true;
     input.removeAttribute('aria-invalid');
+    if (reconnect) reconnect.hidden = true;
   }
 
   function showLinkError(message) {
@@ -78,13 +82,18 @@ if (linkForm) {
     try {
       await readLink(url);
     } catch (error) {
+      if (input.value !== url) return;
       if (error.code === 'INVALID_SHEETS_URL') {
-        if (input.value === url) showLinkError('請輸入有效的 Google Sheets 連結。');
+        showLinkError('請輸入有效的 Google Sheets 連結。');
       } else {
         operationError.textContent = error.code
           ? error.message
           : '暫時無法讀取 Google Sheets，請稍後重試。';
         operationError.hidden = false;
+        if (reconnect && pendingLink && reconnectCodes.has(error.code)) {
+          reconnect.querySelector('[name="return_to"]').value = pendingLink.flowUrl;
+          reconnect.hidden = false;
+        }
       }
     } finally {
       button.disabled = false;
