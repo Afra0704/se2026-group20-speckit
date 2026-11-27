@@ -1,7 +1,38 @@
 from catalog_support import course_import_id
+from classroom_tab_support import activate_tab, browser_tabs, join_tab
 from conftest import post
 from concurrent.futures import ThreadPoolExecutor
 from threading import Event
+from uuid import uuid4
+
+
+def test_tab_submission_requires_csrf_and_keeps_original_group_after_close(
+        classroom_app, classroom_teacher, classroom_setup):
+    from quiz_support import published_quiz
+
+    _, room = classroom_setup
+    rid = room['classroom_id']
+    student, _ = browser_tabs(classroom_app)
+    joined = join_tab(student, room, '1')
+    headers = activate_tab(student, joined)
+    activity, questions = published_quiz(classroom_app, classroom_teacher, classroom_setup)
+    aid = activity['activity_id']
+    question = questions[0]
+    assert post(classroom_teacher, f'/teacher/classrooms/{rid}/activities/{aid}/start').status_code == 200
+    submit_url = f'/activities/{aid}/submissions'
+    body = {'question_id': question['question_id'], 'items': [
+        {'item_id': item['item_id'], 'answer_text': '原組答案'} for item in question['items']
+    ]}
+    headers['Idempotency-Key'] = str(uuid4())
+    assert student.post(submit_url, headers=headers, json=body).status_code == 403
+    headers['X-CSRF-Token'] = student.get('/csrf').json['csrf']
+    assert student.post(submit_url, headers=headers, json=body).status_code == 201
+    assert post(classroom_teacher, f'/teacher/classrooms/{rid}/close', confirm=True).status_code == 200
+    assert student.post(submit_url, headers=headers, json=body).status_code == 409
+    teacher_result = classroom_teacher.get(f'/activities/{aid}/results',
+                                           headers={'X-Activity-Role': 'teacher'})
+    assert teacher_result.json['results'][0]['groups'][0]['rank'] == 1
+    assert teacher_result.json['results'][0]['winner_name'] == '第 1 組'
 
 
 def test_accept_first_keeps_original_scope_while_close_waits(classroom_app, classroom_teacher, classroom_setup):

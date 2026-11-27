@@ -19,6 +19,23 @@ globalThis.QuizSubmission = (() => {
     }
   }
 
+  function scopesFor(room, documentScope) {
+    if (!documentScope) return [];
+    const scopes = new Set(pending.keys());
+    try {
+      for (let index = 0; index < sessionStorage.length; index++) {
+        const key = sessionStorage.key(index);
+        if (key?.startsWith(prefix)) scopes.add(key.slice(prefix.length));
+      }
+    } catch {}
+    return [...scopes].filter(scope => {
+      try {
+        const parts = JSON.parse(scope);
+        return parts[0] === room && parts[4] === documentScope;
+      } catch { return false; }
+    });
+  }
+
   function attach(form, submit, question, context, send, accepted, report) {
     const retry = document.createElement("button");
     retry.type = "button";
@@ -27,20 +44,23 @@ globalThis.QuizSubmission = (() => {
     form.append(retry);
     let busy = false;
     let sent = false;
-    const scopeOf = (value) => JSON.stringify([value.room, value.activity, value.group, question]);
+    const scopeOf = (value) => JSON.stringify(value.operationScope
+      ? [value.room, value.activity, value.group, question, value.operationScope]
+      : [value.room, value.activity, value.group, question]);
     function update() {
       const value = context();
       const awaitingReply = value && read(scopeOf(value));
       retry.hidden = !awaitingReply;
       retry.disabled = busy || retry.hidden;
       submit.textContent = sent || awaitingReply ? "重新提交" : "提交";
-      if (value) submit.disabled = busy || value.live === false;
+      if (value) submit.disabled = busy || value.live === false || !!(value.operationScope && awaitingReply);
     }
 
     async function run(retrying) {
       const value = context();
       if (busy || !value || (!retrying && submit.disabled)) return;
       const scope = scopeOf(value);
+      if (!retrying && value.operationScope && read(scope)) return;
       const operation = retrying ? read(scope) : {
         key: crypto.randomUUID(),
         body: {question_id: question, items: [...new FormData(form)].map(([item_id, answer_text]) =>
@@ -79,5 +99,9 @@ globalThis.QuizSubmission = (() => {
     retry.onclick = () => run(true);
     return update;
   }
-  return {attach};
+  return {
+    attach,
+    hasPending: (room, scope) => scopesFor(room, scope).some(read),
+    clearScope: (room, scope) => scopesFor(room, scope).forEach(key => save(key, null)),
+  };
 })();

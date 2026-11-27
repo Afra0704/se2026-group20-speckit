@@ -3,25 +3,51 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 
-async function screen(beaconAccepted, holdFirstHeartbeat = false) {
+async function screen(beaconAccepted, holdFirstHeartbeat = false, tab = null) {
   const listeners = {}, docListeners = {}, timers = [], calls = [];
   const beacons = [];
   const element = () => ({hidden: false, textContent: '', children: [],
     replaceChildren(...children) { this.children = children; },
     append(...children) { this.children.push(...children); }, querySelectorAll: () => []});
   const nodes = Object.fromEntries(['room-content', 'state', 'message', 'questions', 'results',
-    'access-notice', 'closed-notice', 'recover', 'activity-title'].map(id => [id, element()]));
-  const document = {hidden: false, querySelector: () => ({dataset: {classroomId: 'room', csrf: 'csrf'}}),
+    'access-notice', 'closed-notice', 'recover', 'rejoin', 'activity-title'].map(id => [id, element()]));
+  const dataset = {classroomId: 'room', csrf: 'csrf'};
+  if (tab) dataset.pageProtocol = '1';
+  const document = {hidden: false, querySelector: () => ({dataset}),
     getElementById: id => nodes[id], createElement: element,
     addEventListener: (event, handler) => { docListeners[event] = handler; }};
   let nonce = 0;
   let firstHeartbeat = true, releaseHeartbeat;
+  let accessCount = 0;
+  const saved = new Map(tab ? [['classroom-tab:room', JSON.stringify(tab.stored)]] : []);
+  const assigned = [], prompts = [];
   const context = {document, AbortController, Uint8Array, URLSearchParams,
     crypto: {getRandomValues(bytes) { bytes.fill(++nonce); return bytes; }},
-    window: {addEventListener: (event, handler) => { listeners[event] = handler; }},
+    window: {addEventListener: (event, handler) => { listeners[event] = handler; },
+      confirm: message => {prompts.push(message); return tab.confirm;},
+      location: {assign: path => assigned.push(path)}},
+    performance: {getEntriesByType: () => [{type: tab?.navigation}]},
+    QuizSubmission: {hasPending: () => !!tab?.pending, clearScope: () => { tab.pending = false; }},
+    sessionStorage: {getItem: key => saved.get(key), setItem: (key, value) => saved.set(key, value),
+      removeItem: key => saved.delete(key)},
     setInterval: (handler, milliseconds) => timers.push({handler, milliseconds}),
     async fetch(path, options) {
       calls.push({path, options});
+      if (path.endsWith('/tab-access')) {
+        const count = ++accessCount;
+        if (tab.loseResponse && count === 1) throw new Error('lost response');
+        const body = JSON.parse(options.body);
+        return {ok: true, status: 200, json: async () => ({
+          group_id: 1, resume_id: 'resume-'+count, page_token: 'token-'+count,
+          expires_at: Date.now()/1000+900, continued_operation_scope: !!body.handoff_id,
+        })};
+      }
+      if (path.endsWith('/revoke')) return {ok: true, status: 204};
+      if (path.endsWith('/state') && tab?.closed) {
+        return {ok: true, status: 200, json: async () => ({
+          classroom_id: 'room', classroom_state: 'CLOSED', state_version: 2,
+        })};
+      }
       if (path.endsWith('/presence') && holdFirstHeartbeat && firstHeartbeat) {
         firstHeartbeat = false;
         await new Promise(resolve => { releaseHeartbeat = resolve; });
@@ -38,10 +64,78 @@ async function screen(beaconAccepted, holdFirstHeartbeat = false) {
   vm.runInNewContext(fs.readFileSync('src/guided_notes/static/student-room.js', 'utf8'), context);
   const flush = () => new Promise(setImmediate);
   await flush();
-  return {calls, beacons, listeners, docListeners, document, flush,
+  return {calls, beacons, listeners, docListeners, document, flush, saved, nodes, assigned, prompts,
+    poll: () => timers[0].handler(),
     releaseHeartbeat: () => releaseHeartbeat(),
     heartbeat: () => timers.filter(timer => timer.milliseconds === 1000).at(-1).handler()};
 }
+
+test('a duplicate ignores a copied handoff and waits for its own credential before reading', async () => {
+  const page = await screen(true, false, {
+    stored: {resume: 'original', scope: 'scope-of-original', handoff: 'original-handoff'},
+    navigation: 'navigate',
+  });
+  const activation = page.calls.find(call => call.path.endsWith('/tab-access'));
+  const data = JSON.parse(activation.options.body);
+  assert.equal(data.resume_id, 'original');
+  assert.equal(data.handoff_id, undefined);
+  assert.equal(JSON.parse(page.saved.get('classroom-tab:room')).scope, data.page_id);
+  assert.equal(page.calls.find(call => call.path.endsWith('/state')).options.headers['X-Classroom-Tab'], 'token-1');
+});
+
+test('reload retries the same activation after a lost response and retains the verified scope', async () => {
+  const page = await screen(true, false, {
+    stored: {resume: 'original', scope: 'scope-of-original', handoff: 'original-handoff'},
+    navigation: 'reload', loseResponse: true,
+  });
+  assert.equal(page.calls.some(call => call.path.endsWith('/state')), false);
+  await page.poll();
+  const attempts = page.calls.filter(call => call.path.endsWith('/tab-access'));
+  assert.equal(attempts.length, 2);
+  assert.equal(attempts[0].options.body, attempts[1].options.body);
+  assert.equal(JSON.parse(attempts[1].options.body).handoff_id, 'original-handoff');
+  assert.equal(JSON.parse(page.saved.get('classroom-tab:room')).scope, 'scope-of-original');
+});
+
+test('returning from the back-forward cache reauthorizes with a fresh document credential', async () => {
+  const page = await screen(true, false, {stored: {resume: 'original'}});
+  page.listeners.pagehide();
+  const leave = page.beacons[0].body;
+  assert.equal(leave.get('page_token'), 'token-1');
+  page.listeners.pageshow();
+  await page.flush();
+  const activation = page.calls.filter(call => call.path.endsWith('/tab-access')).at(-1);
+  assert.equal(JSON.parse(activation.options.body).handoff_id, leave.get('handoff_id'));
+  assert.equal(page.calls.filter(call => call.path.endsWith('/state')).at(-1).options.headers['X-Classroom-Tab'], 'token-2');
+});
+
+test('closing the classroom clears this tab and stops further protected polling', async () => {
+  const tab = {stored: {resume: 'original'}};
+  const page = await screen(true, false, tab);
+  tab.closed = true;
+  await page.poll();
+  await page.flush();
+  assert.equal(page.nodes['closed-notice'].hidden, false);
+  assert.equal(page.saved.has('classroom-tab:room'), false);
+  const calls = page.calls.length;
+  await page.poll();
+  await page.heartbeat();
+  assert.equal(page.calls.length, calls);
+});
+
+test('canceling rejoin keeps pending work and confirmation clears this tab after revocation', async () => {
+  const tab = {stored: {resume: 'original'}, pending: true, confirm: false};
+  const page = await screen(true, false, tab);
+  await page.nodes.rejoin.onclick();
+  assert.match(page.prompts[0], /伺服器可能已受理/);
+  assert.equal(tab.pending, true);
+  assert.equal(page.calls.some(call => call.path.endsWith('/revoke')), false);
+  tab.confirm = true;
+  await page.nodes.rejoin.onclick();
+  assert.equal(tab.pending, false);
+  assert.equal(page.saved.has('classroom-tab:room'), false);
+  assert.deepEqual(page.assigned, ['/student']);
+});
 
 test('pagehide sends an independent keepalive departure and pageshow uses a new page identity', async () => {
   const page = await screen();

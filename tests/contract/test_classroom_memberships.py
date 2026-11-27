@@ -1,4 +1,5 @@
 from catalog_support import course_import_id
+from classroom_tab_support import activate_tab, browser_tabs, join_tab
 from conftest import post
 import pytest
 
@@ -53,3 +54,41 @@ def test_numeric_join_rejects_invalid_group_without_replacing_grant(classroom_ap
         assert session['classroom_grant'] == grant
     state = student.get(f"/classrooms/{room['classroom_id']}/state")
     assert state.json['group_name'] == '第 42 組'
+
+
+def test_tabs_keep_separate_classrooms_in_one_browser(classroom_app, classroom_teacher, classroom_setup):
+    course, room = classroom_setup
+    second_room = post(classroom_teacher, f"/teacher/courses/{course['course_id']}/classrooms",
+                       title='下午班').json
+    browser, _ = browser_tabs(classroom_app)
+    a = activate_tab(browser, join_tab(browser, room, '1'))
+    b = activate_tab(browser, join_tab(browser, second_room, '2'))
+    for room_data, expected_name, headers in (
+        (second_room, '第 2 組', b), (room, '第 1 組', a),
+    ):
+        state = browser.get(f"/classrooms/{room_data['classroom_id']}/state", headers=headers)
+        assert state.status_code == 200
+        assert state.json['group_name'] == expected_name
+    same_group = activate_tab(browser, join_tab(browser, room, '1'))
+    assert same_group != a
+    state_url = f"/classrooms/{room['classroom_id']}/state"
+    assert browser.get(state_url, headers=a).status_code == 200
+    assert browser.get(state_url, headers=same_group).status_code == 200
+
+    from guided_notes.activities.classroom_presence import roster
+    from guided_notes.db import connection
+
+    with classroom_app.app_context():
+        groups = list(roster(connection(), {'id': room['classroom_id'], 'state': 'OPEN'}))
+    assert len(groups) == 1
+    assert groups[0]['online_count'] == 1
+
+
+def test_invalid_tab_join_does_not_replace_current_authorization(classroom_app, classroom_setup):
+    _, room = classroom_setup
+    student, _ = browser_tabs(classroom_app)
+    headers = activate_tab(student, join_tab(student, room, '1'))
+    invalid = join_tab(student, room, '01')
+    assert invalid.status_code == 400
+    assert invalid.json['error'] == 'INVALID_GROUP_NUMBER'
+    assert student.get(f"/classrooms/{room['classroom_id']}/state", headers=headers).status_code == 200

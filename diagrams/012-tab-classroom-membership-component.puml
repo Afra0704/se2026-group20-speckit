@@ -1,0 +1,14 @@
+@startuml
+actor 學生
+component "各分頁加入與重加入" as Tab
+component "後端課堂及組別授權" as Grant
+component "同瀏覽器同堂組別限制" as Group
+component "003 正式送答與結果" as Quiz
+component "010 在線統計" as Presence
+學生 --> Tab
+Tab --> Grant
+Grant --> Group
+Group --> Presence : 採既有存活判定
+Grant --> Quiz
+Grant --> Presence
+@enduml

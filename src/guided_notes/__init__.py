@@ -78,7 +78,11 @@ def create_app(test_config=None):
     @app.get('/student')
     def student_entry():
         template = "activities/student_join.html" if app.config["CLASSROOM_MODE"] else "activities/student.html"
-        return render_template(template, csrf=csrf_token(), role="student")
+        page = render_template(template, csrf=csrf_token(), role="student")
+        if app.config["CLASSROOM_MODE"]:
+            from .activities.classroom_tabs import set_browser_cookie
+            return set_browser_cookie(app.make_response(page))
+        return page
 
     @app.get('/student/classrooms/<classroom_id>')
     def student_room(classroom_id):
