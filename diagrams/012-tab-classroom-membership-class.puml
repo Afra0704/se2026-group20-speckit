@@ -1,0 +1,15 @@
+@startuml
+class "分頁參與情境" as Tab
+class "分頁資格" as Grant
+class "原課堂" as Room
+class "原組別" as Group
+class "本機草稿與重試" as Draft
+class "同瀏覽器同堂組別" as Binding
+Tab "1" -- "0..1" Grant
+Tab "1" o-- "0..*" Draft
+Grant --> Room
+Grant --> Group
+Binding --> Room
+Binding --> Group : 有效時僅一組
+Binding "1" -- "*" Grant
+@enduml

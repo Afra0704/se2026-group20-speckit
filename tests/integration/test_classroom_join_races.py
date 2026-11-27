@@ -1,8 +1,9 @@
 from concurrent.futures import ThreadPoolExecutor
-from threading import Event
+from threading import Barrier, Event
 import pytest
 
 from conftest import post
+from classroom_tab_support import activate_tab, browser_tabs, join_tab
 from guided_notes.db import connection
 
 
@@ -68,3 +69,38 @@ def test_failure_during_close_rolls_back_activity_and_code(classroom_app, classr
         assert connection().execute('SELECT state FROM classrooms WHERE id=?', (room['classroom_id'],)).fetchone()[0] == 'OPEN'
         assert connection().execute('SELECT phase FROM activities WHERE id=?', (aid,)).fetchone()[0] == 'PREPARING'
     assert post(classroom_app.test_client(), '/classroom-memberships', code=room['code'], group_name='2').status_code == 201
+
+
+def test_parallel_tab_joins_choose_only_one_group_before_heartbeat(classroom_app, classroom_setup):
+    _, room = classroom_setup
+    first, second = browser_tabs(classroom_app)
+    ready = Barrier(2)
+
+    def join(client, group):
+        ready.wait(timeout=5)
+        return join_tab(client, room, group)
+
+    with ThreadPoolExecutor(2) as pool:
+        a = pool.submit(join, first, '1')
+        b = pool.submit(join, second, '2')
+        responses = [a.result(timeout=10), b.result(timeout=10)]
+    assert sorted(response.status_code for response in responses) == [201, 409]
+    denied = next(response for response in responses if response.status_code == 409)
+    assert denied.json['error'] == 'CLASSROOM_GROUP_IN_USE'
+
+
+def test_expired_last_page_allows_group_change_and_invalidates_old_generation(
+        classroom_app, classroom_setup, monkeypatch):
+    from guided_notes.activities import classroom_presence
+
+    _, room = classroom_setup
+    first, second = browser_tabs(classroom_app)
+    clock = [classroom_presence.now()]
+    monkeypatch.setattr(classroom_presence, 'now', lambda: clock[0])
+    headers = activate_tab(first, join_tab(first, room, '1'))
+    assert join_tab(second, room, '2').status_code == 409
+    clock[0] += classroom_presence.PRESENCE_TTL_SECONDS + 1
+    activate_tab(second, join_tab(second, room, '2'))
+    clock[0] += classroom_presence.PRESENCE_TTL_SECONDS + 1
+    state = first.get(f"/classrooms/{room['classroom_id']}/state", headers=headers)
+    assert state.status_code in (401, 403)

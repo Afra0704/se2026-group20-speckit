@@ -20,11 +20,36 @@
   let historyRequest=null;
   let historyFailed=false,historyNotice=null;
   let scopeBlocked=false;
+  const tabProtocol=main.dataset.pageProtocol==='1', roomPath=`/classrooms/${encodeURIComponent(room)}`;
+  const storageKey='classroom-tab:'+room;
+  let pageToken=null, tokenExpires=0, activation=null, operationScope=null;
+  let rejoining=false, revokeRequest=null, documentHandoff=null;
+  function storedTab(){
+    try{return JSON.parse(sessionStorage.getItem(storageKey));}
+    catch{return null;}
+  }
+  function clearStoredTab(){
+    try{sessionStorage.removeItem(storageKey);}catch{}
+  }
+  const authErrors=['AUTH_REQUIRED','FORBIDDEN','RECOVERY_DENIED','CLASSROOM_TAB_REQUIRED','CLASSROOM_REJOIN_REQUIRED'];
   const phaseText={PREPARING:'尚未開放搶答',LIVE:'搶答中',CLOSED:'活動已結束'};
   function clear(){content.hidden=true;byId('questions').replaceChildren();byId('results').replaceChildren();activity=null;view=null;historyKey=null;selectedResult=null;resultOutput=null;historyFailed=false;historyNotice=null;}
-  function ended(){if(!state.closed)state.close();controller.abort();clear();byId('access-notice').hidden=true;byId('closed-notice').hidden=false;byId('state').textContent='課堂已結束';byId('message').textContent='';}
+  function ended(){
+    if(!state.closed)state.close();
+    controller.abort();
+    if(tabProtocol){
+      // This is only a display marker for this fixed classroom ID, never authority.
+      // Replace the recovery index rather than retaining credentials after closure.
+      try{sessionStorage.setItem(storageKey,JSON.stringify({closed:true}));}catch{}
+    }
+    pageToken=null;activation=null;operationScope=null;clear();byId('access-notice').hidden=true;byId('closed-notice').hidden=false;byId('state').textContent='課堂已結束';byId('message').textContent='';
+  }
   async function api(path,body,key){
     const options={cache:'no-store',signal:controller.signal,headers:{'X-Activity-Role':'student'}};
+    if(tabProtocol){
+      options.headers['X-Classroom-Protocol']='1';
+      if(pageToken)options.headers['X-Classroom-Tab']=pageToken;
+    }
     if(body!==undefined){options.method='POST';Object.assign(options.headers,{'Content-Type':'application/json','X-CSRF-Token':main.dataset.csrf});options.body=JSON.stringify(body);}
     if(key)options.headers['Idempotency-Key']=key;
     const response=await fetch(path,options), data=response.status===204?null:await response.json();
@@ -35,9 +60,40 @@
   function error(error,gen){
     if(gen!==state.generation||error.name==='AbortError')return;
     if(error.message==='CLASSROOM_CLOSED'){ended();return;}
-    if(['AUTH_REQUIRED','FORBIDDEN','RECOVERY_DENIED'].includes(error.message)){
-      state.invalidate();clear();byId('access-notice').hidden=false;byId('state').textContent='請重新驗證本堂資格';
+    if(authErrors.includes(error.message)){
+      if(tabProtocol){
+        pageToken=null;activation=null;scopeBlocked=true;clearStoredTab();
+        byId('recover').hidden=true;
+      }
+      state.invalidate();clear();byId('access-notice').hidden=false;
+      byId('state').textContent=tabProtocol?'本頁資格已失效，請重新加入課堂。':'請重新驗證本堂資格';
     }else{state.invalidate();clear();byId('state').textContent='連線中斷，正在重新連線…';}
+  }
+  async function activate(){
+    const stored=storedTab();
+    if(!stored?.resume)throw new Error('CLASSROOM_TAB_REQUIRED');
+    if(!activation){
+      activation={resume_id:stored.resume,page_id:newPageId(),request_id:newPageId()};
+      const navigation=globalThis.performance?.getEntriesByType('navigation')[0];
+      if(documentHandoff)activation.handoff_id=documentHandoff;
+      else if(stored.handoff&&navigation?.type==='reload')activation.handoff_id=stored.handoff;
+    }
+    const attempt=activation;
+    const next=await api(roomPath+'/tab-access',attempt);
+    if(activation!==attempt||state.closed||scopeBlocked)return;
+    const scope=next.continued_operation_scope&&stored.scope?stored.scope:attempt.page_id;
+    sessionStorage.setItem(storageKey,JSON.stringify({resume:next.resume_id,scope}));
+    operationScope=scope;
+    group=next.group_id;
+    pageId=attempt.page_id;
+    pageToken=next.page_token;
+    tokenExpires=next.expires_at;
+    activation=null;
+    documentHandoff=null;
+    if(stored.scope&&scope!==stored.scope&&QuizSubmission.hasPending(room,stored.scope)){
+      byId('message').textContent='本頁未承接先前的送答。若結果尚未確認，請在原分頁或向老師核對。';
+    }
+    restorePresence(true);
   }
   function textAnswer(value){return typeof value==='string'?value:Object.values(value||{}).join('、');}
   function describeRow(row) {
@@ -59,10 +115,10 @@
         }
         const button=document.createElement('button');button.textContent='提交';form.append(button);li.append(form);byId('questions').append(li);
         const gen=state.generation;
-        const context=()=>valid(gen,id)&&group!==null?{room,activity:id,group,live:view?.phase==='LIVE'}:null;
+        const context=()=>valid(gen,id)&&group!==null?{room,activity:id,group,operationScope,live:view?.phase==='LIVE'}:null;
         const send=(aid,body,key)=>api(`/activities/${encodeURIComponent(aid)}/submissions`,body,key);
         const accepted=()=>{if(valid(gen,id))byId('message').textContent='答案已受理';};
-        const failed=e=>{if(!valid(gen,id))return;if(['CLASSROOM_CLOSED','AUTH_REQUIRED','FORBIDDEN'].includes(e.message))error(e,gen);else byId('message').textContent=e.message==='QUIZ_UNAVAILABLE'?'正式搶答服務尚未接入，請告知老師。':'送答未完成，請確認連線後重試。';};
+        const failed=e=>{if(!valid(gen,id))return;if(e.message==='CLASSROOM_CLOSED'||authErrors.includes(e.message))error(e,gen);else byId('message').textContent=e.message==='QUIZ_UNAVAILABLE'?'正式搶答服務尚未接入，請告知老師。':'送答未完成，請確認連線後重試。';};
         form.quizUpdate=QuizSubmission.attach(form,button,q.question_id,context,send,accepted,failed);
       }
     }
@@ -77,7 +133,7 @@
     try{await loadHistory(gen);}
     catch(e){
       if(!valid(gen)||e.name==='AbortError')return;
-      if(['CLASSROOM_CLOSED','AUTH_REQUIRED','FORBIDDEN','RECOVERY_DENIED'].includes(e.message)){
+      if(e.message==='CLASSROOM_CLOSED'||authErrors.includes(e.message)){
         error(e,gen);
       }else{
         historyFailed=true;
@@ -151,7 +207,7 @@
       }
     }catch(e){
       if(!isCurrent())return;
-      if(['CLASSROOM_CLOSED','AUTH_REQUIRED','FORBIDDEN','RECOVERY_DENIED'].includes(e.message)){
+      if(e.message==='CLASSROOM_CLOSED'||authErrors.includes(e.message)){
         error(e,gen);
       }else if(e.name!=='AbortError'){
         selection.done=true;
@@ -165,9 +221,13 @@
     finally{selection.loading=false;}
   }
   async function refresh(){
-    if(polling||state.closed||recovering||scopeBlocked)return;
+    if(polling||state.closed||recovering||scopeBlocked||rejoining||revokeRequest)return;
     polling=true;const gen=state.generation;
     try{
+      if(tabProtocol&&(!pageToken||Date.now()/1000>=tokenExpires-10)){
+        await activate();
+        if(!valid(gen)||!pageToken)return;
+      }
       const data=await api(`/classrooms/${encodeURIComponent(room)}/state`);
       if(!state.accept(data,gen))return;
       if(state.closed){ended();return;}
@@ -195,16 +255,43 @@
   byId('recover').onclick=async()=>{
     if(recovering||state.closed)return;
     recovering=true;const gen=state.generation;byId('recover').disabled=true;
-    try{await api(`/classrooms/${encodeURIComponent(room)}/result-access`,{});}
+    try{if(tabProtocol)await activate();else await api(roomPath+'/result-access',{});}
     catch(e){error(e,gen);}finally{recovering=false;byId('recover').disabled=false;}
     await refresh();
   };
+  if(tabProtocol){
+    const rejoin=byId('rejoin');
+    rejoin.onclick=async()=>{
+      if(rejoining||state.closed||!pageToken)return;
+      if(!revokeRequest){
+        const draft=Array.from(byId('questions').querySelectorAll('input')).some(input=>input.value.trim());
+        const pending=QuizSubmission.hasPending(room,operationScope);
+        const message=pending?'尚有送答結果未確認，伺服器可能已受理。重新加入會清除本頁的草稿及重試紀錄。確定繼續？':
+          draft?'重新加入會清除本頁尚未送出的草稿。確定繼續？':'確定要離開本頁的課堂資格並重新加入？';
+        if(!window.confirm(message))return;
+        revokeRequest=newPageId();
+        state.invalidate();controller.abort();controller=new AbortController();
+        for(const field of byId('questions').querySelectorAll('input,button'))field.disabled=true;
+      }
+      rejoining=true;rejoin.disabled=true;
+      try{
+        await api(roomPath+'/tab-access/revoke',{request_id:revokeRequest});
+        scopeBlocked=true;pageToken=null;clearStoredTab();
+        QuizSubmission.clearScope(room,operationScope);clear();
+        window.location.assign('/student');
+      }catch(e){
+        if(e.message==='CLASSROOM_CLOSED'){ended();return;}
+        byId('message').textContent='仍無法確認本頁已離開。請再按一次「重新加入課堂」重試。';
+      }finally{rejoining=false;rejoin.disabled=false;}
+    };
+  }
   function suspend(){state.invalidate();controller.abort();controller=new AbortController();clear();}
   function resume(){suspend();refresh();}
   let leavePresence=()=>{},restorePresence=()=>{};
   window.addEventListener('pagehide',()=>{leavePresence();suspend();});
-  window.addEventListener('pageshow',()=>{resume();restorePresence();});
-  window.addEventListener('online',()=>{resume();restorePresence();});
+  function reconnect(){suspend();restorePresence();void refresh();}
+  window.addEventListener('pageshow',reconnect);
+  window.addEventListener('online',reconnect);
   document.addEventListener('visibilitychange',()=>{if(document.hidden)suspend();else resume();});
   setInterval(()=>{if(!document.hidden)refresh();},1000);
   const newPageId=()=>globalThis.crypto?.getRandomValues
@@ -212,17 +299,17 @@
   let pageId=newPageId();
   if(pageId){
     let presencePending=null,departed=false;
-    const beacon=(path)=>{
+    const beacon=(path,extra={})=>{
       if(typeof globalThis.navigator?.sendBeacon!=='function')return false;
       try{
-        return navigator.sendBeacon(path,new URLSearchParams({page_id:pageId,csrf_token:main.dataset.csrf}));
+        return navigator.sendBeacon(path,new URLSearchParams({page_id:pageId,csrf_token:main.dataset.csrf,...extra}));
       }catch{return false;}
     };
     const heartbeat=async()=>{
       const generation=state.generation;
-      if(presencePending?.generation===generation||departed||state.closed||scopeBlocked)return;
+      if(presencePending?.generation===generation||departed||state.closed||scopeBlocked||revokeRequest||(tabProtocol&&!pageToken))return;
       const path=`/classrooms/${encodeURIComponent(room)}/presence`;
-      if(document.hidden&&beacon(path))return;
+      if(!tabProtocol&&document.hidden&&beacon(path))return;
       const request={generation};
       presencePending=request;
       try{await api(path,{page_id:pageId});}
@@ -231,23 +318,34 @@
     };
     setInterval(heartbeat,1000);
     leavePresence=()=>{
-      if(departed||state.closed||scopeBlocked)return;
+      if(departed||state.closed||scopeBlocked||(tabProtocol&&!pageToken))return;
       departed=true;
       const path=`/classrooms/${encodeURIComponent(room)}/presence/leave`;
-      if(beacon(path))return;
+      const extra=tabProtocol?{page_token:pageToken,handoff_id:newPageId()}:{};
+      if(tabProtocol){
+        documentHandoff=extra.handoff_id;
+        const stored=storedTab();
+        try{if(stored)sessionStorage.setItem(storageKey,JSON.stringify({...stored,handoff:extra.handoff_id}));}catch{}
+      }
+      if(beacon(path,extra))return;
       // Independent of the polling AbortController, which pagehide cancels.
       void fetch(path,{
         method:'POST',keepalive:true,cache:'no-store',
         headers:{'Content-Type':'application/json','X-CSRF-Token':main.dataset.csrf},
-        body:JSON.stringify({page_id:pageId}),
+        body:JSON.stringify({page_id:pageId,...extra}),
       }).catch(()=>{});
     };
-    restorePresence=()=>{
-      if(departed){pageId=newPageId();departed=false;}
+    restorePresence=(activated=false)=>{
+      if(departed){
+        if(tabProtocol&&!activated){pageToken=null;void refresh();return;}
+        if(!tabProtocol)pageId=newPageId();
+      }
+      departed=false;
       void heartbeat();
     };
     document.addEventListener('visibilitychange',()=>{void heartbeat();});
     void heartbeat();
   }
-  refresh();
+  if(tabProtocol&&storedTab()?.closed===true)ended();
+  else refresh();
 })();

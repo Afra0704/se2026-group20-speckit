@@ -10,6 +10,9 @@ def test_legacy_upgrade_preserves_rows_and_releases_only_closed_codes(tmp_path):
     app = restart(target)
     after = rows(target)
     assert all(after[name] == values for name, values in before.items())
+    assert after['classroom_browser_groups'] == []
+    assert after['classroom_tab_grants'] == []
+    assert after['classroom_tab_operations'] == []
     with sqlite3.connect(target) as conn:
         conn.execute('PRAGMA foreign_keys=ON')
         assert conn.execute('PRAGMA foreign_key_check').fetchall() == []
@@ -22,6 +25,9 @@ def test_legacy_upgrade_preserves_rows_and_releases_only_closed_codes(tmp_path):
         with pytest.raises(sqlite3.IntegrityError):
             conn.execute("UPDATE classrooms SET code='CD456' WHERE id='room'")
     restart(target)
+    assert all(rows(target)[name] == [] for name in (
+        'classroom_browser_groups', 'classroom_tab_grants', 'classroom_tab_operations',
+    ))
     assert app.test_cli_runner().invoke(args=['init-db']).exit_code == 0
 
 
@@ -32,6 +38,26 @@ def test_current_activity_composite_foreign_key_survives(tmp_path):
         fk = conn.execute('PRAGMA foreign_key_list(classrooms)').fetchall()
         assert any(r[2] == 'classroom_activities' and r[3] == 'current_activity_id' for r in fk)
         assert conn.execute('PRAGMA integrity_check').fetchone()[0] == 'ok'
+
+
+def test_tab_schema_preserves_existing_grants_when_initialized_again(tmp_path):
+    target = legacy_database(tmp_path)
+    restart(target)
+    with sqlite3.connect(target) as db:
+        db.execute('PRAGMA foreign_keys=ON')
+        db.execute("INSERT INTO classroom_browser_groups VALUES ('room','browser',1,1)")
+        db.execute("""INSERT INTO classroom_tab_grants
+            (classroom_id, browser_key, page_id, membership_id, generation, resume_hash, resume_expires_at)
+            VALUES ('room','browser','page',1,1,'synthetic-resume-hash',500)""")
+        db.execute("""INSERT INTO classroom_tab_operations
+            (classroom_id, browser_key, action, request_id, request_hash, page_id)
+            VALUES ('room','browser','join','operation','synthetic-request-hash','page')""")
+        with pytest.raises(sqlite3.IntegrityError):
+            db.execute("INSERT INTO classroom_browser_groups VALUES ('room','browser',1,2)")
+        assert db.execute('PRAGMA foreign_key_check').fetchall() == []
+    before = rows(target)
+    restart(target)
+    assert rows(target) == before
 
 
 def test_unknown_classroom_columns_are_preserved_by_refusing_upgrade(tmp_path):

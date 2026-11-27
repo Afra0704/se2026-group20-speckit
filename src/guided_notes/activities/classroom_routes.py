@@ -12,6 +12,7 @@ from .classroom_access import (
     activity_transaction, classroom, owned_classroom, requested_activity, require_no_unfinished,
 )
 from .classroom_catalog import get_catalog, list_catalogs, get_display_content
+from . import classroom_tabs
 from .display_service import save_display
 from .classroom_membership import group_for, group_label, group_number, identity_for, join, recover
 from .course_service import get_owned_course
@@ -218,6 +219,17 @@ def enroll():
     group_name = group_number(data.get("group_name"))
     code = string(data, "code", 32).upper()
     limit_attempts("classroom-join")
+    if "page_protocol" in data:
+        if type(data["page_protocol"]) is not int or data["page_protocol"] != 1:
+            raise ApiError(400, "INVALID_REQUEST")
+        page_id = string(data, "page_id", 64)
+        request_id = string(data, "request_id", 64)
+        with write_transaction() as db:
+            joined = classroom_tabs.enroll(db, code, group_name, page_id, request_id)
+        session.pop("classroom_grant", None)
+        return jsonify(joined), 201
+    if classroom_tabs.browser_key():
+        raise ApiError(401, "CLASSROOM_TAB_REQUIRED")
     with write_transaction() as db:
         classroom_id, group_id, proof, token = join(db, code, group_name)
     session["classroom_grant"] = token
@@ -227,6 +239,26 @@ def enroll():
                         max_age=current_app.config["RECOVERY_SECONDS"],
                         path=f"/classrooms/{classroom_id}/result-access")
     return response, 201
+
+
+@rooms.post("/classrooms/<classroom_id>/tab-access")
+def tab_access(classroom_id):
+    data = payload()
+    resume_id = string(data, "resume_id", 128)
+    page_id = string(data, "page_id", 64)
+    request_id = string(data, "request_id", 64)
+    handoff = string(data, "handoff_id", 64) if "handoff_id" in data else None
+    with write_transaction() as db:
+        return classroom_tabs.access(db, classroom_id, resume_id, page_id, request_id, handoff,
+                                     request.headers.get("X-Classroom-Tab"))
+
+
+@rooms.post("/classrooms/<classroom_id>/tab-access/revoke")
+def revoke_tab_access(classroom_id):
+    request_id = string(payload(), "request_id", 64)
+    with write_transaction() as db:
+        classroom_tabs.revoke(db, classroom_id, request.headers.get("X-Classroom-Tab"), request_id)
+    return "", 204
 
 
 @rooms.get("/classrooms/<classroom_id>/state")
@@ -278,16 +310,25 @@ def leave_presence(classroom_id):
 
     data = dict(payload())
     data.pop('csrf_token', None)
+    token = string(data, 'page_token', 128) if 'page_token' in data else None
+    data.pop('page_token', None)
+    handoff = string(data, 'handoff_id', 64) if 'handoff_id' in data else None
+    data.pop('handoff_id', None)
     if set(data) != {'page_id'}:
         raise ApiError(400, 'INVALID_REQUEST')
     page_id = string(data, 'page_id', 64)
     with write_transaction() as db:
-        leave(db, classroom_id, page_id)
+        grant = leave(db, classroom_id, page_id, token)
+        if handoff and 'browser_key' in grant.keys():
+            classroom_tabs.offer_handoff(db, grant, handoff)
     return '', 204
 
 
 @rooms.post("/classrooms/<classroom_id>/result-access")
 def result_access(classroom_id):
+    if (classroom_tabs.browser_key() or "X-Classroom-Tab" in request.headers
+            or request.headers.get("X-Classroom-Protocol") == "1"):
+        raise ApiError(401, "CLASSROOM_TAB_REQUIRED")
     data = payload()
     if 'group_id' in data or 'group_name' in data:
         raise ApiError(400, 'INVALID_REQUEST')
