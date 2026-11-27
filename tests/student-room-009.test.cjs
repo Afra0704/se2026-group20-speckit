@@ -30,18 +30,25 @@ class Element {
  append(...items){this.children.push(...items);}
  replaceChildren(...items){this.children=items;}
  querySelectorAll(selector){const tags=selector.split(',');return this.children.filter(x=>tags.includes(x.tag)).concat(this.children.flatMap(x=>x.querySelectorAll?.(selector)||[]));}
+ setAttribute(name,value){this[name]=value;}
 }
 async function dom(initialPhase='CLOSED'){
  const ids=Object.fromEntries(['room-content','questions','results','state','message','closed-notice','access-notice','activity-title','recover'].map(x=>[x,new Element()]));
  const main=new Element();main.dataset={classroomId:'A',csrf:'test'};
  let closed=false,delay=false,fail=false,release,currentGroup=1,resultStatus='settled',activityId='quiz',phase=initialPhase;
+ let historyFailure=false,historyDenied=false,historyCalls=0;
  const timers=[],listeners={};
  const ctx=vm.createContext({document:{hidden:false,querySelector:()=>main,getElementById:x=>ids[x],createElement:x=>new Element(x),addEventListener:(e,f)=>listeners[e]=f},
  window:{addEventListener:(e,f)=>listeners[e]=f},AbortController,setInterval:f=>timers.push(f),
  fetch:async path=>{
   let data;
   if(path.endsWith('/state'))data={classroom_id:'A',classroom_state:closed?'CLOSED':'OPEN',state_version:closed?2:1,group_name:'A',activity:{activity_id:activityId,phase,group_id:currentGroup,questions:[]}};
-  else if(path.startsWith('/classrooms/'))data={activities:[{activity_id:'quiz',title:'Original result'},{activity_id:'other',title:'Other result'}]};
+  else if(path.startsWith('/classrooms/')){
+   historyCalls++;
+   if(historyFailure)throw new Error('History network failure');
+   if(historyDenied)return {ok:false,status:401,json:async()=>({error:'AUTH_REQUIRED'})};
+   data={activities:[{activity_id:'quiz',title:'Original result'},{activity_id:'other',title:'Other result'}]};
+  }
   else {
    const original=path.includes('/quiz/');
    if(delay&&original){await new Promise(r=>release=r);if(fail)throw new Error('Network failure');}
@@ -52,7 +59,8 @@ async function dom(initialPhase='CLOSED'){
  vm.runInContext(fs.readFileSync('src/guided_notes/static/student-room.js','utf8'),ctx);
  const flush=async()=>{await new Promise(setImmediate);await new Promise(setImmediate);};
  await flush();
- return {ids,flush,async tick(){timers[0]();await flush();},close(){closed=true;},endActivity(){phase='CLOSED';},next(){activityId='next';phase='PREPARING';},pending(){resultStatus='pending';},changeGroup(){currentGroup=2;},delay({reject=false}={}){delay=true;fail=reject;},release(){release();},listeners};
+ return {ids,flush,async tick(){timers[0]();await flush();},close(){closed=true;},endActivity(){phase='CLOSED';},next(){activityId='next';phase='PREPARING';},pending(){resultStatus='pending';},changeGroup(){currentGroup=2;},delay({reject=false}={}){delay=true;fail=reject;},release(){release();},listeners,
+  failHistory(){historyFailure=true;},recoverHistory(){historyFailure=false;},denyHistory(){historyDenied=true;},get historyCalls(){return historyCalls;}};
 }
 test('a selected result remains visible across ordinary classroom polling',async()=>{
  const x=await dom();await x.ids.results.children[0].onclick();
@@ -115,4 +123,26 @@ test('a late automatic result does not replace manually selected history',async(
  x.release();await x.flush();
  assert.ok(x.ids.results.textContent.includes('other answer'));
  assert.equal(x.ids.results.textContent.includes('original answer'),false);
+});
+
+test('history transport failure keeps the classroom visible and offers a local manual retry',async()=>{
+ const x=await dom();x.failHistory();await x.tick();
+ assert.equal(x.ids['room-content'].hidden,false);
+ assert.ok(x.ids.state.textContent.includes('活動已結束'));
+ assert.ok(x.ids.results.textContent.includes('original answer'));
+ const notice=x.ids.results.children.find(child=>child.role==='alert');
+ assert.ok(notice);assert.equal(notice.hidden,false);
+ const calls=x.historyCalls;await x.tick();
+ assert.equal(x.historyCalls,calls,'do not repeatedly replace the error during state polling');
+ x.recoverHistory();notice.children[0].onclick();await x.flush();
+ assert.equal(notice.hidden,true);
+ assert.ok(x.ids.results.textContent.includes('original answer'));
+ assert.equal(x.ids['room-content'].hidden,false);
+});
+
+test('history authorization failure still clears protected classroom content',async()=>{
+ const x=await dom();x.denyHistory();await x.tick();
+ assert.equal(x.ids['room-content'].hidden,true);
+ assert.equal(x.ids['access-notice'].hidden,false);
+ assert.equal(x.ids.results.children.length,0);
 });

@@ -18,6 +18,32 @@ if (linkForm) {
   const button = linkForm.querySelector('button');
   const fieldError = document.getElementById('spreadsheet-url-error');
   const operationError = document.getElementById('link-import-error');
+  let pendingLink = linkForm.dataset?.flowUrl
+    ? {url: input.value, flowUrl: linkForm.dataset.flowUrl} : null;
+
+  async function readLink(url) {
+    let state;
+    if (pendingLink?.url === url) {
+      try {
+        state = await api(pendingLink.flowUrl);
+      } catch (error) {
+        if (['FLOW_EXPIRED', 'FLOW_INVALIDATED', 'FLOW_NOT_FOUND'].includes(error.code)) pendingLink = null;
+        else throw error;
+      }
+    } else pendingLink = null;
+    if (!pendingLink || ['completed', 'cancelled'].includes(state?.status)) {
+      const created = await api(`/teacher/workspace/courses/${encodeURIComponent(course)}/imports`,
+        {source_kind: 'link', spreadsheet_url: url});
+      pendingLink = {url, flowUrl: created.flow_url};
+      state = created;
+    }
+    if (!['worksheets_ready', 'preview_ready'].includes(state.status)) {
+      const action = state.status === 'failed' || (state.status === 'reading' && state.retryable) ? 'retry' : 'read';
+      await api(pendingLink.flowUrl + '/' + action, {});
+    }
+    // Authorization, if needed, continues through the existing browser-bound flow.
+    location.assign(pendingLink.flowUrl);
+  }
 
   function clearLinkErrors() {
     fieldError.textContent = '';
@@ -50,7 +76,7 @@ if (linkForm) {
     const url = input.value;
     button.disabled = true;
     try {
-      await create('link', url);
+      await readLink(url);
     } catch (error) {
       if (error.code === 'INVALID_SHEETS_URL') {
         if (input.value === url) showLinkError('請輸入有效的 Google Sheets 連結。');

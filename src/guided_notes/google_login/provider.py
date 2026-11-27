@@ -22,6 +22,7 @@ AUTH_URI = 'https://accounts.google.com/o/oauth2/v2/auth'
 CERT_URI = 'https://www.googleapis.com/oauth2/v1/certs'
 LOGIN_SCOPES = ('openid', 'email', 'profile')
 SHEETS_SCOPE = 'https://www.googleapis.com/auth/spreadsheets'
+CLOCK_SKEW_SECONDS = 60
 
 
 def load_client(path, redirect_uri, root):
@@ -113,7 +114,7 @@ def validate_claims(claims, client_id, nonce=None):
             raise ValueError()
         if not isinstance(claims['sub'], str) or not claims['sub'].strip():
             raise ValueError()
-        if not math.isfinite(float(claims['exp'])) or not math.isfinite(float(claims['iat'])) or float(claims['exp']) <= now or float(claims['iat']) > now + 60:
+        if not math.isfinite(float(claims['exp'])) or not math.isfinite(float(claims['iat'])) or float(claims['exp']) <= now or float(claims['iat']) > now + CLOCK_SKEW_SECONDS:
             raise ValueError()
         if claims.get('azp', client_id) != client_id:
             raise ValueError()
@@ -174,24 +175,49 @@ class GoogleProvider:
             redirect_uri=attempt['redirect_uri'], budget=budget)
         flow = Flow(oauth, 'web', config, redirect_uri=attempt['redirect_uri'],
                     code_verifier=attempt['secrets']['verifier'], autogenerate_code_verifier=False)
+        stage = 'token_exchange'
         try:
             token = dict(_scope_warning(lambda: flow.fetch_token(code=code)))
+            stage = 'identity_verification'
             identity = self.verify(token.get('id_token'), web['client_id'], budget, attempt['secrets']['nonce'])
+            stage = 'required_scopes'
             if not set(LOGIN_SCOPES).issubset(actual_scopes(token)):
                 raise ApiError(400, 'GOOGLE_FLOW_INVALID')
             budget.check()
             return {'identity': identity, 'token': token}
-        except ApiError:
+        except ApiError as error:
+            current_app.logger.warning('Google verification failed: stage=%s code=%s', stage, error.code)
             raise
         except (requests.RequestException, google_errors.TransportError):
             raise ApiError(503, 'GOOGLE_UNAVAILABLE') from None
-        except (OAuth2Error, ValueError, TypeError):
+        except (OAuth2Error, ValueError, TypeError) as error:
+            current_app.logger.warning('Google verification failed: stage=%s type=%s', stage, type(error).__name__)
             raise ApiError(400, 'GOOGLE_FLOW_INVALID') from None
 
     def verify(self, raw, client_id, budget, nonce=None):
         if not isinstance(raw, str) or not raw:
             raise ApiError(400, 'GOOGLE_FLOW_INVALID')
-        claims = id_token.verify_oauth2_token(raw, Request(session=FixedSession(budget)), audience=client_id)
+        try:
+            claims = id_token.verify_oauth2_token(
+                raw, Request(session=FixedSession(budget)), audience=client_id,
+                clock_skew_in_seconds=CLOCK_SKEW_SECONDS,
+            )
+        except google_errors.InvalidValue as error:
+            # Match fixed library messages without logging claims, tokens or client identifiers.
+            reason = 'other_invalid_value'
+            for prefix, category in (
+                ('Token used too early', 'issued_in_future'),
+                ('Token expired', 'expired'),
+                ('Token has wrong audience', 'audience_mismatch'),
+                ('Unsupported signature algorithm', 'unsupported_algorithm'),
+                ('The key algorithm', 'algorithm_dependency'),
+                ('Could not verify token signature', 'signature_invalid'),
+            ):
+                if str(error).startswith(prefix):
+                    reason = category
+                    break
+            current_app.logger.warning('Google identity validation rejected: reason=%s', reason)
+            raise
         return validate_claims(claims, client_id, nonce)
 
     def refresh(self, secret, client, budget):

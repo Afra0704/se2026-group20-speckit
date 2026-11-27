@@ -42,3 +42,15 @@ A 核對欄位修正、伺服器驗證及原匯入流程。B 繪出課堂及身�
 A：欄位提示與授權／讀取錯誤分別落在 workspace lectures/import 模板、import-flow.js 與 workspace routes。B：固定課堂與頁面存活落在 classroom_presence、presence 路由與 student-room.js，教師以授權 groups 端點讀取已去重結果。C：學生結果與狀態輪詢分離，手動歷史優先與關課終止落在 student-room.js，教師結果區沿用 classroom.js 的原授權入口。交付複核仍待真人驗收證據。
 
 B 定案後以相同的 PlantUML CLI 渲染 `./diagrams/010-presence-*.puml`，退出碼 0。三張 PNG 的簽章均檢查通過，時序圖補註 3 秒心跳與 25 秒逾時，組件責任與資料關係沿用已複核版本。
+
+### 2026-11-27 A 人工驗收操作修訂
+
+依使用者指定，A 的來源讀取失敗回到連結表單，保留來源及流程參考，改由相同「讀取講義」按鈕明確接續。010-import 的 Component／Class／Sequence 已同步，使用 `tmp/tools/plantuml-1.2026.10.jar` 與 headless Java CLI 重渲染三張 PNG，退出碼 0。Codex 已檢視 Sequence PNG，核對欄位錯誤、來源失敗、原流程接續與成功選分頁；這是技術核對，未記為組員新一輪圖意互審。
+
+### 2026-11-27 B 正常關頁通知修訂
+
+使用者要求正常關頁更即時，010-presence 三圖同步主動離開、120 秒離開標記與原逾時備援；PlantUML CLI 重渲染成功。Codex 已檢視 Sequence PNG 並核對 API／前端生命週期／去重責任，未代記組員互審。背景凍結問題仍另列待驗。
+
+### 最終一致性核對（2026-11-27）
+
+依使用者最後修訂，presence sequence 已更新為 1 秒心跳、4 秒失聯判定及 pagehide Beacon／keepalive 備援；results sequence／class 已補歷史清單局部錯誤與手動重試，身分失效仍清除內容。本輪變動的 PlantUML 已以相同 CLI 重渲染，對照目前程式及 70 項 Node／485 項 Python 回歸。24/24 產品人工操作由使用者回報通過；本段是 Codex 的程式與圖表技術核對，沒有補寫未提供的獨立審圖者或審查紀錄。

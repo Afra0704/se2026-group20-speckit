@@ -9,4 +9,6 @@ component "授權、選分頁與預覽" as Flow
 Form --> Feedback
 Form --> Validate
 Validate --> Flow
+Flow --> Feedback : 讀取失敗回連結表單
+Form --> Flow : 同一讀取按鈕接續原流程
 @enduml

@@ -6,6 +6,8 @@ from flask import session
 from ..auth import digest
 from .classroom_membership import group_for
 
+PRESENCE_TTL_SECONDS = 4
+
 
 def now():
     return int(time())
@@ -15,15 +17,31 @@ def heartbeat(db, classroom_id, page_id):
     group = group_for(db, classroom_id, submitting=True)
     current = now()
     db.execute('DELETE FROM classroom_presence WHERE expires_at <= ?', (current,))
+    db.execute('DELETE FROM classroom_presence_departures WHERE expires_at <= ?', (current,))
+    browser_key = digest(session['csrf'])
+    if db.execute('SELECT 1 FROM classroom_presence_departures WHERE classroom_id=? AND browser_key=? AND page_id=?',
+                  (classroom_id, browser_key, page_id)).fetchone():
+        return
     db.execute(
         """INSERT INTO classroom_presence VALUES (?, ?, ?, ?, ?, ?)
            ON CONFLICT(classroom_id, browser_key, page_id) DO UPDATE SET
              group_id=excluded.group_id, membership_id=excluded.membership_id,
              expires_at=excluded.expires_at
            WHERE excluded.membership_id >= classroom_presence.membership_id""",
-        (classroom_id, digest(session['csrf']), page_id, group['id'],
-         group['membership_id'], current + 25),
+        (classroom_id, browser_key, page_id, group['id'],
+         group['membership_id'], current + PRESENCE_TTL_SECONDS),
     )
+
+
+def leave(db, classroom_id, page_id):
+    group_for(db, classroom_id, submitting=True)
+    key = (classroom_id, digest(session['csrf']), page_id)
+    db.execute('DELETE FROM classroom_presence WHERE classroom_id=? AND browser_key=? AND page_id=?', key)
+    # A heartbeat already in flight must not restore the page after its departure.
+    db.execute('DELETE FROM classroom_presence_departures WHERE expires_at <= ?', (now(),))
+    db.execute('INSERT INTO classroom_presence_departures VALUES (?,?,?,?) '
+               'ON CONFLICT(classroom_id,browser_key,page_id) DO UPDATE SET expires_at=excluded.expires_at',
+               (*key, now() + 120))
 
 
 def roster(db, room):
