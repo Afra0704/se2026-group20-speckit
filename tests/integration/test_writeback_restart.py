@@ -15,6 +15,29 @@ def recover(teacher, operation_id):
     return post(teacher, f"/teacher/notes/operations/{operation_id}/recovery-preview")
 
 
+def test_recovery_distinguishes_consented_overwrite_from_new_conflict(app, teacher, writable):
+    from test_export_previews import ended_activity
+    aid, _, _ = ended_activity(app, teacher)
+    writable.put(7, 5, {'stringValue': 'original-third-answer'})
+    preview = create(teacher, aid).json
+    required = [i['item_id'] for i in preview['items'] if i['action'] == 'requires_overwrite_confirmation']
+    assert required
+    writable.fail_at = 2
+    first = confirm_export(teacher, preview['preview_id'], overwrite=required).json
+    fresh = recover(teacher, first['operation_id']).json
+    page = teacher.get(fresh['preview_url']).text
+    assert '待覆寫（沿用前次同意，原內容未變）' in page
+    assert fresh['counts']['requires_overwrite_confirmation'] == 0
+    assert 'name="overwrite_item_ids"' not in page
+    # A later source edit needs new consent and must not inherit the old one.
+    writable.put(7, 5, {'stringValue': 'new-external-answer'})
+    conflict = recover(teacher, first['operation_id']).json
+    page = teacher.get(conflict['preview_url']).text
+    assert '需要覆寫確認' in page and 'name="overwrite_item_ids"' in page
+    assert '待覆寫（沿用前次同意，原內容未變）' not in page
+    assert confirm_export(teacher, conflict['preview_id'], key='missing-consent').status_code == 409
+
+
 def test_partial_failure_recovers_only_pending_set_and_preserves_winner(app, teacher, writable):
     preview, _, _ = setup_preview(app, teacher, writable)
     writable.fail_at = 2

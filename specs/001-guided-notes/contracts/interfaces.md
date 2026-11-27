@@ -221,3 +221,7 @@ CatalogDTO／ResultSnapshotDTO 不改。教師 HTML 從 notes_catalog_names 取�
 - POST recovery-preview 僅接受空 JSON（HTML 另 csrf_token），先重檢原結果與目前來源／語意，再回讀；201 回原預覽格式及 origin_operation_id，HTML 303。新預覽保存原勝組、原 result_version 與判定 actions；再以新 key 明確確認才會寫入。即使已全部相同也可返回無待寫項的新預覽，舊報告同時記錄已回讀一致。
 - 同源未完成 attempt 保留 blocks_source；只有該 lineage 的恢復可接續，完成後解除 root lineage 阻擋。程序 mutex 與 DB lease 皆以物理來源作鍵，跨教師各自的 source_id 也不得交錯。單程序／共用 DB 為適用邊界，不能代替 Google 外部編輯鎖。
 - 執行預算預設 120 秒（server config NOTES_WRITE_SECONDS 可供測試調整），在題組邊界保留剩餘工作，不啟動未管理背景執行緒。lease 300 秒、SDK 30 秒 timeout；逾時不能證明遠端取消，恢復仍先讀後確認。
+
+### 2026-11-27 恢復預覽的覆寫呈現
+
+恢復預覽中 action=write、原值非空且沿用原作業時，顯示「待覆寫（沿用前次同意，原內容未變）」。這僅修正文案，不修改 action、確認集合、識別、結果版本或實際寫入判定。原值不同於前次觀察時仍為 requires_overwrite_confirmation，必須再次勾選；已相同文字仍不送寫入。

@@ -3,7 +3,7 @@
 {% block content %}
 <h1>{{ preview.title }} · 回填預覽</h1>
 <p class="notice">{% if preview.status == 'ready' %}此預覽尚未寫入 Google Sheets。{% else %}這是已使用或失效預覽的歷史觀察，實際處理結果請查看作業報告。{% endif %}以下是建立預覽時的觀察，重新查看不會重新讀取來源；確認時會重新核對來源與結果。外部編輯仍可能發生在檢查與寫入之間，回填報告記錄回讀當下的結果。</p>
-{% if preview.origin_operation_id %}<p>恢復原作業：<a href="{{ url_for('notes.operation_report', operation_id=preview.origin_operation_id) }}">查看原報告</a>。保留原勝組及結果版本。</p>{% endif %}
+{% if preview.origin_operation_id %}<p>恢復原作業：<a href="{{ url_for('notes.operation_report', operation_id=preview.origin_operation_id) }}">查看原報告</a>。保留原勝組及結果版本。</p><p>原內容未變的覆寫沿用前次同意；內容若已改變，仍須重新確認覆寫。已為相同文字的答案不會再次寫入。</p>{% endif %}
 <section class="card">
   <p>活動識別：<code>{{ preview.activity_id }}</code></p>
   <p>講義版本：{{ preview.import_version }} · 結果版本：{{ preview.result_version }}</p>
@@ -19,7 +19,7 @@
     <td>{{ item.binding.answer_range|notes_a1 }}</td>
     <td>{% if 'formulaValue' in value %}公式：{{ value.formulaValue }}{% elif 'stringValue' in value %}文字：{{ value.stringValue }}{% elif 'numberValue' in value %}數字：{{ value.numberValue }}{% elif 'boolValue' in value %}布林值：{{ value.boolValue }}{% else %}空白{% endif %}</td>
     <td>{{ item.proposed_text if item.proposed_text is not none else '—' }}</td>
-    <td>{{ {'write':'待寫入','already_matches':'已為相同文字（預覽觀察）','skip':'無勝組，略過','requires_overwrite_confirmation':'需要覆寫確認'}[item.action] }}</td></tr>
+    <td>{% if item.action == 'write' and item.original_user_value and preview.origin_operation_id %}待覆寫（沿用前次同意，原內容未變）{% else %}{{ {'write':'待寫入','already_matches':'已為相同文字（預覽觀察）','skip':'無勝組，略過','requires_overwrite_confirmation':'需要覆寫確認'}[item.action] }}{% endif %}</td></tr>
   {% endfor %}</tbody>
 </table></section>
 {% if preview.status == 'ready' %}
