@@ -1,0 +1,95 @@
+{
+  "platform": "linux",
+  "python": "3.13.18 (main, Oct 26 2026, 14:20:56) [GCC 13.3.0]",
+  "zones": [
+    {
+      "tz": [
+        "UTC",
+        "UTC"
+      ],
+      "values": [
+        {
+          "label": "結束",
+          "status": "known",
+          "text": "2026-11-27 00:03",
+          "instant_utc": "2026-11-26T16:03:59+00:00"
+        },
+        {
+          "label": "結束",
+          "status": "known",
+          "text": "2026-11-27 00:03",
+          "instant_utc": "2026-11-26T16:03:59.123456+00:00"
+        },
+        {
+          "label": "結束",
+          "status": "unknown_timezone",
+          "text": "時區未確認",
+          "instant_utc": null
+        }
+      ],
+      "requested_timezone": "UTC"
+    },
+    {
+      "tz": [
+        "CST",
+        "CST"
+      ],
+      "values": [
+        {
+          "label": "結束",
+          "status": "known",
+          "text": "2026-11-27 00:03",
+          "instant_utc": "2026-11-26T16:03:59+00:00"
+        },
+        {
+          "label": "結束",
+          "status": "known",
+          "text": "2026-11-27 00:03",
+          "instant_utc": "2026-11-26T16:03:59.123456+00:00"
+        },
+        {
+          "label": "結束",
+          "status": "unknown_timezone",
+          "text": "時區未確認",
+          "instant_utc": null
+        }
+      ],
+      "requested_timezone": "Asia/Taipei"
+    },
+    {
+      "tz": [
+        "EST",
+        "EDT"
+      ],
+      "values": [
+        {
+          "label": "結束",
+          "status": "known",
+          "text": "2026-11-27 00:03",
+          "instant_utc": "2026-11-26T16:03:59+00:00"
+        },
+        {
+          "label": "結束",
+          "status": "known",
+          "text": "2026-11-27 00:03",
+          "instant_utc": "2026-11-26T16:03:59.123456+00:00"
+        },
+        {
+          "label": "結束",
+          "status": "unknown_timezone",
+          "text": "時區未確認",
+          "instant_utc": null
+        }
+      ],
+      "requested_timezone": "America/New_York"
+    }
+  ],
+  "run_id": 46005787175,
+  "job_id": 140528469547,
+  "head_sha": "912db43121061c449d9afa74b6ecd37cdfb8f207",
+  "run_url": "https://github.com/Afra0704/se2026-group20-speckit/actions/runs/46005787175",
+  "tests": 1,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0
+}

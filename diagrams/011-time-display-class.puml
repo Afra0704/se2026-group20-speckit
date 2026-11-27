@@ -1,0 +1,52 @@
+@startuml
+!pragma layout smetana
+title 011 時間顯示一致性 — Class（原圖已審閱：使用者回報；非資料表設計）
+class "原事件時間" as Event {
+  原對象識別
+  事件種類
+  原時間值（可缺）
+  事件是否已發生
+  原對象階段（未開始／已結束等）
+}
+class "來源證據" as Source {
+  明確偏移量或可信原時區
+  已知產生規則
+}
+enum "解讀狀態" as Quality {
+  可確認時刻
+  尚未發生
+  已發生但未記錄
+  格式無法辨識
+  時區未確認
+}
+class "時間觀察" as Observation {
+  同一瞬間（可缺）
+  解讀狀態
+}
+class "呈現政策" as Policy {
+  台北時間 UTC+08:00
+  日期與24小時時分
+  到分鐘截取、不進位
+}
+class "顯示結果" as View {
+  正確事件標籤
+  日期時間或狀態提示
+  區塊時區說明
+}
+class "既有結果關聯" as Identity {
+  活動及講義版本
+  原受理序列
+  原順位及勝組
+  原結果版本
+}
+Event "1" --> "1" Source : 核對來源
+Event "1" --> "1" Observation : 唯讀解讀
+Observation --> Quality
+Observation --> Policy : 僅可確認時刻才轉換
+Policy --> View
+Event --> Identity : 保留原關聯
+note bottom of Identity
+時間顯示不重新產生結果，
+不將顯示文字用作排名依據。
+end note
+@enduml

@@ -1,6 +1,5 @@
 """Teacher-only import UI/API; source coordinates never enter student views."""
 from dataclasses import asdict
-from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from uuid import uuid4
 
@@ -9,11 +8,14 @@ from flask import Blueprint, current_app, jsonify, redirect, render_template, re
 from ..auth import require_teacher
 from ..db import connection
 from ..http import ApiError, payload
+from ..time_display import TIMEZONE_NOTICE
+from ..time_views import notes_time as event_time, readback_time
 from . import course_catalogs as courses, export_service, import_service as service, repository as repo, writeback
 from .google_authorization import AuthError, authorize
 from .models import ContractError, normalize_lecture_name
 from .recognition import RecognitionError
 from .sheets_gateway import GatewayError, SheetsGateway, build_google_service, parse_sheets_url
+from . import export_context
 
 notes = Blueprint("notes", __name__, url_prefix="/teacher/notes",
                   template_folder="templates", static_folder="static", static_url_path="/assets")
@@ -33,7 +35,14 @@ def a1_range(area):
 
 
 def taipei_time(value):
-    return datetime.fromisoformat(value).astimezone(timezone(timedelta(hours=8), "Asia/Taipei")).strftime("%Y-%m-%d %H:%M")
+    return event_time(value).text
+
+
+@notes.context_processor
+def time_presenters():
+    # Helpers only format values supplied by already-authorized HTML routes.
+    return {'event_time': event_time, 'readback_time': readback_time,
+            'time_zone_notice': TIMEZONE_NOTICE}
 
 
 def gateway(teacher):
@@ -82,6 +91,8 @@ def error_response(code, status, context=None):
         "IDEMPOTENCY_CONFLICT": "這次重送的內容與原確認不同，請回到預覽重新確認。",
         "OVERWRITE_CONFIRMATION_REQUIRED": "請逐項確認所有需要覆寫的答案格。"})
     messages["INVALID_LECTURE_NAME"] = "請選擇名稱方式；自訂講義名稱須為 1–100 個字元，且不能包含換行或控制字元。"
+    if code == 'RESULT_INVALID' and (context or {}).get('reason') == 'WINNER_GROUP_SCOPE_MISMATCH':
+        messages[code] = export_context.MAPPING_MESSAGE
     if current_app.config.get('TEACHER_AUTH_MODE') == 'google':
         from ..google_login.routes import MESSAGES
         messages.update(MESSAGES)
@@ -322,7 +333,7 @@ def export_preview_data(row, preview):
         "winner_group_id": winners[item.question_id], "answer_range": asdict(item.binding.answer_range),
         "original_user_value": item.original_user_value, "proposed_text": item.proposed_text,
         "action": item.action} for item in preview.items]
-    return {"preview_id": row["preview_id"], "status": row["status"], "activity_id": row["activity_id"],
+    result = {"preview_id": row["preview_id"], "status": row["status"], "activity_id": row["activity_id"],
         "origin_operation_id": row["origin_operation_id"],
         "import_id": row["import_id"], "import_version": row["import_version"],
         "result_version": row["result_version"], "created_at": row["created_at"],
@@ -332,32 +343,37 @@ def export_preview_data(row, preview):
         "items": items, "counts": {action: sum(i["action"] == action for i in items) for action in (
             "write", "already_matches", "skip", "requires_overwrite_confirmation")},
         "preview_url": url_for("notes.view_export_preview", preview_id=row["preview_id"])}
+    export_context.decorate(require_teacher(), result, preview.snapshot['units'])
+    if result.get('activity_context'):
+        result['activity_context'].update(lecture_title=result['title'], source_title=result['source_title'],
+                                          sheet_id=result['sheet_id'])
+    return result
 
 
 def export_group_labels(preview):
-    # Preview ownership was verified before rendering. Resolve only its original classroom.
-    from ..activities.classroom_membership import group_label
-
-    if not current_app.config["CLASSROOM_MODE"]:
-        return {}
-    groups = connection().execute(
-        """SELECT g.id, g.name FROM classroom_activities a
-           JOIN classroom_groups g ON g.classroom_id = a.classroom_id
-           WHERE a.activity_id = ?""",
-        (preview["activity_id"],),
-    )
-    labels = {str(group["id"]): group_label(group["name"]) for group in groups}
-    return {item["item_id"]: labels.get(str(item["winner_group_id"]), "組別資料未保留")
-            for item in preview["items"] if item["winner_group_id"] is not None}
+    return {item['item_id']: item.get('winner_group_label') or
+            ('組別資料未保留' if preview.get('activity_context') else item['winner_group_id'])
+            for item in preview['items'] if item['winner_group_id'] is not None}
 
 
 @notes.get("/export-previews")
 def export_form():
     teacher = require_teacher()
+    aid = export_context.selected_activity(request.args)
+    selected = export_context.activity_context(teacher, aid) if aid else None
     previews = connection().execute("""SELECT p.preview_id,p.activity_id,p.created_at
         FROM notes_export_previews p JOIN notes_sources s USING(source_id)
         WHERE s.teacher_id=? ORDER BY p.created_at DESC""", (teacher.teacher_id,)).fetchall()
-    return render_template("notes/export_form.html", previews=previews)
+    visible = []
+    for row in previews:
+        try:
+            context = export_context.activity_context(teacher, row['activity_id'])
+        except ApiError as error:
+            if error.status not in (403, 404):
+                raise
+            continue
+        visible.append(dict(row, activity_context=context))
+    return render_template("notes/export_form.html", previews=visible, selected=selected)
 
 
 @notes.post("/export-previews")

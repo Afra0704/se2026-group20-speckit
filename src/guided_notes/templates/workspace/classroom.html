@@ -1,4 +1,4 @@
-{% extends 'workspace/base.html' %}{% block content %}<h2>{{ room.title }}</h2><p id="code" class="classroom-code">課堂碼：{{ room.code }}{% if room.state=='CLOSED' %}（已失效，可能重用）{% endif %}</p><section class="card"><h3>已加入組別</h3><p id="classroom-presence-status" role="status"></p><ul id="classroom-groups" aria-live="polite"><li>尚無學生組別</li></ul></section><section class="card" aria-labelledby="activities-heading">
+{% extends 'workspace/base.html' %}{% block content %}{% if selected_activity_id %}<span id="selected-activity" data-selected-activity-id="{{ selected_activity_id }}" hidden></span>{% endif %}<h2>{{ room.title }}</h2><p id="code" class="classroom-code">課堂碼：{{ room.code }}{% if room.state=='CLOSED' %}（已失效，可能重用）{% endif %}</p><section class="card"><h3>已加入組別</h3><p id="classroom-presence-status" role="status"></p><ul id="classroom-groups" aria-live="polite"><li>尚無學生組別</li></ul></section><section class="card" aria-labelledby="activities-heading">
         <div class="section-heading">
           <h2 id="activities-heading">講義活動</h2>
           <button id="close-room" class="danger" type="button" disabled>結束課堂</button>
@@ -9,6 +9,7 @@
           <button disabled>建立活動</button>
         </form>
         <p class="muted">同堂一次只能有一個準備中或搶答中的活動，請先結束目前活動再建立下一個。</p>
+        <p class="muted">活動時間：台北時間（UTC+08:00）</p>
         <ul id="activities" class="activity-list"></ul>
       </section>
 <p id="state" role="status"></p><section id="results" aria-label="活動結果"></section><dialog id="feedback-dialog"><h2 id="feedback-title"></h2><p id="feedback-message"></p><form method="dialog"><button>確定</button></form></dialog>{% endblock %}{% block scripts %}<script src="{{ url_for('static', filename='quiz-submission.js') }}"></script><script type="module" src="{{ url_for('static',filename='classroom.js') }}"></script>{% endblock %}

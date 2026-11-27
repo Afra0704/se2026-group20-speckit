@@ -1,5 +1,17 @@
 # se2026-group20-speckit
 
+## Issue #19／#20 統一開發版本
+
+人工驗收、兩份真Google Sheets副本回填／回讀、Chrome及Linux POSIX三時區驗證已完成；執行者與證據限制見[交付檢核](docs/issues-19-20-delivery-review.md)。待另一位組員審查PR後再合併，Issue #19／#20不因AI自查提前關閉。
+
+目前整合分支為 `codex/integrate-issues-19-20`，工作目錄為 `D:\os_final`。以最新master `80510a6`為基底，保留#20時間顯示與#19結果直達回填全部提交；不再從舊 `tmp/011-time-display-implementation` 啟動本次驗收。整合驗證、版本與啟動方式見[統一版本紀錄](docs/issues-19-20-integration.md)。
+
+## Issue #19：從活動結果預覽回填（本機實作，待真人驗收）
+
+教師可從目前／歷史活動結果按「預覽回填講義」，不必手輸活動識別。預覽與報告顯示原課程、課堂、活動、講義版本／來源分頁及原堂「第 N 組」，時間沿用 #20 台北至分鐘。返回原結果與刷新保持選定活動；關課及已移除講義仍沿原歷史對應。
+
+原堂勝組資料異常會明確報錯並阻止新寫入，既有報告仍保留。沿用覆寫同意、重新授權、冪等與先回讀恢復；全無勝組顯示略過，確認前不寫來源。實際自動測試與待辦見 [012 驗證](specs/012-result-writeback/validation.md)，操作與真人矩陣見 [012 指南](specs/012-result-writeback/quickstart.md)。尚未完成真人教師加兩組、兩份真 Sheets 與同學互審，不代表 Issue 可結案。
+
 ## 010 人工驗收完成（2026-11-27）
 
 Issue #10 的 24 個人工案例已由使用者逐例／批次回報通過。貼連結的格式、權限與網路錯誤統一在表單旁顯示，保留來源並以「讀取講義」接續；學生結果及歷史清單暫時失敗可局部重試。在線目標依使用者修訂為加入／恢復及離線均 5 秒，採每秒心跳、4 秒失聯判定，保留多頁去重、關頁 Beacon 與逾時備援。Google 登入補齊與既有規則一致的 60 秒時鐘容差，仍驗簽章、對象、nonce 與有效期限。
@@ -226,3 +238,7 @@ integration 目前僅有離線元件交接測試，尚無 HTTP／登入／DB 的
 貼連結使用原Sheets授權；雲端選檔另需同project專用Picker Web client、受限制API key與project number。沒有Picker設定時可繼續管理課程及貼連結；不把原後端Sheets token交給瀏覽器。設定、CMD啟動與人工矩陣見 [008操作說明](specs/008-teacher-course-workspace/quickstart.md)，實際證據見 [008驗證紀錄](specs/008-teacher-course-workspace/validation.md)。真Google Picker、兩教師與兩組學生人工驗收、具名互審／D21仍待完成；受控測試不代表真雲端通過。
 
 啟動前先在私人位置備份原DB與key；保持原007環境設定，不清空DB或重建key。關掉舊服務後，CMD於repo執行 `.venv\Scripts\python.exe -m flask --app guided_notes:create_app run --host 127.0.0.1 --port 5000`，開啟 `http://127.0.0.1:5000/teacher`。啟動會以可重跑附加schema保留原資料；新增測試只用暫存DB。
+
+## 011 時間顯示一致性（2026-11-27）
+
+教師活動歷史分別顯示建立、開始與結束；notes匯入確認、預覽、報告更新及逐格回讀統一使用台北時間（UTC+08:00）、24小時制、`YYYY-MM-DD HH:mm`。只截取至分鐘，不進位，原秒／微秒、排序、勝組與結果版本保留。可信SQL UTC可解讀，未知naive不猜測，缺值／損壞各有提示，非verified回讀顯示尚未驗證。操作與實際驗證界線見[011 quickstart](specs/011-time-display/quickstart.md)與[驗證紀錄](specs/011-time-display/validation.md)；人工驗收與真POSIX矩陣未完成前不宣稱整體結案。

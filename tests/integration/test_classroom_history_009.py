@@ -37,7 +37,9 @@ def test_unknown_export_history_survives_upgrade_close_and_cross_teacher_reuse(c
     monkeypatch.setattr(classroom_routes, 'make_room_code', lambda: room['code'])
     new = post(other, f'/teacher/courses/{new_course}/classrooms', title='new')
     assert new.status_code == 201
-    assert classroom_teacher.get(f"/teacher/notes/operations/{report['operation_id']}", headers={'Accept':'application/json'}).json == report
+    # #19 adds current display context; closure changes only its classroom state.
+    expected_report = dict(report, activity_context=dict(report['activity_context'], classroom_state='CLOSED'))
+    assert classroom_teacher.get(f"/teacher/notes/operations/{report['operation_id']}", headers={'Accept':'application/json'}).json == expected_report
     assert len(gateway.writes) == 1
     for student in students:
         assert student.get(f'/activities/{aid}/results').status_code == 409

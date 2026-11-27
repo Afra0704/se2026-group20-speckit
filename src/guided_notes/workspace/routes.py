@@ -84,7 +84,11 @@ def classroom(course_id, classroom_id):
     room = owned_classroom(connection(), teacher, classroom_id)
     if room['course_id'] != course_id:
         raise ApiError(404, 'CLASSROOM_NOT_FOUND')
-    return page('classroom', course=course, room=room, section='classrooms')
+    from ..notes.export_context import selected_activity, activity_context
+    aid = selected_activity(request.args)
+    if aid and activity_context(teacher, aid)['classroom_id'] != classroom_id:
+        raise ApiError(404, 'ACTIVITY_NOT_FOUND')
+    return page('classroom', course=course, room=room, section='classrooms', selected_activity_id=aid)
 
 
 from . import import_flows as flows

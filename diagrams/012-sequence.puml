@@ -1,0 +1,64 @@
+@startuml
+skinparam defaultFontName Microsoft JhengHei
+title 012 活動結果回填｜Sequence（實作對應，人工驗收待完成）
+actor 教師 as T
+participant "結果／預覽頁" as UI
+participant "權限與活動脈絡" as C
+participant "既有回填服務" as E
+participant "Issue 16 標籤／Issue 20 時間" as F
+participant "Sheets 授權" as A
+participant "原 Sheets" as S
+T -> UI : 選定活動：預覽回填講義
+UI -> C : 原活動識別
+C -> C : 驗教師／課程／原課堂歸屬
+alt 無權限
+ C --> UI : 拒絕，不回傳受限內容
+else 有權限
+ C -> E : 固定原活動／講義版本／結算版本
+ alt 未結束／未結算
+  E --> UI : 各自明確提示，無寫入
+ else 已結算可預覽（含全無勝組 skip）
+  E -> C : 查原課堂勝組
+  alt 勝組缺失或跨堂
+   C --> UI : 資料對應錯誤，阻止新增寫入
+  else 對應有效
+   C -> F : 組號標籤／語意明確的時間
+   F --> UI : 第 N 組／共同時間格式
+   E -> A : 使用原教師 Sheets 授權
+   alt 授權失效
+    A --> UI : 安全重新連接，保留原活動／操作
+    T -> A : 明確重新授權
+    A --> UI : 回原活動；取消／失敗亦保留脈絡
+   else 授權有效
+    E -> S : 讀來源與檢查變動
+    S --> E : 原值／來源檢查結果
+    E --> UI : 預覽與衝突／無勝組略過
+    opt 有勝組且教師明確確認（全 skip 顯示無勝組並停用確認）
+    T -> UI : 逐項同意覆寫並確認
+    UI -> C : 重新驗權與原活動
+    C -> E : 確認固定預覽
+    E -> S : 驗來源後僅寫目標格／回讀
+    S --> E : 成功／部分成功／未知
+    E --> UI : 原活動報告（含課程／課堂／版本）
+    opt 部分成功／未知或來源變動需恢復
+     T -> UI : 從原操作啟動恢復
+     UI -> C : 再驗原歸屬
+     C -> E : 原操作恢復
+     E -> S : 先回讀
+     S --> E : 目前值
+     E --> UI : 原勝組／版本恢復預覽；跳過已完成題
+     note over T,E : 再次確認才續寫；保留原覆寫同意並標新衝突
+    end
+    end
+   end
+  end
+ end
+end
+note over UI,E
+  重新整理／返回始終按原活動或預覽識別讀取並驗權。
+  返回 workspace 原堂 URL 帶 activity_id；伺服器驗同堂後初始化原結果。
+  無效／跨堂拒絕，不退回最新活動；不改 Sheets 授權返回 allowlist。
+  確認前及每批寫入前重驗原堂勝組；恢復在讀來源前重驗。
+  已保存預覽／報告的壞標籤保留原記錄並顯示 context_error，停用新增寫入。
+end note
+@enduml

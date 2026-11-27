@@ -1,0 +1,41 @@
+@startuml
+title 011 時間顯示一致性 — Sequence（原圖已審閱：使用者回報）
+actor "教師／有權限學生" as User
+participant "歷史／結果頁" as Page
+participant "既有權限檢查" as Access
+participant "原事件讀取" as Read
+database "既有紀錄" as Records
+participant "來源與事件判讀" as Meaning
+participant "台北時間呈現" as Display
+User -> Page : 查看原授權範圍的事件
+Page -> Access : 核對教師／原堂資格及狀態
+alt 無權限或學生課堂已關閉
+  Access --> Page : 沿用拒絕／終態
+  Page --> User : 不提供受保護時間或結果
+else 有權限
+  Access --> Page : 可讀範圍
+  Page -> Read : 取得事件種類與原值
+  Read -> Records : 讀原對象、時刻、來源及結果關聯
+  Records --> Read : 原紀錄（不更新）
+  Read -> Meaning : 原值＋事件狀態＋來源證據
+  alt 有明確時區
+    Meaning -> Display : 已確認的同一瞬間
+    Display --> Page : 台北日期與時分
+  else 無時區但原來源可證明為 UTC
+    Meaning -> Display : 以已知 UTC 解讀的同一瞬間
+    Display --> Page : 台北日期與時分，跨日正確
+  else 尚未發生／已發生但缺紀錄
+    Meaning -> Display : 事件與原階段（含未開始即結束）
+    Display --> Page : 尚未開始／尚未結束／未開始即結束／時間未記錄
+  else 格式錯誤／來源時區不明
+    Meaning -> Display : 格式或來源狀態（不轉換）
+    Display --> Page : 無法辨識／時區未確認，不猜測
+  end
+  Page --> User : 正確事件標籤、日期時間或提示、區塊時區
+end
+note over Read, Records
+沒有獨立結算時刻就不補造。
+不改原事件、受理序列、勝組或結果版本。
+不觸發重新結算、講義寫入或重新授權。
+end note
+@enduml

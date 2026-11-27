@@ -1,0 +1,11 @@
+{% set context = preview.activity_context %}
+{% if context %}
+<section class="card" aria-label="原活動資訊">
+  <p>課程：{{ context.course_title }} · 課堂：{{ context.classroom_title }}</p>
+  <p>活動：{{ context.activity_title }}</p>
+  <p>{{ time_zone_notice }} · {% for key in ['created_at', 'started_at', 'closed_at'] %}{{ context.times[key].label }}：{{ context.times[key].text }}{% if not loop.last %} · {% endif %}{% endfor %}</p>
+  <p>講義：{{ preview.title }} · 版本 {{ preview.import_version }} · 來源分頁：{{ preview.source_title }}</p>
+  <p><a href="{{ context.result_url }}">返回原活動結果</a></p>
+</section>
+{% endif %}
+{% if preview.context_error %}<p role="alert">{{ preview.context_error.message }}</p>{% endif %}

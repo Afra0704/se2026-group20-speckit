@@ -9,10 +9,34 @@ from guided_notes import create_app
 from guided_notes.db import connection
 from test_export_previews import create
 from test_export_routes import confirm_export, setup_preview
+from result_writeback_support import export_room, result_teacher
 
 
 def recover(teacher, operation_id):
     return post(teacher, f"/teacher/notes/operations/{operation_id}/recovery-preview")
+
+
+def test_formal_classroom_restart_preserves_context_and_recovers_only_pending(classroom_app, result_teacher):
+    _, room, aid, group, snapshot = export_room(classroom_app, result_teacher)
+    preview = post(result_teacher, '/teacher/notes/export-previews', activity_id=aid).json
+    gateway = classroom_app.config['NOTES_GATEWAY']
+    gateway.fail_at = 1
+    gateway.unknown_applies = True
+    report = confirm_export(result_teacher, preview['preview_id']).json
+    restarted = create_app(dict(classroom_app.config))
+    client = restarted.test_client()
+    client.set_cookie('session', result_teacher.get_cookie('session').value)
+    saved = client.get(f"/teacher/notes/operations/{report['operation_id']}", headers={'Accept':'application/json'})
+    assert saved.json == report
+    fresh = recover(client, report['operation_id'])
+    assert fresh.status_code == 201
+    assert fresh.json['activity_context']['classroom_id'] == room['classroom_id']
+    final = confirm_export(client, fresh.json['preview_id'], key='restarted-original').json
+    assert final['status'] == 'completed'
+    assert {u['winner_group_label'] for u in final['units']} == {'第 42 組'}
+    assert {u['winner_group_id'] for u in final['units']} == {str(group['group_id'])}
+    assert final['result_version'] == snapshot['result_version']
+    assert [len(batch) for batch in gateway.writes] == [2,1]
 
 
 def test_recovery_distinguishes_consented_overwrite_from_new_conflict(app, teacher, writable):
