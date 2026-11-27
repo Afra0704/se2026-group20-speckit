@@ -38,9 +38,13 @@ Issue #16。以 `e9a29c7` 為基底。依據 [規格](spec.md)、[計畫](plan.m
 
 ## 第六階段｜整體交付
 
-- [ ] T014 依 `specs/011-numeric-group-labels/quickstart.md` 執行完整 Node 與相關 Python 回歸，再由一位教師與至少兩組學生在空白測試庫實測。將版本、執行者、案例與預期及實際結果寫入 `specs/011-numeric-group-labels/validation.md`。
-- [ ] T015 執行 SpecKit Converge，對照程式及 `diagrams/011-component.puml`、`diagrams/011-class.puml`、`diagrams/011-sequence.puml`，將差異、重繪與檢查結果記入 `specs/011-numeric-group-labels/diagram-review.md`。合併前核對驗收證據與組員審查。
+- [x] T014 依 `specs/011-numeric-group-labels/quickstart.md` 執行完整 Node 與相關 Python 回歸，再由一位教師與至少兩組學生在空白測試庫實測。將版本、執行者、案例與預期及實際結果寫入 `specs/011-numeric-group-labels/validation.md`。
+- [x] T015 執行 SpecKit Converge，對照程式及 `diagrams/011-component.puml`、`diagrams/011-class.puml`、`diagrams/011-sequence.puml`，將差異、重繪與檢查結果記入 `specs/011-numeric-group-labels/diagram-review.md`。合併前核對驗收證據與組員審查。
 
 ## 依賴與交付順序
 
 `T001 → T002 → T003 → US1 → US2 → T014 → T015`。US3 的受控保留測試可與 US2 的顯示測試分開準備，T013 於顯示接線後驗證，T014 同時依賴 US2 與 US3。T004／T005、T008／T009 各操作不同測試檔，可並行。先交付 US1 的加入與欄位提示作為第一個可驗收增量，再加上全部顯示面與歷史回歸。
+
+## Phase 7: Convergence
+
+- [x] T016 補上不同課堂相同組號的回填預覽／報告整合測試，逐份核對原勝組 ID 與顯示標籤，記錄測試結果；對應 FR-011-02、FR-011-03、T009（partial，MEDIUM）。
