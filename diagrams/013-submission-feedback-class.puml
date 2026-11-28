@@ -1,0 +1,22 @@
+@startuml
+class "本頁作答範圍" as Scope {
+  課堂、活動、組別、題目、分頁
+}
+class "作答欄位" as Field {
+  小題、原文、欄位錯誤
+}
+class "送答操作" as Op {
+  操作識別、原答案
+}
+class "本題回饋" as Hint {
+  目前操作、送答狀態
+}
+class "正式受理紀錄" as Result {
+  有效答案、原順位
+}
+Scope "1" o-- "*" Field
+Scope "1" -- "*" Op
+Scope "1" -- "1" Hint
+Hint --> Op : 僅更新相符操作
+Op --> Result : 原樣重試最多受理一次
+@enduml

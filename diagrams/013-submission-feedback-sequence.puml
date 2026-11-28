@@ -1,0 +1,41 @@
+@startuml
+actor 學生
+participant "本題表單" as Form
+participant "本頁操作" as Op
+participant "正式受理" as Server
+學生 -> Form : 提交
+alt 空白或漏填
+ Form --> 學生 : 提示錯誤欄位並保留輸入
+else 輸入完整
+ Form -> Op : 固定原答案並顯示送出中
+ Op -> Server : 送答
+ alt 收到受理結果
+  Server --> Op : 已受理
+  Op --> Form : 顯示本題已受理
+ else 明確拒絕
+  Server --> Op : 拒絕原因
+  Op --> Form : 顯示對應方式
+ else 無法確認結果
+  Op --> Form : 顯示可能已受理
+  opt 學生編輯答案
+   學生 -> Form : 編輯並保留目前輸入
+  end
+  學生 -> Form : 重試此次送答
+  Form -> Op : 使用原操作及原答案
+  Op -> Server : 查回原結果或首次受理
+  alt 原操作結果確定
+   Server --> Op : 原操作結果
+   Op --> Form : 確定後才可另行提交目前輸入
+  else 重送內容衝突
+   Server --> Op : 無法核對原送答
+   Op --> Form : 保留未決與編輯內容，提示核對或重新加入
+  else 仍無法確認
+   Op --> Form : 保留未決操作，可手動重試
+  end
+ end
+end
+note over Form, Op
+晚到回覆僅更新仍相符的操作
+重整、複製及重新加入沿用 #17 的作用域
+end note
+@enduml

@@ -53,7 +53,14 @@
     if(body!==undefined){options.method='POST';Object.assign(options.headers,{'Content-Type':'application/json','X-CSRF-Token':main.dataset.csrf});options.body=JSON.stringify(body);}
     if(key)options.headers['Idempotency-Key']=key;
     const response=await fetch(path,options), data=response.status===204?null:await response.json();
-    if(!response.ok){const error=new Error(data?.error||'REQUEST_FAILED');error.status=response.status;throw error;}
+    if(!response.ok){
+      const error=new Error(data?.error||'REQUEST_FAILED');
+      error.status=response.status;
+      error.invalidItemIds=data?.invalid_item_ids;
+      error.retryAfter=response.headers?.get('Retry-After')??data?.retry_after;
+      throw error;
+    }
+    if(key&&(response.status!==201||data?.status!=='accepted'))throw new Error('SUBMISSION_OUTCOME_UNKNOWN');
     return data;
   }
   function valid(gen,id){return !state.closed&&gen===state.generation&&(!id||activity===id);}
@@ -105,21 +112,31 @@
     const current=data.activity, id=current?.activity_id||null;
     if(activity!==id||!view){
       byId('questions').replaceChildren();activity=id;
-      for(const q of current?.questions||[]){
+      for(const [questionIndex,q] of (current?.questions||[]).entries()){
         const li=document.createElement('li'),form=document.createElement('form');
+        const fields=new Map();
+        form.noValidate=true;
         const title=document.createElement('h2');title.textContent=`題目 ${q.display_number}`;li.append(title);
-        for(const item of q.items){
+        for(const [itemIndex,item] of q.items.entries()){
           const label=document.createElement('label'),prompt=document.createElement('p'),input=document.createElement('input');
+          const notice=document.createElement('span');
           prompt.className='question-prompt';prompt.textContent=[item.subitem_label,item.prompt_text??'此版本缺少完整題目，請老師選擇完整版本。'].filter(Boolean).join(' ');
-          input.name=item.item_id;input.required=true;label.append(prompt,input);form.append(label);
+          notice.id=`answer-error-${questionIndex}-${itemIndex}`;
+          notice.className='student-field-error';
+          notice.textContent='答案不可為空';
+          notice.hidden=true;
+          input.name=item.item_id;input.required=true;input.setAttribute('aria-describedby',notice.id);
+          fields.set(item.item_id,{input,notice});
+          label.append(prompt,input);form.append(label,notice);
         }
         const button=document.createElement('button');button.textContent='提交';form.append(button);li.append(form);byId('questions').append(li);
         const gen=state.generation;
         const context=()=>valid(gen,id)&&group!==null?{room,activity:id,group,operationScope,live:view?.phase==='LIVE'}:null;
         const send=(aid,body,key)=>api(`/activities/${encodeURIComponent(aid)}/submissions`,body,key);
-        const accepted=()=>{if(valid(gen,id))byId('message').textContent='答案已受理';};
-        const failed=e=>{if(!valid(gen,id))return;if(e.message==='CLASSROOM_CLOSED'||authErrors.includes(e.message))error(e,gen);else byId('message').textContent=e.message==='QUIZ_UNAVAILABLE'?'正式搶答服務尚未接入，請告知老師。':'送答未完成，請確認連線後重試。';};
-        form.quizUpdate=QuizSubmission.attach(form,button,q.question_id,context,send,accepted,failed);
+        const failed=e=>{
+          if(valid(gen,id)&&(e.message==='CLASSROOM_CLOSED'||authErrors.includes(e.message)))error(e,gen);
+        };
+        form.quizUpdate=QuizSubmission.attach(form,button,q.question_id,context,send,undefined,failed,fields);
       }
     }
     view=current;

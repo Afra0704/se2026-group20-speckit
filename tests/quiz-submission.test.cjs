@@ -127,3 +127,76 @@ for (const oldStatus of [201, 409]) {
     assert.equal(storage.size, 0);
   });
 }
+
+test("manual retry preserves edited text and blocks further submission after replay conflict", async () => {
+  const storage = new Map(), sent = [];
+  const browser = {
+    crypto: {randomUUID: () => "original-key"},
+    sessionStorage: {getItem: k => storage.get(k), setItem: (k, v) => storage.set(k, v),
+      removeItem: k => storage.delete(k)},
+    document: {createElement: () => ({})},
+    FormData: class {
+      constructor(form) { this.answer = form.answer; }
+      *[Symbol.iterator]() { yield ["i", this.answer]; }
+    },
+  };
+  function load(answer) {
+    vm.runInNewContext(fs.readFileSync("src/guided_notes/static/quiz-submission.js", "utf8"), browser);
+    const form = {answer, children: [], append(node) { this.children.push(node); }};
+    const button = {};
+    browser.QuizSubmission.attach(form, button, "q", () => ({room: "r", activity: "a", group: 1, operationScope: "page", live: true}),
+      async (activity, body, key) => {
+        sent.push({activity, body, key});
+        if (sent.length === 1) throw new TypeError("lost response");
+        if (sent.length === 2) throw Object.assign(new Error("TOO_MANY_ATTEMPTS"), {status: 429});
+        throw Object.assign(new Error("SUBMISSION_REPLAY_CONFLICT"), {status: 409});
+      }, () => {}, () => {})();
+    return {form, button, status: form.children[0], retry: form.children.at(-1)};
+  }
+  const event = {preventDefault() {}};
+  const page = load(" 台北 ");
+  await page.form.onsubmit(event);
+  page.form.answer = "新北";
+  assert.equal(page.button.disabled, true);
+  await page.form.onsubmit(event);
+  assert.equal(sent.length, 1);
+  await page.retry.onclick();
+  assert.match(page.status.textContent, /未確認/);
+  await page.retry.onclick();
+  assert.deepEqual(sent[0], sent[1]);
+  assert.deepEqual(sent[0], sent[2]);
+  assert.equal(page.form.answer, "新北");
+  assert.equal(page.retry.disabled, true);
+  assert.match(page.status.textContent, /無法核對原送答/);
+  const reloaded = load("another draft");
+  assert.equal(reloaded.button.disabled, true);
+  assert.equal(reloaded.retry.disabled, true);
+  assert.match(reloaded.status.textContent, /無法核對原送答/);
+  await reloaded.retry.onclick();
+  assert.equal(sent.length, 3);
+});
+
+test("a first refusal never labels the action as an accepted resubmission", async () => {
+  const browser = {
+    crypto: {randomUUID: () => "unused-key"},
+    document: {createElement: () => ({})},
+    FormData: class { *[Symbol.iterator]() { yield ["i", "answer"]; } },
+  };
+  vm.runInNewContext(fs.readFileSync("src/guided_notes/static/quiz-submission.js", "utf8"), browser);
+  const cases = [
+    [400, "INVALID_ITEMS", /作答欄位/],
+    [409, "INVALID_PHASE", /無法送答/],
+    [429, "TOO_MANY_ATTEMPTS", /3 秒後/],
+    [503, "TEMPORARILY_UNAVAILABLE", /可能已受理/],
+  ];
+  for (const [status, code, expected] of cases) {
+    const form = {children: [], append(node) { this.children.push(node); }};
+    const button = {};
+    browser.QuizSubmission.attach(form, button, code, () => ({room: "r", activity: "a", group: 1, operationScope: "page"}),
+      async () => { throw Object.assign(new Error(code), {status, retryAfter: "3"}); })();
+    await form.onsubmit({preventDefault() {}});
+    assert.equal(button.textContent, "提交");
+    assert.match(form.children[0].textContent, expected);
+    assert.equal(form.children[1].hidden, status < 500);
+  }
+});

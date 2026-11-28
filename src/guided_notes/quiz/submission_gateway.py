@@ -39,7 +39,8 @@ def validated_operation_id(value):
 
 
 def validated_answers(question, items):
-    expected = {item["item_id"] for item in question["items"]}
+    ordered_ids = [item["item_id"] for item in question["items"]]
+    expected = set(ordered_ids)
     answers = {}
     if not isinstance(items, list):
         raise ApiError(400, "INVALID_ITEMS")
@@ -49,9 +50,10 @@ def validated_answers(question, items):
         item_id = item.get("item_id")
         answer = item.get("answer_text")
         if (not isinstance(item_id, str) or item_id not in expected
-                or item_id in answers or not isinstance(answer, str) or not answer.strip()):
+                or item_id in answers or not isinstance(answer, str)):
             raise ApiError(400, "INVALID_ITEMS")
         answers[item_id] = answer
-    if answers.keys() != expected:
-        raise ApiError(400, "INVALID_ITEMS")
+    invalid = [item_id for item_id in ordered_ids if not answers.get(item_id, "").strip()]
+    if invalid:
+        raise ApiError(400, "INVALID_ITEMS", invalid_item_ids=invalid)
     return answers

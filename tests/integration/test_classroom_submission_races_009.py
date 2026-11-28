@@ -6,6 +6,46 @@ from threading import Event
 from uuid import uuid4
 
 
+def test_replaying_old_tab_answer_does_not_replace_newer_effective_answer(
+        classroom_app, classroom_teacher, classroom_setup):
+    import json
+
+    from guided_notes.db import connection
+    from quiz_support import published_quiz
+
+    _, room = classroom_setup
+    student, _ = browser_tabs(classroom_app)
+    headers = activate_tab(student, join_tab(student, room, '1'))
+    headers['X-CSRF-Token'] = student.get('/csrf').json['csrf']
+    activity, questions = published_quiz(classroom_app, classroom_teacher, classroom_setup)
+    aid = activity['activity_id']
+    path = f"/activities/{aid}/submissions"
+    assert post(classroom_teacher, f"/teacher/classrooms/{room['classroom_id']}/activities/{aid}/start").status_code == 200
+    old_key, new_key = str(uuid4()), str(uuid4())
+    question = questions[0]
+
+    def send(key, answer):
+        return student.post(path, headers={**headers, 'Idempotency-Key': key}, json={
+            'question_id': question['question_id'], 'items': [
+                {'item_id': item['item_id'], 'answer_text': answer} for item in question['items']
+            ],
+        })
+
+    assert send(old_key, ' 台北 ').status_code == 201
+    assert send(new_key, ' 新北 ').status_code == 201
+    assert send(old_key, ' 台北 ').status_code == 201
+    assert send(old_key, '更改').json == {'error': 'SUBMISSION_REPLAY_CONFLICT'}
+    with classroom_app.app_context():
+        db = connection()
+        assert db.execute('SELECT COUNT(*) FROM quiz_submissions WHERE activity_id=?', (aid,)).fetchone()[0] == 2
+        effective = db.execute(
+            'SELECT s.operation_id,s.answers FROM quiz_effective e '
+            'JOIN quiz_submissions s USING(accept_seq) WHERE e.activity_id=?', (aid,),
+        ).fetchone()
+        assert effective['operation_id'] == new_key
+        assert set(json.loads(effective['answers']).values()) == {' 新北 '}
+
+
 def test_tab_submission_requires_csrf_and_keeps_original_group_after_close(
         classroom_app, classroom_teacher, classroom_setup):
     from quiz_support import published_quiz
