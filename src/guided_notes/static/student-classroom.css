@@ -22,3 +22,8 @@
 }
 
 .student-field-error { color: #a62020; }
+
+#questions input[aria-invalid="true"] { border-color: #a62020; }
+#questions .student-field-error { display: block; }
+.submission-feedback { overflow-wrap: anywhere; }
+.submission-feedback:empty { margin: 0; }

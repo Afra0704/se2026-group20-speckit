@@ -5,10 +5,11 @@ from .db import DatabaseBusy
 
 
 class ApiError(Exception):
-    def __init__(self, status, code, *, retry_after=None):
+    def __init__(self, status, code, *, retry_after=None, invalid_item_ids=None):
         self.status = status
         self.code = code
         self.retry_after = retry_after
+        self.invalid_item_ids = invalid_item_ids
 
 
 def payload():
@@ -29,6 +30,8 @@ def init_app(app):
     @app.errorhandler(ApiError)
     def api_error(error):
         body = {"error": error.code}
+        if error.invalid_item_ids is not None:
+            body["invalid_item_ids"] = error.invalid_item_ids
         headers = {}
         if error.retry_after is not None:
             body["retry_after"] = error.retry_after

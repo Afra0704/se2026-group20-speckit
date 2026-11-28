@@ -1,0 +1,15 @@
+@startuml
+actor 學生
+component "作答表單與欄位提示" as Form
+component "本題送答回饋" as Feedback
+component "未決操作與原樣重試" as Pending
+component "#17 分頁資格" as Tab
+component "正式受理與順位" as Accepted
+學生 --> Form
+Form --> Feedback
+Form --> Pending
+Pending --> Tab : 本頁資格及作用域
+Pending --> Accepted : 驗證及送答
+Accepted --> Feedback : 受理或明確拒絕
+Pending --> Feedback : 結果未知
+@enduml
