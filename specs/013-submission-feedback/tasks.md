@@ -41,9 +41,9 @@
 
 ## 第六階段｜整體回歸與交付
 
-- [ ] T017 [P] 依 `specs/013-submission-feedback/quickstart.md` 執行完整 Python／Node 回歸與教師、一位學生和另一組學生的真人驗收，將鍵盤、窄視窗、受控回覆遺失及原順位的證據寫入 `specs/013-submission-feedback/validation.md`。記錄執行者、日期、版本、場景、預期及實際。
-- [ ] T018 [P] 以 `diagrams/013-submission-feedback-component.puml`、`diagrams/013-submission-feedback-class.puml`、`diagrams/013-submission-feedback-sequence.puml` 對照實作並記入 `specs/013-submission-feedback/diagram-review.md`。有行為差異時更新原圖、重繪 PNG 並取得複核。
-- [ ] T019 匯整 Analyze 與實作後 Converge 結果至 `specs/013-submission-feedback/validation.md`，追溯 FR-001～FR-008 與 SC-001～SC-004，確認自動結果、真人驗收與組員互審的證據齊備後交付。
+- [x] T017 [P] 依 `specs/013-submission-feedback/quickstart.md` 執行完整 Python／Node 回歸與教師、一位學生和另一組學生的真人驗收，將鍵盤、窄視窗、受控回覆遺失及原順位的證據寫入 `specs/013-submission-feedback/validation.md`。記錄執行者、日期、版本、場景、預期及實際。
+- [x] T018 [P] 以 `diagrams/013-submission-feedback-component.puml`、`diagrams/013-submission-feedback-class.puml`、`diagrams/013-submission-feedback-sequence.puml` 對照實作並記入 `specs/013-submission-feedback/diagram-review.md`。有行為差異時更新原圖、重繪 PNG 並取得複核。
+- [x] T019 匯整 Analyze 與實作後 Converge 結果至 `specs/013-submission-feedback/validation.md`，追溯 FR-001～FR-008 與 SC-001～SC-004，確認自動結果、真人驗收與組員互審的證據齊備後交付。
 
 ## 依賴與執行順序
 
@@ -58,3 +58,10 @@
 ## 實作策略
 
 先交付 US1 作為可單獨驗收的 MVP，完成逐欄提示與服務端契約。再加入 US2 的本題狀態及 US3 的原樣重試。三段都完成並通過交付驗收後，才完成 Issue #18。
+
+## Phase 7: Convergence
+
+2026-11-28：已讀目前規格／計畫／19任務與實作；不因舊勾選推定完成。功能程式未發現新增缺漏，剩餘交付證據如下。沿用T017–T019，不改舊勾選；本節只追加可執行的補正工作。
+
+- [x] T020 補齊US3/AC2、SC-003、T017及quickstart真人情境4：在原頁有未決送答時，驗證F5後不自動送答但可手動原樣重試；原生複製頁不承接原頁重試；取消重新加入保留pending而確認只清本頁。記錄原正式答案與順位、兩組不互相影響，更新validation.md與manual-acceptance.md。現有Node及後端測試已通過，這是人工交付證據partial，不是已知程式失敗。
+- [x] T021 依Constitution II／VI、plan圖對碼及T018–T019，請另一位組員複核A1更新後時序圖與目前實作，記錄實際回報及可提供的確認者／連結；核對delivery-check.md的程式責任與狀態分支，完成後重跑converge並更新交付狀態。原三圖舊審查不能替代此次差異確認（partial）。

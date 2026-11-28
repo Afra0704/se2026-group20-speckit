@@ -30,3 +30,7 @@ $uml = Get-ChildItem diagrams/013-submission-feedback-*.puml | ForEach-Object Fu
 - 時序圖的欄位錯誤、送出後未知、原樣重試與 A1 衝突分支均對應 `src/guided_notes/static/quiz-submission.js`。顯示衝突後只能核對或依 #17 重新加入。無程式與圖意差異需要重繪。
 
 使用者已指示 A1 一併實作。更新後時序圖與本輪實作仍待組員複核。
+
+2026-11-28交付檢核：Codex已將三圖逐一對照render／attach／scope／replay／A1分支，責任、資料及時序一致，詳見delivery-check.md。Java24／PlantUML1.2026.10 checkonly退出0，三份既有PNG簽章正確，未變圖意故不重繪。這是AI圖對碼檢查，不替代另一位組員對A1更新圖的複核；確認者與回報尚未提供，T021維持待辦。
+
+同日後續：在完成S1–S3且本聊天室明確列出A1更新圖複核為最後待辦後，使用者回報「同學已審核」，據此將T021記為已完成。組員姓名及獨立審查連結未提供，不補造；此為使用者回報的組員圖意複核，不是GitHub正式review狀態。未改圖意，無需重繪PNG。
